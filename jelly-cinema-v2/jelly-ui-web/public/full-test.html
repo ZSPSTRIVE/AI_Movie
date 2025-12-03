@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>果冻影院 - 完整功能测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; max-width: 1200px; margin: 0 auto; }
+        .section { background: #fff; border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        .section h2 { margin-top: 0; color: #333; border-bottom: 2px solid #409eff; padding-bottom: 10px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; font-size: 12px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; }
+        .warning { background: #fff3cd; border: 1px solid #ffeeba; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; background: #409eff; color: white; border: none; border-radius: 4px; }
+        button:hover { background: #66b1ff; }
+        input, textarea { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 12px; margin-left: 10px; }
+        .status.ok { background: #67c23a; color: white; }
+        .status.fail { background: #f56c6c; color: white; }
+        .status.pending { background: #909399; color: white; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; }
+        h1 { text-align: center; color: #409eff; }
+        .summary { background: #ecf5ff; padding: 15px; border-radius: 8px; margin-bottom: 20px; }
+        .summary-item { display: inline-block; margin: 0 20px; }
+    </style>
+</head>
+<body>
+    <h1>🎬 果冻影院 - 完整功能测试</h1>
+    
+    <div class="summary">
+        <strong>测试统计：</strong>
+        <span class="summary-item">✅ 通过: <span id="passCount">0</span></span>
+        <span class="summary-item">❌ 失败: <span id="failCount">0</span></span>
+        <span class="summary-item">⏳ 待测: <span id="pendingCount">0</span></span>
+        <button onclick="runAllTests()" style="float: right;">🚀 运行所有测试</button>
+        <button onclick="clearAll()" style="float: right; background: #909399;">🗑️ 清除结果</button>
+    </div>
+
+    <div class="grid">
+        <!-- 认证模块 -->
+        <div class="section">
+            <h2>🔐 认证模块 <span id="auth-status" class="status pending">待测</span></h2>
+            <div>
+                <input id="reg-username" placeholder="用户名" value="testuser">
+                <input id="reg-password" placeholder="密码" value="123456">
+                <input id="reg-nickname" placeholder="昵称" value="测试用户">
+            </div>
+            <button onclick="testRegister()">测试注册</button>
+            <button onclick="testLogin()">测试登录</button>
+            <button onclick="testLogout()">测试登出</button>
+            <div id="auth-result" class="result">点击按钮测试...</div>
+        </div>
+
+        <!-- 电影模块 -->
+        <div class="section">
+            <h2>🎬 电影模块 <span id="film-status" class="status pending">待测</span></h2>
+            <button onclick="testFilmList()">电影列表</button>
+            <button onclick="testFilmRecommend()">推荐电影</button>
+            <button onclick="testFilmHot()">热门榜单</button>
+            <button onclick="testFilmCategory()">分类列表</button>
+            <button onclick="testFilmDetail()">电影详情</button>
+            <div id="film-result" class="result">点击按钮测试...</div>
+        </div>
+
+        <!-- 社区模块 -->
+        <div class="section">
+            <h2>💬 社区模块 <span id="community-status" class="status pending">待测</span></h2>
+            <button onclick="testPostList()">帖子列表</button>
+            <button onclick="testCreatePost()">发布帖子</button>
+            <button onclick="testCommentList()">评论列表</button>
+            <div id="community-result" class="result">点击按钮测试...</div>
+        </div>
+
+        <!-- AI 模块 -->
+        <div class="section">
+            <h2>🤖 AI 模块 <span id="ai-status" class="status pending">待测</span></h2>
+            <div>
+                <textarea id="ai-prompt" rows="2" cols="30" placeholder="输入问题">你好，请介绍一下三体这部电视剧</textarea>
+            </div>
+            <button onclick="testAiChat()">AI 对话</button>
+            <button onclick="testNovelOutline()">小说大纲</button>
+            <div id="ai-result" class="result">点击按钮测试...</div>
+        </div>
+
+        <!-- IM 模块 -->
+        <div class="section">
+            <h2>📨 即时通讯 <span id="im-status" class="status pending">待测</span></h2>
+            <button onclick="testImSessions()">会话列表</button>
+            <button onclick="testWebSocket()">WebSocket连接</button>
+            <div id="im-result" class="result">点击按钮测试...</div>
+        </div>
+
+        <!-- 工具 -->
+        <div class="section">
+            <h2>🛠️ 工具</h2>
+            <button onclick="clearStorage()">清除本地存储</button>
+            <button onclick="showToken()">显示当前Token</button>
+            <button onclick="testGateway()">测试Gateway</button>
+            <div id="tool-result" class="result">工具结果...</div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        let passCount = 0;
+        let failCount = 0;
+
+        function updateStats() {
+            document.getElementById('passCount').textContent = passCount;
+            document.getElementById('failCount').textContent = failCount;
+        }
+
+        function setResult(id, success, message) {
+            const el = document.getElementById(id);
+            el.className = 'result ' + (success ? 'success' : 'error');
+            el.textContent = (success ? '✅ ' : '❌ ') + message;
+        }
+
+        function setStatus(id, status) {
+            const el = document.getElementById(id);
+            el.className = 'status ' + status;
+            el.textContent = status === 'ok' ? '通过' : status === 'fail' ? '失败' : '待测';
+        }
+
+        async function apiCall(url, options = {}) {
+            const headers = { 'Content-Type': 'application/json', ...options.headers };
+            if (token) headers['Authorization'] = token;
+            try {
+                const res = await fetch('/api' + url, { ...options, headers });
+                const text = await res.text();
+                console.log('Response for ' + url + ':', text);
+                try {
+                    return JSON.parse(text);
+                } catch (e) {
+                    return { code: res.status, msg: text || 'Empty response', data: null };
+                }
+            } catch (e) {
+                console.error('Fetch error:', e);
+                return { code: 500, msg: e.message, data: null };
+            }
+        }
+
+        // ===== 认证测试 =====
+        async function testRegister() {
+            try {
+                const username = document.getElementById('reg-username').value + Date.now();
+                const password = document.getElementById('reg-password').value;
+                const nickname = document.getElementById('reg-nickname').value;
+                const data = await apiCall('/auth/register', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password, confirmPassword: password, nickname })
+                });
+                if (data.code === 200) {
+                    setResult('auth-result', true, '注册成功！用户名: ' + username);
+                    document.getElementById('reg-username').value = username;
+                    setStatus('auth-status', 'ok'); passCount++;
+                } else {
+                    setResult('auth-result', false, '注册失败: ' + data.msg);
+                    setStatus('auth-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('auth-result', false, '请求失败: ' + e.message);
+                setStatus('auth-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testLogin() {
+            try {
+                const username = document.getElementById('reg-username').value;
+                const password = document.getElementById('reg-password').value;
+                const data = await apiCall('/auth/login', {
+                    method: 'POST',
+                    body: JSON.stringify({ username, password })
+                });
+                if (data.code === 200) {
+                    token = data.data.token;
+                    setResult('auth-result', true, '登录成功！\nToken: ' + token + '\n用户: ' + data.data.nickname);
+                    setStatus('auth-status', 'ok'); passCount++;
+                } else {
+                    setResult('auth-result', false, '登录失败: ' + data.msg);
+                    setStatus('auth-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('auth-result', false, '请求失败: ' + e.message);
+                setStatus('auth-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testLogout() {
+            try {
+                const data = await apiCall('/auth/logout', { method: 'POST' });
+                token = null;
+                setResult('auth-result', true, '登出成功！');
+            } catch (e) {
+                setResult('auth-result', false, '登出失败: ' + e.message);
+            }
+        }
+
+        // ===== 电影测试 =====
+        async function testFilmList() {
+            try {
+                const data = await apiCall('/film/list?pageNum=1&pageSize=5');
+                console.log('Film list response:', data);
+                if (data.code === 200) {
+                    setResult('film-result', true, '电影列表获取成功！\n共 ' + data.data.total + ' 部电影\n' + JSON.stringify(data.data.rows?.slice(0, 2), null, 2));
+                    setStatus('film-status', 'ok'); passCount++;
+                } else {
+                    setResult('film-result', false, '获取失败: ' + (data.msg || data.error || JSON.stringify(data)));
+                    setStatus('film-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('film-result', false, '请求失败: ' + e.message + '\n' + e.stack);
+                setStatus('film-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testFilmRecommend() {
+            try {
+                const data = await apiCall('/film/recommend/feed?size=3');
+                if (data.code === 200) {
+                    const titles = data.data.map(f => f.title).join(', ');
+                    setResult('film-result', true, '推荐电影获取成功！\n电影: ' + titles);
+                    setStatus('film-status', 'ok');
+                } else {
+                    setResult('film-result', false, '获取失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('film-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        async function testFilmHot() {
+            try {
+                const data = await apiCall('/film/recommend/hot?size=3');
+                if (data.code === 200) {
+                    const titles = data.data.map(f => f.title + '(' + f.playCount + '次)').join(', ');
+                    setResult('film-result', true, '热门榜单获取成功！\n' + titles);
+                } else {
+                    setResult('film-result', false, '获取失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('film-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        async function testFilmCategory() {
+            try {
+                const data = await apiCall('/film/category/list');
+                if (data.code === 200) {
+                    const names = data.data.map(c => c.name).join(', ');
+                    setResult('film-result', true, '分类列表获取成功！\n分类: ' + names);
+                } else {
+                    setResult('film-result', false, '获取失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('film-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        async function testFilmDetail() {
+            try {
+                const data = await apiCall('/film/detail/1001');
+                if (data.code === 200) {
+                    setResult('film-result', true, '电影详情获取成功！\n' + data.data.title + ' - ' + data.data.description?.slice(0, 50) + '...');
+                } else {
+                    setResult('film-result', false, '获取失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('film-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        // ===== 社区测试 =====
+        async function testPostList() {
+            try {
+                const data = await apiCall('/post/list?pageNum=1&pageSize=5');
+                if (data.code === 200) {
+                    setResult('community-result', true, '帖子列表获取成功！\n共 ' + data.data.total + ' 个帖子');
+                    setStatus('community-status', 'ok'); passCount++;
+                } else {
+                    setResult('community-result', false, '获取失败: ' + data.msg);
+                    setStatus('community-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('community-result', false, '请求失败: ' + e.message);
+                setStatus('community-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testCreatePost() {
+            if (!token) {
+                setResult('community-result', false, '请先登录！');
+                return;
+            }
+            try {
+                const data = await apiCall('/post/create', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        title: '测试帖子 ' + new Date().toLocaleString(),
+                        contentHtml: '<p>这是一个测试帖子内容</p>'
+                    })
+                });
+                if (data.code === 200) {
+                    setResult('community-result', true, '发布帖子成功！帖子ID: ' + data.data);
+                } else {
+                    setResult('community-result', false, '发布失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('community-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        async function testCommentList() {
+            try {
+                const data = await apiCall('/comment/list/1?pageNum=1&pageSize=5');
+                if (data.code === 200) {
+                    setResult('community-result', true, '评论列表获取成功！\n共 ' + data.data.total + ' 条评论');
+                } else {
+                    setResult('community-result', false, '获取失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('community-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        // ===== AI 测试 =====
+        async function testAiChat() {
+            try {
+                const prompt = document.getElementById('ai-prompt').value;
+                setResult('ai-result', true, '正在请求 AI...');
+                const data = await apiCall('/ai/chat', {
+                    method: 'POST',
+                    body: JSON.stringify({ prompt, enableRag: false })
+                });
+                console.log('AI chat response:', data);
+                if (data.code === 200) {
+                    setResult('ai-result', true, 'AI 对话成功！\n回复: ' + data.data);
+                    setStatus('ai-status', 'ok'); passCount++;
+                } else {
+                    setResult('ai-result', false, 'AI 对话失败: ' + (data.msg || data.error || 'Unknown error') + '\n完整响应:\n' + JSON.stringify(data, null, 2));
+                    setStatus('ai-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('ai-result', false, '请求失败: ' + e.message);
+                setStatus('ai-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testNovelOutline() {
+            if (!token) {
+                setResult('ai-result', false, '请先登录！');
+                return;
+            }
+            try {
+                setResult('ai-result', true, '正在生成小说大纲...');
+                const data = await apiCall('/ai/novel/generate-outline', {
+                    method: 'POST',
+                    body: JSON.stringify({ theme: '科幻冒险', chapterCount: 3 })
+                });
+                if (data.code === 200) {
+                    setResult('ai-result', true, '小说大纲生成成功！\n' + data.data?.slice(0, 500) + '...');
+                } else {
+                    setResult('ai-result', false, '生成失败: ' + data.msg);
+                }
+            } catch (e) {
+                setResult('ai-result', false, '请求失败: ' + e.message);
+            }
+        }
+
+        // ===== IM 测试 =====
+        async function testImSessions() {
+            if (!token) {
+                setResult('im-result', false, '请先登录！');
+                return;
+            }
+            try {
+                const data = await apiCall('/im/sessions');
+                if (data.code === 200) {
+                    setResult('im-result', true, '会话列表获取成功！\n共 ' + (data.data?.length || 0) + ' 个会话');
+                    setStatus('im-status', 'ok'); passCount++;
+                } else {
+                    setResult('im-result', false, '获取失败: ' + data.msg);
+                    setStatus('im-status', 'fail'); failCount++;
+                }
+            } catch (e) {
+                setResult('im-result', false, '请求失败: ' + e.message);
+                setStatus('im-status', 'fail'); failCount++;
+            }
+            updateStats();
+        }
+
+        async function testWebSocket() {
+            if (!token) {
+                setResult('im-result', false, '请先登录！');
+                return;
+            }
+            try {
+                const ws = new WebSocket('ws://localhost:8080/ws/chat?token=' + token);
+                ws.onopen = () => {
+                    setResult('im-result', true, 'WebSocket 连接成功！');
+                    setStatus('im-status', 'ok');
+                    ws.close();
+                };
+                ws.onerror = (e) => {
+                    setResult('im-result', false, 'WebSocket 连接失败！');
+                    setStatus('im-status', 'fail');
+                };
+            } catch (e) {
+                setResult('im-result', false, 'WebSocket 错误: ' + e.message);
+            }
+        }
+
+        // ===== 工具 =====
+        function clearStorage() {
+            localStorage.clear();
+            sessionStorage.clear();
+            token = null;
+            setResult('tool-result', true, '已清除所有本地存储！');
+        }
+
+        function showToken() {
+            setResult('tool-result', token ? true : false, token ? 'Token: ' + token : '未登录，没有 Token');
+        }
+
+        async function testGateway() {
+            try {
+                const res = await fetch('http://localhost:8080/film/recommend/feed?size=1');
+                const data = await res.json();
+                setResult('tool-result', true, 'Gateway 正常！\n' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                setResult('tool-result', false, 'Gateway 访问失败（可能是 CORS）: ' + e.message);
+            }
+        }
+
+        // ===== 运行所有测试 =====
+        async function runAllTests() {
+            passCount = 0; failCount = 0;
+            
+            // 先注册登录
+            await testRegister();
+            await new Promise(r => setTimeout(r, 500));
+            await testLogin();
+            await new Promise(r => setTimeout(r, 500));
+            
+            // 测试各模块
+            await testFilmList();
+            await testPostList();
+            await testAiChat();
+            await testImSessions();
+            
+            updateStats();
+            alert('测试完成！通过: ' + passCount + ', 失败: ' + failCount);
+        }
+
+        function clearAll() {
+            passCount = 0; failCount = 0;
+            updateStats();
+            document.querySelectorAll('.result').forEach(el => {
+                el.className = 'result';
+                el.textContent = '点击按钮测试...';
+            });
+            document.querySelectorAll('.status').forEach(el => {
+                el.className = 'status pending';
+                el.textContent = '待测';
+            });
+        }
+    </script>
+</body>
+</html>

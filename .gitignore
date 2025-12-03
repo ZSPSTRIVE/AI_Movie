@@ -1,0 +1,70 @@
+# 依赖目录
+node_modules/
+
+# 打包和编译输出
+dist/
+build/
+out/
+target/
+
+# 日志文件
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# 环境变量文件
+.env
+.env.local
+.env.*.local
+
+# 敏感配置文件（API Key、Secret）
+doc/config/application-shared.yml
+jelly-cinema-v2/doc/config/application-shared.yml
+jelly-cinema-v2/jelly-modules/jelly-im/src/main/resources/application.yml
+jelly-cinema-v2/jelly-modules/jelly-ai/src/main/resources/application.yml
+
+# 编辑器
+.idea/
+.vscode/
+*.sublime*
+*.swp
+
+# 系统文件
+.DS_Store
+Thumbs.db
+
+# 缓存
+.cache/
+coverage/
+tmp/
+temp/
+*.tmp
+*.temp
+
+# TypeScript
+*.tsbuildinfo
+
+# 锁定文件（按需忽略）
+# 如果你使用某一种包管理工具，请保留其 lockfile，忽略另外两种
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Electron
+release/
+*.asar
+
+# Webpack / Vite 缓存
+webpack-stats.json
+.esbuild/
+
+# Test
+.junit/
+test-output/
+
+# Git
+.git/
+.gitignore
+!.gitignore

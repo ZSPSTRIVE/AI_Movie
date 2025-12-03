@@ -1,0 +1,81 @@
+# ==========================================
+# 果冻影院 2.0 Git 忽略配置
+# ==========================================
+
+# ========== 环境变量和敏感配置 ==========
+.env
+.env.local
+.env.*.local
+*.local.yml
+application-local.yml
+application-prod.yml
+
+# 包含敏感信息的配置文件（API Key、Secret）
+doc/config/application-shared.yml
+jelly-modules/jelly-im/src/main/resources/application.yml
+jelly-modules/jelly-ai/src/main/resources/application.yml
+
+# ========== Java 后端 ==========
+# 编译输出
+target/
+*.class
+*.jar
+*.war
+*.ear
+
+# Maven
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+mvnw
+mvnw.cmd
+
+# IDE
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Logs
+logs/
+*.log
+
+# ========== 前端 ==========
+# 依赖
+node_modules/
+.pnpm-store/
+
+# 构建输出
+dist/
+build/
+
+# 缓存
+.cache/
+.vite/
+.eslintcache
+*.tsbuildinfo
+
+# 测试覆盖率
+coverage/
+
+# ========== 系统文件 ==========
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+*~
+
+# ========== 编辑器 ==========
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# ========== 临时文件 ==========
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+
+# ========== 数据库 ==========
+*.db
+*.sqlite

@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>简单测试</title>
+</head>
+<body>
+    <h1>简单 API 测试</h1>
+    
+    <h2>1. 测试电影列表（不带Token）</h2>
+    <button onclick="test1()">测试</button>
+    <pre id="r1">点击测试...</pre>
+    
+    <h2>2. 测试登录</h2>
+    <button onclick="test2()">登录 (用户名: 123456, 密码: 12345678)</button>
+    <pre id="r2">点击测试...</pre>
+    
+    <h2>3. 测试电影列表（带Token）</h2>
+    <button onclick="test3()">测试</button>
+    <pre id="r3">先登录...</pre>
+    
+    <script>
+        let token = '';
+        
+        async function test1() {
+            document.getElementById('r1').textContent = '请求中...';
+            try {
+                const res = await fetch('/api/film/list?pageNum=1&pageSize=3');
+                const text = await res.text();
+                document.getElementById('r1').textContent = 'HTTP ' + res.status + '\n' + text;
+            } catch (e) {
+                document.getElementById('r1').textContent = '错误: ' + e.message;
+            }
+        }
+        
+        async function test2() {
+            document.getElementById('r2').textContent = '请求中...';
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: '123456', password: '12345678' })
+                });
+                const text = await res.text();
+                document.getElementById('r2').textContent = 'HTTP ' + res.status + '\n' + text;
+                
+                // 解析token
+                try {
+                    const data = JSON.parse(text);
+                    if (data.data && data.data.token) {
+                        token = data.data.token;
+                        document.getElementById('r3').textContent = 'Token已获取: ' + token;
+                    }
+                } catch (e) {}
+            } catch (e) {
+                document.getElementById('r2').textContent = '错误: ' + e.message;
+            }
+        }
+        
+        async function test3() {
+            if (!token) {
+                document.getElementById('r3').textContent = '请先登录!';
+                return;
+            }
+            document.getElementById('r3').textContent = '请求中...';
+            try {
+                const res = await fetch('/api/film/list?pageNum=1&pageSize=3', {
+                    headers: { 'Authorization': token }
+                });
+                const text = await res.text();
+                document.getElementById('r3').textContent = 'HTTP ' + res.status + '\n' + text;
+            } catch (e) {
+                document.getElementById('r3').textContent = '错误: ' + e.message;
+            }
+        }
+    </script>
+</body>
+</html>

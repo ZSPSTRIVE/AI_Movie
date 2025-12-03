@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <title>API 测试页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { background: #f5f5f5; padding: 10px; margin: 10px 0; border-radius: 4px; white-space: pre-wrap; }
+        .success { background: #d4edda; }
+        .error { background: #f8d7da; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        h2 { margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <h1>🎬 果冻影院 API 测试</h1>
+    
+    <h2>1. 测试电影推荐 API</h2>
+    <button onclick="testFilmRecommend()">测试 /api/film/recommend/feed</button>
+    <div id="result1" class="result">点击按钮测试...</div>
+    
+    <h2>2. 测试分类列表 API</h2>
+    <button onclick="testCategoryList()">测试 /api/film/category/list</button>
+    <div id="result2" class="result">点击按钮测试...</div>
+    
+    <h2>3. 测试帖子列表 API</h2>
+    <button onclick="testPostList()">测试 /api/post/list</button>
+    <div id="result3" class="result">点击按钮测试...</div>
+    
+    <h2>4. 直接测试 Gateway</h2>
+    <button onclick="testGateway()">直接访问 localhost:8080</button>
+    <div id="result4" class="result">点击按钮测试...</div>
+
+    <h2>5. 测试登录</h2>
+    <div>
+        <input id="username" placeholder="用户名" value="test123">
+        <input id="password" placeholder="密码" value="123456">
+        <button onclick="testLogin()">测试登录</button>
+    </div>
+    <div id="result5" class="result">点击按钮测试登录...</div>
+    
+    <h2>6. 登录后测试 API</h2>
+    <button onclick="testWithToken()">带 Token 请求 /api/film/category/list</button>
+    <div id="result6" class="result">先登录，再测试...</div>
+
+    <h2>7. 清除本地存储</h2>
+    <button onclick="clearStorage()">清除所有缓存</button>
+    <div id="result7" class="result">点击按钮清除...</div>
+
+    <script>
+        let savedToken = null;
+        
+        async function testLogin() {
+            const el = document.getElementById('result5');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            try {
+                const res = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+                const data = await res.json();
+                if (data.code === 200) {
+                    savedToken = data.data.token;
+                    el.className = 'result success';
+                    el.textContent = '✅ 登录成功!\nToken: ' + savedToken + '\n\n完整响应:\n' + JSON.stringify(data, null, 2);
+                } else {
+                    el.className = 'result error';
+                    el.textContent = '❌ 登录失败: ' + data.msg;
+                }
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ 请求失败: ' + e.message;
+            }
+        }
+        
+        async function testWithToken() {
+            const el = document.getElementById('result6');
+            if (!savedToken) {
+                el.className = 'result error';
+                el.textContent = '❌ 请先登录获取 Token';
+                return;
+            }
+            try {
+                const res = await fetch('/api/film/category/list', {
+                    headers: { 'Authorization': savedToken }
+                });
+                const data = await res.json();
+                el.className = data.code === 200 ? 'result success' : 'result error';
+                el.textContent = (data.code === 200 ? '✅ 成功!' : '❌ 失败!') + '\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ 请求失败: ' + e.message;
+            }
+        }
+        async function testFilmRecommend() {
+            const el = document.getElementById('result1');
+            try {
+                const res = await fetch('/api/film/recommend/feed?size=3');
+                const data = await res.json();
+                el.className = 'result success';
+                el.textContent = '✅ 成功!\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ 失败: ' + e.message;
+            }
+        }
+        
+        async function testCategoryList() {
+            const el = document.getElementById('result2');
+            try {
+                const res = await fetch('/api/film/category/list');
+                const data = await res.json();
+                el.className = 'result success';
+                el.textContent = '✅ 成功!\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ 失败: ' + e.message;
+            }
+        }
+        
+        async function testPostList() {
+            const el = document.getElementById('result3');
+            try {
+                const res = await fetch('/api/post/list?pageNum=1&pageSize=5');
+                const data = await res.json();
+                el.className = 'result success';
+                el.textContent = '✅ 成功!\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ 失败: ' + e.message;
+            }
+        }
+        
+        async function testGateway() {
+            const el = document.getElementById('result4');
+            try {
+                const res = await fetch('http://localhost:8080/film/recommend/feed?size=3');
+                const data = await res.json();
+                el.className = 'result success';
+                el.textContent = '✅ Gateway 直接访问成功!\n' + JSON.stringify(data, null, 2);
+            } catch (e) {
+                el.className = 'result error';
+                el.textContent = '❌ Gateway 访问失败: ' + e.message + '\n\n可能是 CORS 问题，请在浏览器地址栏直接访问：\nhttp://localhost:8080/film/recommend/feed?size=3';
+            }
+        }
+        
+        function clearStorage() {
+            const el = document.getElementById('result7');
+            localStorage.clear();
+            sessionStorage.clear();
+            savedToken = null;
+            el.className = 'result success';
+            el.textContent = '✅ 已清除所有本地存储！\n\n请刷新页面后重新测试。';
+        }
+    </script>
+</body>
+</html>

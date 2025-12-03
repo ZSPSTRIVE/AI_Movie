@@ -1,0 +1,484 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/**
+ * Neo-Brutalism / Pop 风格全局样式
+ * 风格: 粗边框、硬阴影、大色块、高饱和、强对比
+ */
+
+// ==================== CSS 变量 ====================
+:root {
+  // 核心色板
+  --nb-bg: #F8FAFC; // 改为极浅灰白，更护眼
+  --nb-card: #FFFFFF;
+  --nb-border: #1E293B; // 改为深蓝灰，比纯黑柔和一点
+  --nb-border-width: 2px; // 稍微减细边框，由3px改为2px
+  --nb-shadow-offset: 4px; // 减小阴影偏移
+  
+  // Pop 强力主色 - 降低亮度和饱和度
+  --pop-yellow: #FFA62B; // 阳光橙黄 - 替代原刺眼黄
+  --pop-blue: #3B82F6;   // Blue 500
+  --pop-red: #EF4444;    // Red 500
+  --pop-green: #10B981;  // Emerald 500
+  --pop-orange: #F97316; // Orange 500
+  --pop-purple: #8B5CF6; // Violet 500
+  --pop-pink: #EC4899;   // Pink 500
+  
+  // 文字
+  --nb-text: #0F172A;    // Slate 900 - 深灰黑
+  --nb-text-sub: #475569; // Slate 600
+  
+  // 动效曲线
+  --nb-snap: cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+// ==================== 基础样式 ====================
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html, body, #app {
+  width: 100%;
+  height: 100%;
+}
+
+body {
+  font-family: 'Archivo', 'Microsoft YaHei', sans-serif;
+  background-color: var(--nb-bg);
+  // 波点改为极淡的灰色，减少干扰
+  background-image: radial-gradient(#CBD5E1 1px, transparent 1px);
+  background-size: 20px 20px;
+  color: var(--nb-text);
+}
+
+// ==================== Neo-Brutalism 滚动条 ====================
+::-webkit-scrollbar {
+  width: 10px;
+  background: #F1F5F9;
+  border-left: 1px solid #E2E8F0;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #94A3B8;
+  border: 2px solid #F1F5F9;
+  border-radius: 5px;
+  
+  &:hover {
+    background: #64748B;
+  }
+}
+
+// ==================== Element Plus 覆盖为 Neo-Brutalism ====================
+.el-button {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 8px !important;
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  box-shadow: 4px 4px 0 var(--nb-border) !important;
+  transition: all 0.15s !important;
+  color: var(--nb-text) !important;
+  
+  &:hover {
+    transform: translate(-4px, -4px) !important;
+    box-shadow: 8px 8px 0 var(--nb-border) !important;
+  }
+  
+  &:active {
+    transform: translate(2px, 2px) !important;
+    box-shadow: 0 0 0 var(--nb-border) !important;
+  }
+  
+  &--primary {
+    background: var(--nb-text) !important;
+    color: var(--pop-yellow) !important;
+    border-color: var(--nb-border) !important;
+  }
+  
+  &--success {
+    background: var(--pop-green) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  &--danger {
+    background: var(--pop-red) !important;
+    color: var(--nb-card) !important;
+  }
+  
+  &--warning {
+    background: var(--pop-orange) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  &--info {
+    background: var(--pop-blue) !important;
+    color: var(--nb-card) !important;
+  }
+}
+
+.el-input__wrapper {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 8px !important;
+  box-shadow: none !important;
+  background: var(--nb-card) !important;
+  
+  &:hover, &.is-focus {
+    box-shadow: 4px 4px 0 var(--pop-blue) !important;
+    transform: translate(-2px, -2px);
+    background: var(--nb-card) !important;
+  }
+  
+  input {
+    color: var(--nb-text) !important;
+    border-bottom: var(--nb-border-width) solid var(--nb-border) !important;
+    margin-bottom: 0 !important;
+    padding: 20px !important;
+    
+    .el-drawer__title {
+      color: var(--nb-text) !important;
+      font-weight: 900 !important;
+    }
+  }
+  
+  .el-drawer__body {
+    background: var(--nb-bg) !important;
+  }
+}
+
+.el-table {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 12px !important;
+  overflow: hidden;
+  color: var(--nb-text) !important;
+  
+  th.el-table__cell {
+    background: var(--pop-yellow) !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    border-bottom: var(--nb-border-width) solid var(--nb-border) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  td.el-table__cell {
+    border-bottom: 2px dashed #E2E8F0 !important;
+  }
+  
+  .el-table__row:hover > td {
+    background: #FEF3C7 !important; // Amber 100
+  }
+}
+
+.el-tag {
+  border: 2px solid var(--nb-border) !important;
+  border-radius: 4px !important;
+  font-weight: 700 !important;
+  box-shadow: 2px 2px 0 var(--nb-border) !important;
+  
+  &--success {
+    background: var(--pop-green) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  &--danger {
+    background: var(--pop-red) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  &--warning {
+    background: var(--pop-orange) !important;
+    color: var(--nb-text) !important;
+  }
+  
+  &--info {
+    background: var(--pop-blue) !important;
+    color: var(--nb-text) !important;
+  }
+}
+
+.el-tabs__item {
+  font-weight: 700 !important;
+  text-transform: uppercase !important;
+  color: var(--nb-text-sub) !important;
+  
+  &.is-active {
+    background: var(--pop-yellow) !important;
+    color: var(--nb-text) !important;
+    border: 2px solid var(--nb-border) !important;
+    border-radius: 8px 8px 0 0 !important;
+    box-shadow: 2px -2px 0 var(--nb-border) !important;
+  }
+}
+
+.el-menu {
+  border: none !important;
+  
+  .el-menu-item {
+    font-weight: 600 !important;
+    border-radius: 8px !important;
+    margin: 4px 8px !important;
+    color: var(--nb-text) !important;
+    
+    &.is-active {
+      background: var(--pop-yellow) !important;
+      color: var(--nb-text) !important;
+      border: 2px solid var(--nb-border) !important;
+      box-shadow: 3px 3px 0 var(--nb-border) !important;
+    }
+    
+    &:hover {
+      background: #F5F5F5 !important;
+    }
+  }
+}
+
+.el-pagination {
+  .el-pager li {
+    border: 2px solid var(--nb-border) !important;
+    border-radius: 4px !important;
+    font-weight: 700 !important;
+    margin: 0 4px !important;
+    background: #FFF !important;
+    
+    &.is-active {
+      background: var(--pop-yellow) !important;
+      color: var(--nb-text) !important;
+      box-shadow: 2px 2px 0 var(--nb-border) !important;
+    }
+  }
+  
+  .btn-prev, .btn-next {
+    border: 2px solid var(--nb-border) !important;
+    border-radius: 4px !important;
+    background: #FFF !important;
+  }
+}
+
+.el-message-box {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 8px 8px 0 var(--nb-border) !important;
+  
+  .el-message-box__header {
+    background: var(--pop-orange) !important;
+    border-bottom: var(--nb-border-width) solid var(--nb-border) !important;
+  }
+}
+
+.el-notification {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 6px 6px 0 var(--nb-border) !important;
+  
+  &.right {
+    animation: slideInRight 0.3s var(--nb-snap) !important;
+  }
+}
+
+.el-message {
+  border: 2px solid var(--nb-border) !important;
+  border-radius: 8px !important;
+  box-shadow: 4px 4px 0 var(--nb-border) !important;
+  background: var(--nb-card) !important;
+  
+  &--success .el-message__content { color: var(--pop-green) !important; }
+  &--error .el-message__content { color: var(--pop-red) !important; }
+  &--warning .el-message__content { color: var(--pop-orange) !important; }
+}
+
+// ==================== Neo-Brutalism 工具类 ====================
+// ... (省略中间未修改部分)
+.nb-title {
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: -0.5px;
+  color: var(--nb-text);
+}
+
+.nb-badge {
+  display: inline-block;
+  padding: 4px 10px;
+  background: var(--pop-yellow);
+  border: 2px solid var(--nb-border);
+  box-shadow: 2px 2px 0 var(--nb-border);
+  font-weight: 800;
+  font-size: 12px;
+  color: #000;
+  transform: rotate(-2deg);
+}
+
+.nb-label {
+  display: inline-block;
+  padding: 2px 8px;
+  background: var(--nb-text);
+  color: #FFF;
+  font-weight: 700;
+  font-size: 12px;
+}
+
+// ==================== 动画 ====================
+@keyframes slideInRight {
+  from { transform: translateX(120%) skewX(-10deg); }
+  to { transform: translateX(0) skewX(0); }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-5px) rotate(-1deg); }
+  75% { transform: translateX(5px) rotate(1deg); }
+}
+
+// ==================== 进度条 ====================
+#nprogress {
+  .bar {
+    background: var(--pop-red) !important;
+    height: 4px !important;
+    box-shadow: 2px 2px 0 #000 !important;
+  }
+  .peg {
+    box-shadow: 0 0 10px var(--pop-red), 0 0 5px var(--pop-red) !important;
+  }
+}
+
+// ==================== 电影卡片 ====================
+.film-card {
+  background: var(--nb-card);
+  border: var(--nb-border-width) solid var(--nb-border);
+  box-shadow: var(--nb-shadow-offset) var(--nb-shadow-offset) 0 var(--nb-border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: all 0.2s var(--nb-snap);
+  
+  &:hover {
+    transform: translate(-4px, -4px);
+    box-shadow: 10px 10px 0 var(--nb-border);
+    
+    .film-card__overlay {
+      opacity: 1;
+    }
+  }
+  
+  &__image {
+    border-bottom: var(--nb-border-width) solid var(--nb-border);
+  }
+  
+  &__title {
+    font-weight: 800;
+    text-transform: uppercase;
+  }
+  
+  &__rating {
+    background: var(--pop-yellow);
+    border: 2px solid #000;
+    padding: 2px 8px;
+    font-weight: 900;
+    box-shadow: 2px 2px 0 #000;
+  }
+}
+
+// ==================== Badge 覆盖 ====================
+.el-badge__content {
+  border: 2px solid #000 !important;
+  font-weight: 700 !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  
+  &.is-fixed {
+    background: var(--pop-red) !important;
+  }
+}
+
+// ==================== Switch 覆盖 ====================
+.el-switch {
+  &.is-checked {
+    .el-switch__core {
+      background: var(--pop-green) !important;
+      border-color: #000 !important;
+    }
+  }
+  
+  .el-switch__core {
+    border: 2px solid #000 !important;
+  }
+}
+
+// ==================== Popover / Tooltip 覆盖 ====================
+.el-popover.el-popper {
+  border: var(--nb-border-width) solid var(--nb-border) !important;
+  border-radius: 12px !important;
+  box-shadow: 6px 6px 0 var(--nb-border) !important;
+  
+  .el-popover__title {
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+  }
+}
+
+// ==================== Empty 覆盖 ====================
+.el-empty {
+  .el-empty__description {
+    font-weight: 600 !important;
+    color: var(--nb-text-sub) !important;
+  }
+}
+
+// ==================== Checkbox / Radio 覆盖 ====================
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  background: var(--pop-green) !important;
+  border-color: #000 !important;
+}
+
+.el-checkbox__inner {
+  border: 2px solid #000 !important;
+  border-radius: 4px !important;
+}
+
+.el-radio__input.is-checked .el-radio__inner {
+  background: var(--pop-blue) !important;
+  border-color: #000 !important;
+}
+
+.el-radio__inner {
+  border: 2px solid #000 !important;
+}
+
+// ==================== Divider 覆盖 ====================
+.el-divider {
+  border-color: #000 !important;
+  
+  .el-divider__text {
+    font-weight: 700 !important;
+    background: var(--nb-bg) !important;
+    padding: 0 16px !important;
+  }
+}
+
+// ==================== Loading 覆盖 ====================
+.el-loading-mask {
+  background: rgba(255, 251, 235, 0.9) !important;
+  
+  .el-loading-spinner {
+    .circular {
+      stroke: var(--pop-blue) !important;
+      stroke-width: 4 !important;
+    }
+    
+    .el-loading-text {
+      font-weight: 700 !important;
+      color: var(--nb-text) !important;
+    }
+  }
+}
+
+// ==================== 骨架屏 ====================
+.skeleton {
+  background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%);
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+  border: 2px solid var(--nb-border);
+}
+
+@keyframes skeleton-loading {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}

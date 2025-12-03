@@ -1,0 +1,97 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: jelly-gateway
+  profiles:
+    active: dev
+  config:
+    import: optional:nacos:${spring.application.name}.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+      config:
+        server-addr: ${NACOS_SERVER:localhost:8848}
+        namespace: ${NACOS_NAMESPACE:}
+        file-extension: yml
+        import-check:
+          enabled: false
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: jelly-auth
+          uri: lb://jelly-auth
+          predicates:
+            - Path=/auth/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-film
+          uri: lb://jelly-film
+          predicates:
+            - Path=/film/**,/user/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-community
+          uri: lb://jelly-community
+          predicates:
+            - Path=/post/**,/comment/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-im
+          uri: lb://jelly-im
+          predicates:
+            - Path=/im/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-oss
+          uri: lb://jelly-im
+          predicates:
+            - Path=/oss/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-im-ws
+          uri: lb:ws://jelly-im
+          predicates:
+            - Path=/ws/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-ai
+          uri: lb://jelly-ai
+          predicates:
+            - Path=/ai/**
+          filters:
+            - StripPrefix=0
+        - id: jelly-admin
+          uri: lb://jelly-admin
+          predicates:
+            - Path=/admin/**
+          filters:
+            - StripPrefix=0
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      database: 0
+
+# Sa-Token
+sa-token:
+  token-name: Authorization
+  timeout: 86400
+  active-timeout: -1
+  is-concurrent: true
+  is-share: true
+  token-style: uuid
+  is-log: false
+  is-read-header: true
+  is-read-cookie: false
+
+logging:
+  level:
+    com.jelly.cinema: debug
+    org.springframework.cloud.gateway: debug

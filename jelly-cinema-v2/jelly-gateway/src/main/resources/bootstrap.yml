@@ -1,0 +1,18 @@
+spring:
+  application:
+    name: jelly-gateway
+  config:
+    import: optional:nacos:${spring.application.name}.yml
+  cloud:
+    nacos:
+      discovery:
+        server-addr: ${NACOS_SERVER:localhost:8848}
+        register-enabled: true
+      config:
+        server-addr: ${NACOS_SERVER:localhost:8848}
+        file-extension: yml
+        import-check:
+          enabled: false
+        shared-configs:
+          - data-id: application-common.yml
+            refresh: true
