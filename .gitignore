@@ -22,8 +22,6 @@ lerna-debug.log*
 # 敏感配置文件（API Key、Secret）
 doc/config/application-shared.yml
 jelly-cinema-v2/doc/config/application-shared.yml
-jelly-cinema-v2/jelly-modules/jelly-im/src/main/resources/application.yml
-jelly-cinema-v2/jelly-modules/jelly-ai/src/main/resources/application.yml
 
 # 编辑器
 .idea/
