@@ -172,6 +172,7 @@ CREATE TABLE `t_chat_msg` (
     `extra` JSON DEFAULT NULL COMMENT '扩展字段',
     `msg_seq` BIGINT NOT NULL COMMENT '消息序列号',
     `status` TINYINT NOT NULL DEFAULT 0 COMMENT '状态：0-正常，1-撤回',
+    `read_status` TINYINT NOT NULL DEFAULT 0 COMMENT '已读状态：0-未读，1-已读（仅私聊消息使用）',
     `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
     `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
     `deleted` TINYINT NOT NULL DEFAULT 0 COMMENT '逻辑删除',

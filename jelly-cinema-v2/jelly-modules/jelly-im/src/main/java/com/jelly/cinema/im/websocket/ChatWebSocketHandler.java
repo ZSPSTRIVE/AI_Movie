@@ -2,6 +2,8 @@ package com.jelly.cinema.im.websocket;
 
 import cn.hutool.json.JSONUtil;
 import com.jelly.cinema.im.domain.dto.MessageDTO;
+import com.jelly.cinema.im.domain.vo.FriendVO;
+import com.jelly.cinema.im.service.FriendService;
 import com.jelly.cinema.im.service.MessageService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Lazy;
@@ -12,6 +14,8 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -25,9 +29,11 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ChatWebSocketHandler extends TextWebSocketHandler {
 
     private final MessageService messageService;
+    private final FriendService friendService;
     
-    public ChatWebSocketHandler(@Lazy MessageService messageService) {
+    public ChatWebSocketHandler(@Lazy MessageService messageService, @Lazy FriendService friendService) {
         this.messageService = messageService;
+        this.friendService = friendService;
     }
 
     /**
@@ -41,6 +47,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
         if (userId != null) {
             ONLINE_SESSIONS.put(userId, session);
             log.info("用户上线: {}, 当前在线人数: {}, 在线用户: {}", userId, ONLINE_SESSIONS.size(), ONLINE_SESSIONS.keySet());
+            // 通知好友该用户上线
+            notifyFriendsOnlineStatus(userId, true);
         }
     }
 
@@ -75,6 +83,8 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             if (storedSession != null && storedSession.getId().equals(session.getId())) {
                 ONLINE_SESSIONS.remove(userId);
                 log.info("用户下线: {}, 当前在线人数: {}, 在线用户: {}", userId, ONLINE_SESSIONS.size(), ONLINE_SESSIONS.keySet());
+                // 通知好友该用户下线
+                notifyFriendsOnlineStatus(userId, false);
             } else {
                 log.info("旧连接关闭，但用户已有新连接: userId={}", userId);
             }
@@ -157,5 +167,33 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
      */
     private Long getUserId(WebSocketSession session) {
         return (Long) session.getAttributes().get("userId");
+    }
+
+    /**
+     * 通知好友该用户的在线状态变化
+     */
+    private void notifyFriendsOnlineStatus(Long userId, boolean online) {
+        try {
+            List<FriendVO> friends = friendService.getFriendList(userId);
+            if (friends == null || friends.isEmpty()) {
+                return;
+            }
+            
+            Map<String, Object> notification = new HashMap<>();
+            notification.put("type", "online");
+            notification.put("userId", String.valueOf(userId));  // 转为字符串避免 JS 大数字精度丢失
+            notification.put("online", online);
+            String json = JSONUtil.toJsonStr(notification);
+            
+            for (FriendVO friend : friends) {
+                // 只通知在线的好友
+                if (isOnline(friend.getId())) {
+                    sendToUser(friend.getId(), json);
+                }
+            }
+            log.info("已通知 {} 位好友用户 {} 的在线状态变化: online={}", friends.size(), userId, online);
+        } catch (Exception e) {
+            log.error("通知好友在线状态失败: userId={}", userId, e);
+        }
     }
 }

@@ -103,7 +103,11 @@ public class MessageController {
 
     @Operation(summary = "批量查询用户在线状态")
     @PostMapping("/online/batch")
-    public R<Map<Long, Boolean>> getOnlineStatus(@RequestBody List<Long> userIds) {
-        return R.ok(webSocketHandler.getOnlineStatus(userIds));
+    public R<Map<String, Boolean>> getOnlineStatus(@RequestBody List<Long> userIds) {
+        Map<Long, Boolean> status = webSocketHandler.getOnlineStatus(userIds);
+        // 将 Long key 转为 String，避免 JS 大数字精度丢失
+        Map<String, Boolean> result = new java.util.HashMap<>();
+        status.forEach((k, v) -> result.put(String.valueOf(k), v));
+        return R.ok(result);
     }
 }

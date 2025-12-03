@@ -112,6 +112,8 @@ onMounted(async () => {
   ws.on('message', handleNewMessage)
   ws.on('recall', handleRecall)
   ws.on('apply', () => loadUnreadCount()) // 收到新申请
+  ws.on('read', handleReadStatus) // 消息已读通知
+  ws.on('online', handleOnlineStatus) // 用户在线状态变化
   ws.connect()
 })
 
@@ -225,6 +227,7 @@ async function handleImageChange(e: Event) {
       msgSeq: Date.now(),
       createTime: new Date().toISOString(),
       status: 0,
+      readStatus: 0,
     })
     nextTick(() => scrollToBottom())
   } catch (error: any) {
@@ -270,6 +273,7 @@ async function handleFileChange(e: Event) {
       msgSeq: Date.now(),
       createTime: new Date().toISOString(),
       status: 0,
+      readStatus: 0,
     })
     nextTick(() => scrollToBottom())
   } catch (error: any) {
@@ -404,7 +408,11 @@ async function selectSession(session: Session) {
     await nextTick()
     scrollToBottom()
     
-    // 清除未读
+    // 清除未读并标记已读（调用后端 API）
+    // 私聊时无条件调用，确保对方收到已读通知
+    if (session.type === 1) {
+      markAsRead(session.sessionId).catch(e => console.warn('标记已读失败', e))
+    }
     session.unreadCount = 0
     
     // 群聊：检查是否需要显示群公告
@@ -472,6 +480,11 @@ function handleNewMessage(data: any) {
     console.log('消息属于当前会话，添加到列表')
     messages.value.push(msg)
     nextTick(() => scrollToBottom())
+    
+    // 当前正在查看该私聊会话：收到对方消息后立即标记已读
+    if (activeSession.value.type === 1 && !isMyMessage(msg)) {
+      markAsRead(msg.sessionId).catch(e => console.warn('实时标记已读失败', e))
+    }
   } else {
     console.log('消息不属于当前会话')
     // 不是当前会话的消息，播放提示音和发送桌面通知
@@ -519,6 +532,31 @@ function handleRecall(data: any) {
   if (index > -1) {
     messages.value[index].status = 1
     messages.value[index].content = '[消息已撤回]'
+  }
+}
+
+// 处理消息已读通知（发送方收到）
+function handleReadStatus(data: any) {
+  console.log('收到已读通知:', data)
+  const { sessionId } = data
+  
+  // 如果是当前会话，更新所有消息的已读状态
+  if (activeSession.value?.sessionId === sessionId) {
+    messages.value.forEach(msg => {
+      // 只更新自己发送的消息
+      if (isMyMessage(msg)) {
+        msg.readStatus = 1
+      }
+    })
+  }
+}
+
+// 处理用户在线状态变化
+function handleOnlineStatus(data: any) {
+  console.log('收到在线状态变化:', data)
+  const { userId, online } = data
+  if (userId) {
+    onlineStatus.value[String(userId)] = online
   }
 }
 
@@ -603,7 +641,8 @@ function sendMessage() {
     content: messageInput.value.trim(),
     msgSeq: Date.now(),
     createTime: new Date().toISOString(),
-    status: 0
+    status: 0,
+    readStatus: 0  // 私聊消息默认未读
   })
   
   messageInput.value = ''
@@ -840,9 +879,29 @@ function startChatWithFriend(friend: Friend) {
 function generatePrivateSessionId(friendId: string | number): string {
   const rawMyId = userStore.userInfo?.userId
   if (!rawMyId) return ''
-  const myId = String(rawMyId)
+  const myIdStr = String(rawMyId)
   const friendIdStr = String(friendId)
-  const [min, max] = myId < friendIdStr ? [myId, friendIdStr] : [friendIdStr, myId]
+  const isNumeric = (v: string) => /^\d+$/.test(v)
+
+  let min: string
+  let max: string
+
+  if (isNumeric(myIdStr) && isNumeric(friendIdStr)) {
+    // 两个 ID 都是纯数字时，使用数值比较，保证和后端 Long min/max 规则一致
+    const my = BigInt(myIdStr)
+    const other = BigInt(friendIdStr)
+    if (my <= other) {
+      min = myIdStr
+      max = friendIdStr
+    } else {
+      min = friendIdStr
+      max = myIdStr
+    }
+  } else {
+    // 非纯数字（几乎不会出现），退回字符串比较
+    ;[min, max] = myIdStr < friendIdStr ? [myIdStr, friendIdStr] : [friendIdStr, myIdStr]
+  }
+
   return `private_${min}_${max}`
 }
 
@@ -989,8 +1048,8 @@ function scrollToMessage(msg: Message) {
             <div
               v-if="session.type === 1 && chatSettings.showOnlineStatus"
               class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white"
-              :class="onlineStatus[session.userId] ? 'bg-green-500' : 'bg-gray-400'"
-              :title="onlineStatus[session.userId] ? '在线' : '离线'"
+              :class="onlineStatus[String(session.userId)] ? 'bg-green-500' : 'bg-gray-400'"
+              :title="onlineStatus[String(session.userId)] ? '在线' : '离线'"
             />
             <!-- 未读消息红点 -->
             <div
@@ -1036,14 +1095,14 @@ function scrollToMessage(msg: Message) {
               <div
                 v-if="activeSession.type === 1 && chatSettings.showOnlineStatus"
                 class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
-                :class="onlineStatus[activeSession.userId] ? 'bg-green-500' : 'bg-gray-400'"
+                :class="onlineStatus[String(activeSession.userId)] ? 'bg-green-500' : 'bg-gray-400'"
               />
             </div>
             <div>
               <span class="font-bold text-white text-lg uppercase">{{ activeSession.nickname }}</span>
               <!-- 在线状态文字 -->
               <div v-if="activeSession.type === 1 && chatSettings.showOnlineStatus" class="text-xs text-white/70">
-                {{ onlineStatus[activeSession.userId] ? '在线' : '离线' }}
+                {{ onlineStatus[String(activeSession.userId)] ? '在线' : '离线' }}
               </div>
             </div>
           </div>

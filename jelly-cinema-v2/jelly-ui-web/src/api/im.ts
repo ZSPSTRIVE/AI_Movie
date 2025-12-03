@@ -358,6 +358,7 @@ export interface Message {
   msgSeq: string | number
   createTime: string
   status: number
+  readStatus?: number // 0-未读 1-已读（仅私聊消息）
 }
 
 /**

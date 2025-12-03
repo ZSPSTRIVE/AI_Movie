@@ -506,11 +506,57 @@ public class MessageServiceImpl implements MessageService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void markAsRead(Long userId, String sessionId) {
         log.info("标记消息已读: userId={}, sessionId={}", userId, sessionId);
 
         // 清除未读计数
         String unreadKey = UNREAD_KEY + userId + ":" + sessionId;
         redisService.delete(unreadKey);
+
+        // 只处理私聊消息的已读状态（群聊不需要）
+        if (!sessionId.startsWith("group_")) {
+            // 查找该会话中发给当前用户的所有未读消息（兼容旧 sessionId 格式）
+            LambdaQueryWrapper<ChatMessage> wrapper = new LambdaQueryWrapper<>();
+
+            if (sessionId.startsWith("private_")) {
+                // 新格式：private_min_max，同时兼容旧的 min_max
+                String oldSessionId = sessionId.substring("private_".length());
+                wrapper.and(w -> w.eq(ChatMessage::getSessionId, sessionId)
+                        .or().eq(ChatMessage::getSessionId, oldSessionId));
+            } else {
+                // 旧格式：直接按原 sessionId 匹配
+                wrapper.eq(ChatMessage::getSessionId, sessionId);
+            }
+
+            wrapper.eq(ChatMessage::getToId, userId)
+                   .eq(ChatMessage::getCmdType, 1)  // 私聊
+                   .and(w -> w.isNull(ChatMessage::getReadStatus).or().eq(ChatMessage::getReadStatus, 0));
+            
+            List<ChatMessage> unreadMessages = chatMessageMapper.selectList(wrapper);
+            
+            if (!unreadMessages.isEmpty()) {
+                // 收集需要通知的发送者ID
+                Set<Long> senderIds = new HashSet<>();
+                
+                // 批量更新消息为已读
+                for (ChatMessage msg : unreadMessages) {
+                    msg.setReadStatus(1);
+                    chatMessageMapper.updateById(msg);
+                    senderIds.add(msg.getFromId());
+                }
+                
+                log.info("已更新 {} 条消息为已读状态", unreadMessages.size());
+                
+                // 通过 WebSocket 通知发送方消息已被读取
+                for (Long senderId : senderIds) {
+                    Map<String, Object> notification = new HashMap<>();
+                    notification.put("type", "read");
+                    notification.put("sessionId", sessionId);
+                    notification.put("readerId", String.valueOf(userId));  // 转为字符串避免 JS 大数字精度丢失
+                    webSocketHandler.sendToUser(senderId, JSONUtil.toJsonStr(notification));
+                }
+            }
+        }
     }
 }

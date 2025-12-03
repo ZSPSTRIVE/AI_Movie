@@ -49,4 +49,9 @@ public class MessageVO implements Serializable {
      * 消息状态：0-正常，1-撤回
      */
     private Integer status;
+
+    /**
+     * 已读状态：0-未读，1-已读（仅私聊消息使用）
+     */
+    private Integer readStatus;
 }
