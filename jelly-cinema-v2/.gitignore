@@ -12,6 +12,8 @@ application-prod.yml
 
 # 包含敏感信息的配置文件
 doc/config/application-shared.yml
+jelly-modules/jelly-im/src/main/resources/application.yml
+jelly-modules/jelly-oss/src/main/resources/application.yml
 
 # ========== Java 后端 ==========
 # 编译输出
