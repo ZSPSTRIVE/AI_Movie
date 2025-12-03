@@ -199,23 +199,7 @@ npm run dev
 - `POST /ai/novel/generate-chapter` - 生成章节内容 (SSE)
 - `POST /ai/rag/upload` - 上传 RAG 文档
 - `GET /ai/rag/search` - RAG 检索
-
-## 🎨 UI 设计
-
-采用 **Neo-Brutalism（新野蛮主义）** 设计风格，特点：
-- 🎨 高饱和度撞色
-- 📦 粗黑边框 + 硬阴影
-- 🔤 大胆的字体排版
-- ✨ 趣味交互动效
-
-| 配色 | 色值 | 用途 |
-|------|------|------|
-| 🟡 Pop Yellow | `#FFE156` | 主要强调色 |
-| 🟢 Pop Green | `#7CFC00` | 成功/在线状态 |
-| 🔵 Pop Blue | `#4ECDC4` | 信息/链接 |
-| 🟣 Pop Purple | `#A855F7` | 特殊标记 |
-| 🔴 Pop Red | `#FF6B6B` | 警告/错误 |
-| 🟠 Pop Orange | `#FFA500` | 次要强调 |
+ 
 
 ## ⚙️ 环境变量配置
 
