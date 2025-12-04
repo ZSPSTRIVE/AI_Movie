@@ -59,4 +59,12 @@ public interface FilmService {
      * @param id 电影 ID
      */
     void incrementPlayCount(Long id);
+
+    /**
+     * 根据 ID 列表获取电影（保持顺序）
+     *
+     * @param ids 电影 ID 列表
+     * @return 电影列表
+     */
+    List<FilmVO> getFilmsByIds(List<Long> ids);
 }

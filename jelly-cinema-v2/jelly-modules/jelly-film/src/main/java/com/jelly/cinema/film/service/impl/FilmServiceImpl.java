@@ -177,6 +177,26 @@ public class FilmServiceImpl implements FilmService {
         log.debug("电影播放量 +1, id={}", id);
     }
 
+    @Override
+    public List<FilmVO> getFilmsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+
+        // 批量查询
+        List<Film> films = filmMapper.selectBatchIds(ids);
+
+        // 转换为 Map 方便按 ID 顺序排列
+        Map<Long, FilmVO> filmMap = films.stream()
+                .collect(Collectors.toMap(Film::getId, this::toVO));
+
+        // 保持传入的 ID 顺序
+        return ids.stream()
+                .map(filmMap::get)
+                .filter(vo -> vo != null)
+                .collect(Collectors.toList());
+    }
+
     /**
      * 转换为 VO
      */

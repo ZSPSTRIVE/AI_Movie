@@ -1,0 +1,47 @@
+# 电影领域同义词配置
+# 格式：词1,词2,词3 => 标准词  或  词1,词2,词3（等价同义词）
+
+# 超级英雄类
+超英,超级英雄,superhero
+漫威,marvel,mcu
+dc,dc漫画,dceu
+复仇者,复联,avengers
+
+# 科幻类
+科幻,scifi,sf,科幻片
+星战,星球大战,star wars
+赛博朋克,cyberpunk
+
+# 动作类
+动作,动作片,action
+武打,功夫,武侠
+枪战,枪火
+
+# 恐怖类
+恐怖,惊悚,horror
+鬼片,恐怖片
+丧尸,僵尸,zombie
+
+# 爱情类
+爱情,言情,romance,浪漫
+爱情片,文艺片
+
+# 喜剧类
+喜剧,搞笑,comedy
+幽默,诙谐
+
+# 动画类
+动画,动漫,anime,animation
+卡通,cartoon
+
+# 地区
+美国,美剧,hollywood,好莱坞
+韩国,韩剧,韩片
+日本,日剧,日影
+中国,国产,华语
+
+# 演员别名示例
+小李子,莱昂纳多,迪卡普里奥,leonardo dicaprio
+汤姆汉克斯,tom hanks
+成龙,jackie chan
+周星驰,星爷

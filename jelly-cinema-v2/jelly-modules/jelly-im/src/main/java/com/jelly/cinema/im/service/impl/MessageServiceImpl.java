@@ -559,4 +559,69 @@ public class MessageServiceImpl implements MessageService {
             }
         }
     }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void saveMessage(ChatMessage message) {
+        log.info("保存消息: msgId={}, from={}, to={}", 
+                message.getId(), message.getSenderId(), message.getReceiverId());
+
+        // 转换字段映射（Netty 模块使用 senderId/receiverId，原模块使用 fromId/toId）
+        if (message.getFromId() == null && message.getSenderId() != null) {
+            message.setFromId(message.getSenderId());
+        }
+        if (message.getToId() == null && message.getReceiverId() != null) {
+            message.setToId(message.getReceiverId());
+        }
+
+        // 生成会话 ID（如果没有）
+        if (message.getSessionId() == null || message.getSessionId().isEmpty()) {
+            int cmdType = message.getSessionType() != null && message.getSessionType() == 2 ? 2 : 1;
+            message.setSessionId(generateSessionId(message.getFromId(), message.getToId(), cmdType));
+            message.setCmdType(cmdType);
+        }
+
+        // 生成消息序列号（如果没有）
+        if (message.getMsgSeq() == null) {
+            message.setMsgSeq(redisService.increment(MSG_SEQ_KEY + message.getSessionId()));
+        }
+
+        // 设置消息类型（如果没有）
+        if (message.getMsgType() == null) {
+            message.setMsgType(message.getContentType() != null ? message.getContentType() : 1);
+        }
+
+        // 设置状态
+        if (message.getStatus() == null) {
+            message.setStatus(0);
+        }
+
+        // 设置创建时间
+        if (message.getCreateTime() == null) {
+            message.setCreateTime(LocalDateTime.now());
+        }
+
+        chatMessageMapper.insert(message);
+        log.info("消息保存成功: id={}, sessionId={}", message.getId(), message.getSessionId());
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void markMessagesAsRead(List<Long> messageIds) {
+        if (messageIds == null || messageIds.isEmpty()) {
+            return;
+        }
+
+        log.info("批量标记消息已读: messageIds={}", messageIds);
+
+        for (Long messageId : messageIds) {
+            ChatMessage message = chatMessageMapper.selectById(messageId);
+            if (message != null && (message.getReadStatus() == null || message.getReadStatus() == 0)) {
+                message.setReadStatus(1);
+                chatMessageMapper.updateById(message);
+            }
+        }
+
+        log.info("批量标记已读完成: count={}", messageIds.size());
+    }
 }

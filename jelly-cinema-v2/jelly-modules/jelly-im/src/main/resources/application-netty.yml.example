@@ -1,0 +1,50 @@
+# Netty 服务器配置示例
+# 复制此文件为 application-netty.yml 并根据实际情况修改
+
+netty:
+  server:
+    # 是否启用 Netty 服务器（默认禁用）
+    enabled: true
+    # Netty 服务端口
+    port: 9999
+    # Boss 线程数（接收连接）
+    boss-threads: 1
+    # Worker 线程数（处理 IO）
+    worker-threads: 8
+    # 读空闲超时（秒）- 超过此时间未收到数据则触发空闲事件
+    reader-idle-time: 60
+    # 写空闲超时（秒）
+    writer-idle-time: 30
+    # 读写空闲超时（秒）
+    all-idle-time: 90
+
+# RocketMQ 配置
+rocketmq:
+  name-server: localhost:9876
+  producer:
+    group: im-producer-group
+    send-message-timeout: 3000
+    retry-times-when-send-failed: 2
+  consumer:
+    group: im-consumer-group
+
+# Redis 配置（用于在线状态管理）
+spring:
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      database: 0
+      lettuce:
+        pool:
+          max-active: 20
+          max-idle: 10
+          min-idle: 5
+
+# Redisson 配置
+redisson:
+  single-server-config:
+    address: redis://localhost:6379
+    database: 0
+    connection-pool-size: 64
+    connection-minimum-idle-size: 10

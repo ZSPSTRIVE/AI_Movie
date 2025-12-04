@@ -1,5 +1,6 @@
 package com.jelly.cinema.im.domain.entity;
 
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.jelly.cinema.common.mybatis.domain.BaseEntity;
 import lombok.Data;
@@ -64,4 +65,30 @@ public class ChatMessage extends BaseEntity {
      * 已读状态：0-未读，1-已读（仅私聊消息使用）
      */
     private Integer readStatus;
+
+    // ========== Netty 模块兼容字段（不持久化）==========
+
+    /**
+     * 发送者 ID（Netty 模块使用，映射到 fromId）
+     */
+    @TableField(exist = false)
+    private Long senderId;
+
+    /**
+     * 接收者 ID（Netty 模块使用，映射到 toId）
+     */
+    @TableField(exist = false)
+    private Long receiverId;
+
+    /**
+     * 会话类型：1-私聊，2-群聊（Netty 模块使用，映射到 cmdType）
+     */
+    @TableField(exist = false)
+    private Integer sessionType;
+
+    /**
+     * 内容类型（Netty 模块使用，映射到 msgType）
+     */
+    @TableField(exist = false)
+    private Integer contentType;
 }

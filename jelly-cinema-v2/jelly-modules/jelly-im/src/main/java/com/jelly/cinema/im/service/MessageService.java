@@ -3,6 +3,7 @@ package com.jelly.cinema.im.service;
 import com.jelly.cinema.common.core.domain.PageQuery;
 import com.jelly.cinema.common.core.domain.PageResult;
 import com.jelly.cinema.im.domain.dto.MessageDTO;
+import com.jelly.cinema.im.domain.entity.ChatMessage;
 import com.jelly.cinema.im.domain.vo.MessageVO;
 import com.jelly.cinema.im.domain.vo.SessionVO;
 
@@ -80,4 +81,18 @@ public interface MessageService {
      * @param sessionId 会话 ID
      */
     void markAsRead(Long userId, String sessionId);
+
+    /**
+     * 保存消息（供 Netty 消息处理器调用）
+     *
+     * @param message 聊天消息实体
+     */
+    void saveMessage(ChatMessage message);
+
+    /**
+     * 批量标记消息已读
+     *
+     * @param messageIds 消息 ID 列表
+     */
+    void markMessagesAsRead(List<Long> messageIds);
 }
