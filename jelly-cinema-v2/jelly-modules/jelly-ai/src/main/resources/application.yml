@@ -47,7 +47,7 @@ ai:
     - name: siliconflow
       priority: 1
       enabled: true
-      api-key: ${AI_SILICONFLOW_KEY:sk-bubyshijpvgcraufmwzilevzoiixdwwjbgtnraowigyrovzt}
+      api-key: ${AI_SILICONFLOW_KEY: }
       base-url: https://api.siliconflow.cn/v1
       model: deepseek-ai/DeepSeek-V3
       temperature: 0.7
@@ -58,7 +58,7 @@ ai:
     - name: deepseek
       priority: 2
       enabled: true
-      api-key: ${AI_DEEPSEEK_KEY:sk-c30807582ff445738904eb5130aba376}
+      api-key: ${AI_DEEPSEEK_KEY: }
       base-url: https://api.deepseek.com
       model: deepseek-chat
       temperature: 0.7
