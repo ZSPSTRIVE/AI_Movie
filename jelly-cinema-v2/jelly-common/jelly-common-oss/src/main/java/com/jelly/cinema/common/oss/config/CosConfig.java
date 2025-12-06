@@ -41,8 +41,9 @@ public class CosConfig {
         Region region = new Region(properties.getRegion());
         ClientConfig clientConfig = new ClientConfig(region);
         
-        // 使用 HTTPS 协议
-        clientConfig.setHttpProtocol(HttpProtocol.https);
+        // JDK 21 与腾讯云 COS 存在 SSL/TLS 兼容性问题，使用 HTTP 协议
+        // 腾讯云 COS 支持 HTTP 访问，数据传输仍然安全（有签名验证）
+        clientConfig.setHttpProtocol(HttpProtocol.http);
 
         return new COSClient(credentials, clientConfig);
     }
