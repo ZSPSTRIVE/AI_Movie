@@ -4,8 +4,10 @@
 export interface LoginForm {
   username: string
   password: string
-  captcha?: string
-  captchaKey?: string
+  captcha: string
+  captchaKey: string
+  emailCode?: string
+  email?: string
 }
 
 /**
@@ -13,9 +15,30 @@ export interface LoginForm {
  */
 export interface RegisterForm {
   username: string
+  email: string
+  emailCode: string
   password: string
   confirmPassword: string
   nickname?: string
+}
+
+/**
+ * 图片验证码响应
+ */
+export interface CaptchaResult {
+  captchaKey: string
+  captchaImage: string
+  expireSeconds: number
+}
+
+/**
+ * 邮箱验证码请求
+ */
+export interface EmailCodeForm {
+  email: string
+  businessType: 'register' | 'login' | 'reset_password' | 'bind_email'
+  captcha?: string
+  captchaKey?: string
 }
 
 /**

@@ -78,3 +78,15 @@ springdoc:
 logging:
   level:
     com.jelly.cinema: debug
+
+# 邮箱配置
+mail:
+  from: ${MAIL_FROM:3080714093@qq.com}
+  password: ${MAIL_PASSWORD:nlnymunelsbrdgfh}
+  host: ${MAIL_HOST:smtp.qq.com}
+  port: ${MAIL_PORT:465}
+  admin: ${ADMIN_MAIL:3080714093@qq.com}
+  ssl: true
+  code-expire-seconds: 300
+  send-interval-seconds: 60
+  daily-limit: 10

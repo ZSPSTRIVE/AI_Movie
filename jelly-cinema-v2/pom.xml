@@ -116,6 +116,11 @@
                 <artifactId>jelly-common-oss</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>com.jelly.cinema</groupId>
+                <artifactId>jelly-common-captcha</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <!-- MySQL -->
             <dependency>

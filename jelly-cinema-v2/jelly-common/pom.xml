@@ -22,5 +22,6 @@
         <module>jelly-common-security</module>
         <module>jelly-common-api</module>
         <module>jelly-common-oss</module>
+        <module>jelly-common-captcha</module>
     </modules>
 </project>

@@ -21,6 +21,12 @@
             <artifactId>jelly-common-security</artifactId>
         </dependency>
         
+        <!-- Common Captcha (验证码 & 邮件) -->
+        <dependency>
+            <groupId>com.jelly.cinema</groupId>
+            <artifactId>jelly-common-captcha</artifactId>
+        </dependency>
+        
         <!-- Common MyBatis -->
         <dependency>
             <groupId>com.jelly.cinema</groupId>
