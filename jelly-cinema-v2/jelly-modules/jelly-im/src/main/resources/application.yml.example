@@ -1,9 +1,9 @@
 server:
-  port: 9100
+  port: 9400
 
 spring:
   application:
-    name: jelly-auth
+    name: jelly-im
   profiles:
     active: dev
   config:
@@ -24,23 +24,25 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://${MYSQL_HOST:localhost}:${MYSQL_PORT:3306}/jelly_cinema?useUnicode=true&characterEncoding=utf8&zeroDateTimeBehavior=convertToNull&useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
     username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:123456}
+    password: ${MYSQL_PASSWORD:root}
     type: com.alibaba.druid.pool.DruidDataSource
-    druid:
-      initial-size: 5
-      min-idle: 5
-      max-active: 20
-      max-wait: 60000
   data:
     redis:
       host: ${REDIS_HOST:localhost}
       port: ${REDIS_PORT:6379}
       database: 0
 
+# RocketMQ
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV:localhost:9876}
+  producer:
+    group: im-producer-group
+    send-message-timeout: 3000
+
 # MyBatis Plus
 mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
-  type-aliases-package: com.jelly.cinema.auth.domain.entity
+  type-aliases-package: com.jelly.cinema.im.domain.entity
   configuration:
     map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
@@ -55,11 +57,6 @@ mybatis-plus:
 sa-token:
   token-name: Authorization
   timeout: 86400
-  active-timeout: -1
-  is-concurrent: true
-  is-share: true
-  token-style: uuid
-  is-log: false
   is-read-header: true
   is-read-cookie: false
 
@@ -69,24 +66,21 @@ knife4j:
   setting:
     language: zh_cn
 
-springdoc:
-  api-docs:
-    enabled: true
-  swagger-ui:
-    enabled: true
-
 logging:
   level:
     com.jelly.cinema: debug
 
-# 邮箱配置
-mail:
-  from: 3080714093@qq.com
-  password: nlnymunelsbrdgfh
-  host: smtp.qq.com
-  port: 465
-  admin: 3080714093@qq.com
-  ssl: true
-  code-expire-seconds: 300
-  send-interval-seconds: 60
-  daily-limit: 10
+# 腾讯云对象存储配置（复制此文件为 application.yml 并填入真实值）
+cos:
+  client:
+    host: https://your-bucket.cos.ap-beijing.myqcloud.com
+    secret-id: your_secret_id
+    secret-key: your_secret_key
+    region: ap-beijing
+    bucket: your-bucket-name
+    app-id: your_app_id
+
+# 文件上传配置
+spring.servlet.multipart:
+  max-file-size: 50MB
+  max-request-size: 50MB

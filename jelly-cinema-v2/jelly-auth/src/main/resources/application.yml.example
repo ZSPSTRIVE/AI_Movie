@@ -79,13 +79,13 @@ logging:
   level:
     com.jelly.cinema: debug
 
-# 邮箱配置
+# 邮箱配置（复制此文件为 application.yml 并填入真实值）
 mail:
-  from: 3080714093@qq.com
-  password: nlnymunelsbrdgfh
+  from: your_email@qq.com
+  password: your_smtp_authorization_code
   host: smtp.qq.com
   port: 465
-  admin: 3080714093@qq.com
+  admin: admin@example.com
   ssl: true
   code-expire-seconds: 300
   send-interval-seconds: 60

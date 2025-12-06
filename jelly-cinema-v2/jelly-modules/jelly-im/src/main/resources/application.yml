@@ -73,12 +73,12 @@ logging:
 # 腾讯云对象存储配置
 cos:
   client:
-    host:  
-    secretId:  
-    secretKey:  
-    region:  
-    bucket:  
-    appId:  
+    host: https://buk-1-1365645108.cos.ap-beijing.myqcloud.com
+    secret-id: AKIDCwXzXv64ygBSVBevzqTt560mMmyxkJfx
+    secret-key: FQYDl6YuGUyKUREpDNcfUIxZzCJDtLZb
+    region: ap-beijing
+    bucket: buk-1-1365645108
+    app-id: 1365645108  
 
 # 文件上传配置
 spring.servlet.multipart:
