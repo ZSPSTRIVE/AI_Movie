@@ -81,11 +81,11 @@ logging:
 
 # 邮箱配置
 mail:
-  from: 3080714093@qq.com
-  password: nlnymunelsbrdgfh
-  host: smtp.qq.com
-  port: 465
-  admin: 3080714093@qq.com
+  from: ${MAIL_FROM:3080714093@qq.com}
+  password: ${MAIL_PASSWORD:nlnymunelsbrdgfh}
+  host: ${MAIL_HOST:smtp.qq.com}
+  port: ${MAIL_PORT:465}
+  admin: ${ADMIN_MAIL:3080714093@qq.com}
   ssl: true
   code-expire-seconds: 300
   send-interval-seconds: 60
