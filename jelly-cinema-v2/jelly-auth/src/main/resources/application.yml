@@ -82,7 +82,7 @@ logging:
 # 邮箱配置
 mail:
   from: ${MAIL_FROM:3080714093@qq.com}
-  password: ${MAIL_PASSWORD:nlnymunelsbrdgfh}
+  password: ${MAIL_PASSWORD:}
   host: ${MAIL_HOST:smtp.qq.com}
   port: ${MAIL_PORT:465}
   admin: ${ADMIN_MAIL:3080714093@qq.com}
