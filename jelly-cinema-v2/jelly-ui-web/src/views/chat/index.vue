@@ -7,6 +7,7 @@ import {
   type Session, type Message, type Friend, IMWebSocket 
 } from '@/api/im'
 import { useUserStore } from '@/stores/user'
+import { useMessageStore } from '@/stores/message'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import AddContactModal from './components/AddContactModal.vue'
 import NotificationCenter from './components/NotificationCenter.vue'
@@ -17,6 +18,7 @@ import FriendDrawer from './components/FriendDrawer.vue'
 import SettingsDrawer from './components/SettingsDrawer.vue'
 
 const userStore = useUserStore()
+const messageStore = useMessageStore()
 
 // 弹窗状态
 const addContactVisible = ref(false)
@@ -301,6 +303,8 @@ async function loadUnreadCount() {
   try {
     const res = await getUnreadApplyCount()
     unreadApplyCount.value = res.data || 0
+    // 同步到全局 store
+    messageStore.setUnreadApplyCount(unreadApplyCount.value)
   } catch (e) {
     // ignore
   }
@@ -322,6 +326,10 @@ async function loadSessions() {
       userId: s.userId,
       nickname: s.nickname 
     })))
+    
+    // 同步未读消息数到全局 store
+    const totalUnread = sessions.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
+    messageStore.setUnreadMessageCount(totalUnread)
     
     // 加载在线状态（仅私聊）
     await loadOnlineStatus()
@@ -413,6 +421,10 @@ async function selectSession(session: Session) {
     if (session.type === 1) {
       markAsRead(session.sessionId).catch(e => console.warn('标记已读失败', e))
     }
+    // 同步到全局 store（减去该会话的未读数）
+    if (session.unreadCount > 0) {
+      messageStore.decrementUnreadMessage(session.unreadCount)
+    }
     session.unreadCount = 0
     
     // 群聊：检查是否需要显示群公告
@@ -502,6 +514,8 @@ function handleNewMessage(data: any) {
     session.lastTime = msg.createTime
     if (activeSession.value?.sessionId !== msg.sessionId) {
       session.unreadCount = (session.unreadCount || 0) + 1
+      // 同步到全局 store
+      messageStore.incrementUnreadMessage()
     }
     // 将该会话移到顶部
     const index = sessions.value.indexOf(session)
@@ -522,6 +536,8 @@ function handleNewMessage(data: any) {
       unreadCount: 1
     }
     sessions.value.unshift(newSession)
+    // 同步到全局 store
+    messageStore.incrementUnreadMessage()
     // 异步刷新会话列表获取完整信息
     loadSessions()
   }

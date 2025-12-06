@@ -1,17 +1,36 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { useMessageStore } from '@/stores/message'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const userStore = useUserStore()
+const messageStore = useMessageStore()
 
 const searchKeyword = ref('')
 
 const isLogin = computed(() => userStore.isLogin)
 const userAvatar = computed(() => userStore.avatar)
 const userNickname = computed(() => userStore.nickname)
+const unreadCount = computed(() => messageStore.totalUnreadCount)
+
+// 登录后加载未读消息数
+onMounted(() => {
+  if (userStore.isLogin) {
+    messageStore.loadAllUnreadCounts()
+  }
+})
+
+// 监听登录状态变化
+watch(() => userStore.isLogin, (isLogin) => {
+  if (isLogin) {
+    messageStore.loadAllUnreadCounts()
+  } else {
+    messageStore.clearAllUnread()
+  }
+})
 
 const navItems = [
   { path: '/', label: '首页', icon: 'HomeFilled' },
@@ -80,7 +99,7 @@ function goToChat() {
         <!-- User Area -->
         <div class="flex items-center space-x-4">
           <!-- 消息通知 -->
-          <el-badge :value="3" :max="99" v-if="isLogin">
+          <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0" v-if="isLogin">
             <el-button circle class="!bg-white !border-2 !border-black" @click="goToChat">
               <el-icon><Bell /></el-icon>
             </el-button>
