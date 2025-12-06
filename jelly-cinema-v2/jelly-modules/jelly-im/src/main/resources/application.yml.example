@@ -74,11 +74,11 @@ logging:
 cos:
   client:
     host: https://your-bucket.cos.ap-beijing.myqcloud.com
-    secret-id: your_secret_id
-    secret-key: your_secret_key
+    secretId: your_secret_id
+    secretKey: your_secret_key
     region: ap-beijing
     bucket: your-bucket-name
-    app-id: your_app_id
+    appId: your_app_id
 
 # 文件上传配置
 spring.servlet.multipart:
