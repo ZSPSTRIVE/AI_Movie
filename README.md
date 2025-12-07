@@ -262,6 +262,9 @@ AI_DEEPSEEK_KEY=your_deepseek_key
 
 如果这个项目对你有帮助，请给一个 ⭐ Star 支持一下！
 
-Made with ❤️ by Jelly Cinema Team
+<p align="center">
+  Made with ❤️ by <a href="https://github.com/ZSPSTRIVE">ZSPSTRIVE</a>
+</p>
+
 
 </div>
