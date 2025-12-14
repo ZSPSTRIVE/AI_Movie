@@ -17,7 +17,7 @@
     "dplayer": "^1.27.1",
     "echarts": "^5.6.0",
     "element-plus": "^2.6.3",
-    "hls.js": "^1.5.7",
+    "hls.js": "^1.6.15",
     "lodash-es": "^4.17.21",
     "markdown-it": "^14.1.0",
     "nprogress": "^0.2.0",

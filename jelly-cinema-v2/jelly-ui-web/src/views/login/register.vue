@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { register, getCaptcha, sendEmailCode } from '@/api/auth'
 import { ElMessage } from 'element-plus'
 import type { FormInstance, FormRules } from 'element-plus'
+import { User, Lock, Picture, Message, Key, Avatar, VideoPlay, ChatDotRound, MagicStick } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -161,133 +162,421 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-dark-bg flex items-center justify-center">
-    <div class="w-full max-w-md">
-      <!-- Logo -->
-      <div class="text-center mb-8">
-        <h1 class="text-4xl font-bold text-primary mb-2">🍮 果冻影院</h1>
-        <p class="text-gray-400">影视 + 社交 + AI 一体化平台</p>
+  <div class="register-page">
+    <div class="glass-bg"></div>
+    
+    <div class="register-container">
+      <!-- 左侧品牌区 -->
+      <div class="brand-panel">
+        <div class="brand-inner">
+          <h1 class="brand-logo">Jelly Cinema</h1>
+          <p class="brand-tagline">发现精彩，畅享视界</p>
+          <ul class="feature-list">
+            <li>
+              <el-icon><VideoPlay /></el-icon>
+              <span>海量高清影视资源</span>
+            </li>
+            <li>
+              <el-icon><ChatDotRound /></el-icon>
+              <span>影迷社区深度交流</span>
+            </li>
+            <li>
+              <el-icon><MagicStick /></el-icon>
+              <span>智能个性化推荐</span>
+            </li>
+          </ul>
+        </div>
       </div>
 
-      <!-- Register Form -->
-      <div class="bg-dark-card rounded-xl p-8">
-        <h2 class="text-2xl font-bold text-white text-center mb-6">注册</h2>
+      <!-- 右侧表单区 -->
+      <div class="form-panel">
+        <div class="form-wrapper">
+          <div class="form-header">
+            <h2>创建账号</h2>
+            <p>加入 Jelly Cinema，开启精彩之旅</p>
+          </div>
 
-        <el-form
-          ref="formRef"
-          :model="form"
-          :rules="rules"
-          size="large"
-          @keyup.enter="handleRegister"
-        >
-          <el-form-item prop="username">
-            <el-input
-              v-model="form.username"
-              placeholder="用户名"
-              prefix-icon="User"
-            />
-          </el-form-item>
-
-          <el-form-item prop="nickname">
-            <el-input
-              v-model="form.nickname"
-              placeholder="昵称（选填）"
-              prefix-icon="Avatar"
-            />
-          </el-form-item>
-
-          <el-form-item prop="email">
-            <el-input
-              v-model="form.email"
-              placeholder="邮箱"
-              prefix-icon="Message"
-              type="email"
-            />
-          </el-form-item>
-
-          <!-- 图片验证码 -->
-          <el-form-item prop="captcha">
-            <div class="flex gap-2 w-full">
-              <el-input
-                v-model="form.captcha"
-                placeholder="图片验证码"
-                prefix-icon="Picture"
-                class="flex-1"
-                maxlength="4"
-              />
-              <div 
-                class="w-28 h-10 border border-gray-600 rounded overflow-hidden cursor-pointer bg-gray-700 flex items-center justify-center"
-                @click="refreshCaptcha"
-              >
-                <img 
-                  v-if="captchaImage" 
-                  :src="captchaImage" 
-                  alt="验证码" 
-                  class="h-full w-full object-cover"
-                />
-                <span v-else class="text-gray-400 text-sm">加载中...</span>
+          <el-form
+            ref="formRef"
+            :model="form"
+            :rules="rules"
+            @keyup.enter="handleRegister"
+          >
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">用户名</label>
+                <el-form-item prop="username">
+                  <el-input
+                    v-model="form.username"
+                    placeholder="4-20位字母数字"
+                    size="large"
+                  >
+                    <template #prefix><el-icon><User /></el-icon></template>
+                  </el-input>
+                </el-form-item>
+              </div>
+              <div class="field-group">
+                <label class="field-label">昵称（选填）</label>
+                <el-form-item prop="nickname">
+                  <el-input
+                    v-model="form.nickname"
+                    placeholder="您的昵称"
+                    size="large"
+                  >
+                    <template #prefix><el-icon><Avatar /></el-icon></template>
+                  </el-input>
+                </el-form-item>
               </div>
             </div>
-          </el-form-item>
 
-          <!-- 邮箱验证码 -->
-          <el-form-item prop="emailCode">
-            <div class="flex gap-2 w-full">
-              <el-input
-                v-model="form.emailCode"
-                placeholder="邮箱验证码"
-                prefix-icon="Key"
-                class="flex-1"
-                maxlength="6"
-              />
-              <el-button
-                :disabled="emailCodeCountdown > 0"
-                @click="handleSendEmailCode"
-              >
-                {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
-              </el-button>
+            <div class="field-group">
+              <label class="field-label">邮箱</label>
+              <el-form-item prop="email">
+                <el-input
+                  v-model="form.email"
+                  placeholder="请输入邮箱地址"
+                  size="large"
+                >
+                  <template #prefix><el-icon><Message /></el-icon></template>
+                </el-input>
+              </el-form-item>
             </div>
-          </el-form-item>
 
-          <el-form-item prop="password">
-            <el-input
-              v-model="form.password"
-              type="password"
-              placeholder="密码"
-              prefix-icon="Lock"
-              show-password
-            />
-          </el-form-item>
+            <div class="field-group">
+              <label class="field-label">图片验证码</label>
+              <el-form-item prop="captcha">
+                <div class="captcha-wrapper">
+                  <el-input
+                    v-model="form.captcha"
+                    placeholder="请输入验证码"
+                    size="large"
+                    maxlength="4"
+                  >
+                    <template #prefix><el-icon><Picture /></el-icon></template>
+                  </el-input>
+                  <div class="captcha-image" @click="refreshCaptcha">
+                    <img v-if="captchaImage" :src="captchaImage" alt="验证码" />
+                    <span v-else>加载中</span>
+                  </div>
+                </div>
+              </el-form-item>
+            </div>
 
-          <el-form-item prop="confirmPassword">
-            <el-input
-              v-model="form.confirmPassword"
-              type="password"
-              placeholder="确认密码"
-              prefix-icon="Lock"
-              show-password
-            />
-          </el-form-item>
+            <div class="field-group">
+              <label class="field-label">邮箱验证码</label>
+              <el-form-item prop="emailCode">
+                <div class="captcha-wrapper">
+                  <el-input
+                    v-model="form.emailCode"
+                    placeholder="请输入邮箱验证码"
+                    size="large"
+                    maxlength="6"
+                  >
+                    <template #prefix><el-icon><Key /></el-icon></template>
+                  </el-input>
+                  <el-button
+                    :disabled="emailCodeCountdown > 0"
+                    @click="handleSendEmailCode"
+                  >
+                    {{ emailCodeCountdown > 0 ? `${emailCodeCountdown}s` : '发送验证码' }}
+                  </el-button>
+                </div>
+              </el-form-item>
+            </div>
 
-          <el-form-item>
+            <div class="field-row">
+              <div class="field-group">
+                <label class="field-label">密码</label>
+                <el-form-item prop="password">
+                  <el-input
+                    v-model="form.password"
+                    type="password"
+                    placeholder="6-20位密码"
+                    size="large"
+                    show-password
+                  >
+                    <template #prefix><el-icon><Lock /></el-icon></template>
+                  </el-input>
+                </el-form-item>
+              </div>
+              <div class="field-group">
+                <label class="field-label">确认密码</label>
+                <el-form-item prop="confirmPassword">
+                  <el-input
+                    v-model="form.confirmPassword"
+                    type="password"
+                    placeholder="再次输入密码"
+                    size="large"
+                    show-password
+                  >
+                    <template #prefix><el-icon><Lock /></el-icon></template>
+                  </el-input>
+                </el-form-item>
+              </div>
+            </div>
+
             <el-button
               type="primary"
-              class="w-full"
+              size="large"
+              class="submit-btn"
               :loading="loading"
               @click="handleRegister"
             >
               注册
             </el-button>
-          </el-form-item>
-        </el-form>
+          </el-form>
 
-        <div class="text-center text-gray-400">
-          已有账号？
-          <router-link to="/login" class="text-primary hover:underline">
-            立即登录
-          </router-link>
+          <div class="form-footer">
+            已有账号？<router-link to="/login">立即登录</router-link>
+          </div>
         </div>
       </div>
     </div>
   </div>
 </template>
+
+<style scoped>
+.register-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.register-container {
+  width: 100%;
+  max-width: 960px;
+  display: grid;
+  grid-template-columns: 380px 1fr;
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+}
+
+/* ─── 品牌区 ─── */
+.brand-panel {
+  background: linear-gradient(160deg, #0284c7 0%, #0ea5e9 50%, #06b6d4 100%);
+  padding: 60px 40px;
+  display: flex;
+  align-items: center;
+}
+
+.brand-inner {
+  color: #fff;
+}
+
+.brand-logo {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 12px 0;
+  letter-spacing: -0.5px;
+}
+
+.brand-tagline {
+  font-size: 15px;
+  opacity: 0.9;
+  margin: 0 0 40px 0;
+  font-weight: 400;
+}
+
+.feature-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.feature-list li {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  opacity: 0.95;
+}
+
+.feature-list li .el-icon {
+  font-size: 20px;
+  opacity: 0.9;
+}
+
+/* ─── 表单区 ─── */
+.form-panel {
+  padding: 48px 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.form-wrapper {
+  width: 100%;
+  max-width: 420px;
+}
+
+.form-header {
+  margin-bottom: 32px;
+}
+
+.form-header h2 {
+  font-size: 26px;
+  font-weight: 700;
+  color: #1e293b;
+  margin: 0 0 8px 0;
+}
+
+.form-header p {
+  font-size: 14px;
+  color: #64748b;
+  margin: 0;
+}
+
+/* ─── 表单字段 ─── */
+.field-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.field-group {
+  margin-bottom: 20px;
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #334155;
+  margin-bottom: 6px;
+}
+
+.captcha-wrapper {
+  display: flex;
+  gap: 12px;
+}
+
+.captcha-wrapper .el-input {
+  flex: 1;
+}
+
+.captcha-image {
+  width: 110px;
+  height: 40px;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #f8fafc;
+  flex-shrink: 0;
+}
+
+.captcha-image:hover {
+  border-color: #cbd5e1;
+}
+
+.captcha-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.captcha-image span {
+  font-size: 12px;
+  color: #94a3b8;
+}
+
+/* ─── 提交按钮 ─── */
+.submit-btn {
+  width: 100%;
+  height: 48px;
+  font-size: 16px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+/* ─── 表单底部 ─── */
+.form-footer {
+  text-align: center;
+  margin-top: 24px;
+  font-size: 14px;
+  color: #64748b;
+}
+
+.form-footer a {
+  color: #0ea5e9;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+.form-footer a:hover {
+  text-decoration: underline;
+}
+
+/* ─── Element Plus 样式覆盖 ─── */
+:deep(.el-input__wrapper) {
+  border-radius: 8px !important;
+  box-shadow: 0 0 0 1px #e2e8f0 !important;
+  padding: 4px 12px !important;
+}
+
+:deep(.el-input__wrapper:hover) {
+  box-shadow: 0 0 0 1px #cbd5e1 !important;
+}
+
+:deep(.el-input__wrapper.is-focus) {
+  box-shadow: 0 0 0 2px #0ea5e9 !important;
+}
+
+:deep(.el-form-item) {
+  margin-bottom: 0;
+}
+
+:deep(.el-form-item__error) {
+  padding-top: 4px;
+  font-size: 12px;
+}
+
+:deep(.el-button--primary) {
+  background: linear-gradient(135deg, #0ea5e9, #06b6d4) !important;
+  border: none !important;
+}
+
+:deep(.el-button--primary:hover) {
+  background: linear-gradient(135deg, #0284c7, #0891b2) !important;
+}
+
+/* ─── 响应式 ─── */
+@media (max-width: 800px) {
+  .register-container {
+    grid-template-columns: 1fr;
+    max-width: 480px;
+  }
+  
+  .brand-panel {
+    padding: 32px 28px;
+  }
+  
+  .brand-tagline {
+    margin-bottom: 24px;
+  }
+  
+  .feature-list {
+    gap: 12px;
+  }
+  
+  .form-panel {
+    padding: 32px 28px;
+  }
+  
+  .field-row {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+</style>

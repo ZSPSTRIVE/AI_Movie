@@ -46,7 +46,7 @@ async function fetchFilms() {
   try {
     const res = await getFilmList(query.value)
     filmList.value = res.data?.rows || []
-    total.value = res.data?.total || 0
+    total.value = Number(res.data?.total) || 0
   } finally {
     loading.value = false
   }

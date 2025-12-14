@@ -27,6 +27,9 @@ public class SaTokenConfigure {
             "/auth/login",
             "/auth/register",
             "/auth/captcha",
+            "/auth/email/code",
+            "/auth/check/email-verify",
+            "/auth/login/email-code",
             // 电影模块 - 全部公开
             "/film/**",
             // 社区模块 - 全部公开

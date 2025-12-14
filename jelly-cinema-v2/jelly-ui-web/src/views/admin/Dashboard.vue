@@ -216,10 +216,10 @@ function renderMessageDistChart() {
 }
 
 .chart-card {
-  @apply bg-dark-card rounded-lg p-4;
+  @apply bg-gray-800 rounded-lg p-4;
 }
 
 .quick-link {
-  @apply flex flex-col items-center gap-2 p-4 bg-dark-card rounded-lg text-gray-300 hover:text-primary hover:bg-dark-card/80 transition-colors;
+  @apply flex flex-col items-center gap-2 p-4 bg-gray-800 rounded-lg text-gray-300 hover:text-primary hover:bg-gray-700 transition-colors;
 }
 </style>

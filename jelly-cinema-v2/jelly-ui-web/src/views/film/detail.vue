@@ -4,6 +4,7 @@ import { useRoute } from 'vue-router'
 import { getFilmDetail, incrementPlayCount } from '@/api/film'
 import { chat } from '@/api/ai'
 import type { Film } from '@/types/film'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 
 const route = useRoute()
 
@@ -14,14 +15,18 @@ const aiQuestion = ref('')
 const aiResponse = ref('')
 const aiLoading = ref(false)
 
-const filmId = computed(() => Number(route.params.id))
+const filmId = computed(() => String(route.params.id))
 
 onMounted(async () => {
   try {
     const res = await getFilmDetail(filmId.value)
     film.value = res.data
     // 增加播放量
-    incrementPlayCount(filmId.value)
+    if (film.value?.id) {
+      incrementPlayCount(film.value.id)
+    }
+  } catch (error) {
+    console.error('获取电影详情失败:', error)
   } finally {
     loading.value = false
   }
@@ -65,21 +70,12 @@ async function handleAiAsk() {
       <div class="flex gap-6">
         <!-- 主内容区域 (70%) -->
         <div class="flex-1 space-y-6">
-          <!-- 播放器 - Neo-Brutalism -->
+          <!-- 播放器 -->
           <div class="aspect-video bg-black border-3 border-black shadow-brutal rounded-2xl overflow-hidden">
-            <video
-              v-if="film.videoUrl"
-              :src="film.videoUrl"
-              controls
-              class="w-full h-full"
-              poster=""
+            <VideoPlayer
+              :src="film.videoUrl || ''"
+              :poster="film.coverUrl"
             />
-            <div v-else class="w-full h-full flex items-center justify-center bg-nb-bg">
-              <div class="text-center">
-                <div class="text-6xl mb-4">🎬</div>
-                <div class="nb-badge">暂无播放源</div>
-              </div>
-            </div>
           </div>
 
           <!-- 电影信息 - Neo-Brutalism -->

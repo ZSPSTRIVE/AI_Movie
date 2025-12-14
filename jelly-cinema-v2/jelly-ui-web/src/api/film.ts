@@ -12,7 +12,7 @@ export function getFilmList(params: FilmQuery): Promise<R<PageResult<Film>>> {
 /**
  * 获取电影详情
  */
-export function getFilmDetail(id: number): Promise<R<Film>> {
+export function getFilmDetail(id: string | number): Promise<R<Film>> {
   return get(`/film/detail/${id}`)
 }
 

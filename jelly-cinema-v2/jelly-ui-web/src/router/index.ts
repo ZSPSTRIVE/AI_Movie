@@ -69,6 +69,12 @@ const routes: RouteRecordRaw[] = [
         name: 'Help',
         component: () => import('@/views/help/index.vue'),
         meta: { title: '帮助与反馈' }
+      },
+      {
+        path: 'growth',
+        name: 'Growth',
+        component: () => import('@/views/growth/index.vue'),
+        meta: { title: '积分商城', requireAuth: true }
       }
     ]
   },
