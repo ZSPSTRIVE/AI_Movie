@@ -70,6 +70,12 @@
             <artifactId>easyexcel</artifactId>
             <version>3.3.3</version>
         </dependency>
+        
+        <!-- OSS 对象存储（腾讯COS） -->
+        <dependency>
+            <groupId>com.jelly.cinema</groupId>
+            <artifactId>jelly-common-oss</artifactId>
+        </dependency>
     </dependencies>
 
     <build>
