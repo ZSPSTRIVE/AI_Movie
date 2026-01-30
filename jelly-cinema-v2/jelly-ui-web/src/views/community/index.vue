@@ -121,22 +121,20 @@ function formatTime(time: string): string {
 
 <template>
   <div class="space-y-6">
-    <!-- Header - Neo-Brutalism -->
+    <!-- Header - Glassmorphism -->
     <div class="flex items-center justify-between">
-      <div class="bg-pop-purple border-3 border-black shadow-brutal rounded-2xl px-6 py-4 inline-block">
-        <h1 class="text-3xl font-black text-white uppercase">社区讨论</h1>
-      </div>
-      <el-button class="!bg-pop-green !text-black !border-3 !border-black !font-black !shadow-brutal hover:!translate-x-1 hover:!-translate-y-1 transition-all !px-6 !py-5" @click="showCreateDialog = true">
+      <h1 class="glass-section-title">社区讨论</h1>
+      <button class="glass-btn" @click="showCreateDialog = true">
         <el-icon class="mr-2"><Edit /></el-icon>
         发布帖子
-      </el-button>
+      </button>
     </div>
 
-    <!-- Search - Neo-Brutalism -->
+    <!-- Search - Glassmorphism -->
     <div class="flex gap-4">
       <el-input
         v-model="query.keyword"
-        placeholder="搜索帖子..."
+        placeholder="搜索帖子"
         clearable
         size="large"
         @keyup.enter="handleSearch"
@@ -146,44 +144,42 @@ function formatTime(time: string): string {
           <el-icon><Search /></el-icon>
         </template>
       </el-input>
-      <el-button class="!bg-pop-blue !text-white !border-2 !border-black !font-bold" @click="handleSearch">
-        <el-icon class="mr-2"><Search /></el-icon>搜索
-      </el-button>
+      <el-button type="primary" @click="handleSearch">搜索</el-button>
     </div>
 
-    <!-- Post List - Neo-Brutalism -->
+    <!-- Post List - Glassmorphism -->
     <div v-if="loading" class="space-y-4">
-      <div v-for="i in 3" :key="i" class="bg-white border-3 border-black rounded-2xl p-6 skeleton h-32" />
+      <div v-for="i in 3" :key="i" class="glass-post-card h-32" style="animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;" />
     </div>
 
     <div v-else-if="postList.length === 0" class="text-center py-20">
-      <el-icon size="64" class="mb-6"><ChatDotSquare /></el-icon>
-      <div class="nb-badge text-lg">暂无帖子，快来发表第一个吧！</div>
+      <el-icon size="64" class="mb-6" style="color: var(--glass-text-muted);"><ChatDotSquare /></el-icon>
+      <div class="text-lg font-medium" style="color: var(--glass-text);">暂无帖子，快来发表第一个吧！</div>
     </div>
 
     <div v-else class="space-y-4">
       <div
         v-for="post in postList"
         :key="post.id"
-        class="bg-white border-3 border-black shadow-brutal-sm rounded-2xl p-6 cursor-pointer transition-all hover:translate-x-1 hover:-translate-y-1 hover:shadow-brutal"
+        class="glass-post-card"
         @click="goToDetail(post.id)"
       >
         <div class="flex gap-4">
-          <!-- Vote - Neo-Brutalism -->
-          <div class="flex flex-col items-center gap-1" @click.stop>
+          <!-- Vote - Glass Compact -->
+          <div class="glass-vote-compact" @click.stop>
             <button
-              class="w-10 h-10 rounded-lg border-2 border-black flex items-center justify-center transition-all"
-              :class="post.voteStatus === 1 ? 'bg-pop-green shadow-brutal-sm' : 'bg-white hover:bg-gray-100'"
+              class="vote-btn"
+              :class="{ 'active-up': post.voteStatus === 1 }"
               @click="handleVote(post, 1)"
             >
               <el-icon><CaretTop /></el-icon>
             </button>
-            <span class="text-xl font-black px-3 py-1 border-2 border-black rounded-lg" :class="post.voteUp - post.voteDown > 0 ? 'bg-pop-yellow' : 'bg-gray-100'">
+            <span class="vote-count">
               {{ post.voteUp - post.voteDown }}
             </span>
             <button
-              class="w-10 h-10 rounded-lg border-2 border-black flex items-center justify-center transition-all"
-              :class="post.voteStatus === -1 ? 'bg-pop-red text-white shadow-brutal-sm' : 'bg-white hover:bg-gray-100'"
+              class="vote-btn"
+              :class="{ 'active-down': post.voteStatus === -1 }"
               @click="handleVote(post, -1)"
             >
               <el-icon><CaretBottom /></el-icon>
@@ -192,24 +188,30 @@ function formatTime(time: string): string {
 
           <!-- Content -->
           <div class="flex-1 min-w-0">
-            <h3 class="text-xl font-bold text-black mb-2 line-clamp-2">{{ post.title }}</h3>
-            <p class="text-nb-text-sub font-medium line-clamp-2 mb-3">{{ post.contentSummary }}</p>
+            <h3 class="post-title">{{ post.title }}</h3>
+            <p class="post-excerpt">{{ post.contentSummary }}</p>
             
-            <div class="flex flex-wrap items-center gap-3 text-sm">
-              <div class="flex items-center gap-2 bg-gray-100 border-2 border-black rounded-lg px-3 py-1">
-                <el-avatar :size="20" :src="post.userAvatar" class="!border !border-black" />
-                <span class="font-bold">{{ post.username || '匿名用户' }}</span>
+            <div class="post-meta">
+              <div class="meta-item">
+                <el-avatar :size="20" :src="post.userAvatar" />
+                <span>{{ post.username || '匿名用户' }}</span>
               </div>
-              <span class="bg-pop-blue text-white font-bold px-2 py-1 rounded border-2 border-black">{{ formatTime(post.createTime) }}</span>
-              <span class="font-bold flex items-center gap-1">
-                <el-icon><View /></el-icon> {{ post.viewCount }}
-              </span>
-              <span class="font-bold flex items-center gap-1">
-                <el-icon><ChatLineRound /></el-icon> {{ post.commentCount }}
-              </span>
-              <span v-if="post.filmTitle" class="bg-pop-orange font-bold px-2 py-1 rounded border-2 border-black flex items-center gap-1">
-                <el-icon><Film /></el-icon> {{ post.filmTitle }}
-              </span>
+              <div class="meta-item">
+                <el-icon><Clock /></el-icon>
+                <span>{{ formatTime(post.createTime) }}</span>
+              </div>
+              <div class="meta-item">
+                <el-icon><View /></el-icon>
+                <span>{{ post.viewCount }}</span>
+              </div>
+              <div class="meta-item">
+                <el-icon><ChatLineRound /></el-icon>
+                <span>{{ post.commentCount }}</span>
+              </div>
+              <div v-if="post.filmTitle" class="meta-item" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(6, 182, 212, 0.12)); color: var(--glass-primary);">
+                <el-icon><Film /></el-icon>
+                <span>{{ post.filmTitle }}</span>
+              </div>
             </div>
           </div>
         </div>

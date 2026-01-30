@@ -190,8 +190,8 @@ function formatDate(date: string | undefined): string {
     
     <!-- 已登录 -->
     <template v-else>
-      <!-- 头部 - Neo-Brutalism -->
-      <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6 mb-6">
+      <!-- 头部 - Glassmorphism -->
+      <div class="glass-card-strong p-6 mb-6">
         <div class="flex items-start gap-6">
           <el-upload
             class="avatar-uploader"
@@ -200,69 +200,69 @@ function formatDate(date: string | undefined): string {
             :auto-upload="false"
             @change="handleAvatarChange"
           >
-            <el-avatar :size="100" :src="userStore.avatar" class="cursor-pointer hover:opacity-80 transition-opacity !border-3 !border-black !shadow-brutal">
+            <el-avatar :size="100" :src="userStore.avatar" class="cursor-pointer hover:opacity-80 transition-opacity" style="border: 3px solid rgba(255, 255, 255, 0.6); box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);">
               {{ user?.nickname?.[0] || user?.username?.[0] }}
             </el-avatar>
-            <div class="text-xs font-bold text-nb-text-sub text-center mt-2 bg-pop-yellow border-2 border-black rounded px-2 py-1">点击更换</div>
+            <div class="text-xs font-semibold text-center mt-2 px-3 py-1.5 rounded-lg" style="background: linear-gradient(135deg, var(--glass-primary), var(--glass-accent)); color: white;">点击更换</div>
           </el-upload>
           
           <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
-              <h1 class="text-2xl font-black text-black">{{ user?.nickname || user?.username }}</h1>
-              <span v-if="user?.role === 'ROLE_ADMIN'" class="bg-pop-red text-white text-xs font-bold px-2 py-1 border-2 border-black rounded">管理员</span>
+              <h1 class="text-2xl font-bold" style="color: var(--glass-text);">{{ user?.nickname || user?.username }}</h1>
+              <span v-if="user?.role === 'ROLE_ADMIN'" class="px-2.5 py-0.5 text-xs font-semibold rounded-lg" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">管理员</span>
             </div>
             
-            <p class="text-nb-text-sub font-medium mb-4 bg-nb-bg border-2 border-black rounded-lg px-4 py-2">{{ user?.signature || '这个人很懒，什么都没写~' }}</p>
+            <p class="font-medium mb-4 px-4 py-2.5 rounded-xl" style="color: var(--glass-text-muted); background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3);">{{ user?.signature || '这个人很懒，什么都没写~' }}</p>
             
             <div class="flex items-center gap-4 text-sm">
-              <span class="bg-gray-100 border-2 border-black rounded-lg px-3 py-1 font-bold flex items-center">
-                <el-icon class="mr-2"><Calendar /></el-icon>加入于 {{ formatDate(user?.createTime) }}
+              <span class="px-3 py-1.5 rounded-lg font-medium flex items-center gap-2" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: var(--glass-text);">
+                <el-icon><Calendar /></el-icon>加入于 {{ formatDate(user?.createTime) }}
               </span>
-              <span v-if="user?.email" class="bg-pop-blue text-white border-2 border-black rounded-lg px-3 py-1 font-bold flex items-center">
-                <el-icon class="mr-2"><Message /></el-icon>{{ user.email }}
+              <span v-if="user?.email" class="px-3 py-1.5 rounded-lg font-medium flex items-center gap-2" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(6, 182, 212, 0.12)); border: 1px solid rgba(14, 165, 233, 0.2); color: var(--glass-primary);">
+                <el-icon><Message /></el-icon>{{ user.email }}
               </span>
             </div>
           </div>
           
           <div class="flex flex-col gap-2">
-            <el-button class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="startEdit">
+            <el-button type="success" @click="startEdit">
               <el-icon class="mr-2"><Edit /></el-icon>编辑资料
             </el-button>
-            <el-button class="!bg-pop-orange !text-black !border-2 !border-black !font-bold" @click="passwordDialogVisible = true">
+            <el-button type="warning" @click="passwordDialogVisible = true">
               <el-icon class="mr-2"><Lock /></el-icon>修改密码
             </el-button>
-            <el-button class="!bg-pop-red !text-white !border-2 !border-black !font-bold" @click="handleLogout">
+            <el-button type="danger" @click="handleLogout">
               <el-icon class="mr-2"><SwitchButton /></el-icon>退出
             </el-button>
           </div>
         </div>
       </div>
       
-      <!-- 标签页 - Neo-Brutalism -->
-      <el-tabs v-model="activeTab" class="nb-tabs">
+      <!-- 标签页 - Glassmorphism -->
+      <el-tabs v-model="activeTab" class="glass-tabs-enhanced">
         <el-tab-pane label="个人资料" name="profile">
-          <div class="bg-white border-3 border-black shadow-brutal-sm rounded-2xl p-6">
+          <div class="glass-card p-6">
             <template v-if="!editMode">
               <div class="grid grid-cols-2 gap-6">
-                <div class="bg-nb-bg border-2 border-black rounded-xl p-4">
-                  <label class="text-nb-text-sub text-sm font-bold">用户名</label>
-                  <p class="text-black font-bold text-lg mt-1">{{ user?.username }}</p>
+                <div class="info-item">
+                  <label>用户名</label>
+                  <p>{{ user?.username }}</p>
                 </div>
-                <div class="bg-nb-bg border-2 border-black rounded-xl p-4">
-                  <label class="text-nb-text-sub text-sm font-bold">昵称</label>
-                  <p class="text-black font-bold text-lg mt-1">{{ user?.nickname || '-' }}</p>
+                <div class="info-item">
+                  <label>昵称</label>
+                  <p>{{ user?.nickname || '-' }}</p>
                 </div>
-                <div class="bg-nb-bg border-2 border-black rounded-xl p-4">
-                  <label class="text-nb-text-sub text-sm font-bold">邮箱</label>
-                  <p class="text-black font-bold text-lg mt-1">{{ user?.email || '-' }}</p>
+                <div class="info-item">
+                  <label>邮箱</label>
+                  <p>{{ user?.email || '-' }}</p>
                 </div>
-                <div class="bg-nb-bg border-2 border-black rounded-xl p-4">
-                  <label class="text-nb-text-sub text-sm font-bold">手机号</label>
-                  <p class="text-black font-bold text-lg mt-1">{{ user?.phone || '-' }}</p>
+                <div class="info-item">
+                  <label>手机号</label>
+                  <p>{{ user?.phone || '-' }}</p>
                 </div>
-                <div class="col-span-2 bg-nb-bg border-2 border-black rounded-xl p-4">
-                  <label class="text-nb-text-sub text-sm font-bold">个性签名</label>
-                  <p class="text-black font-bold text-lg mt-1">{{ user?.signature || '-' }}</p>
+                <div class="info-item" style="grid-column: span 2;">
+                  <label>个性签名</label>
+                  <p>{{ user?.signature || '-' }}</p>
                 </div>
               </div>
             </template>
@@ -405,3 +405,40 @@ function formatDate(date: string | undefined): string {
     </template>
   </div>
 </template>
+
+<style scoped>
+.info-item {
+  padding: 16px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+}
+
+.info-item label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--glass-text-muted);
+  display: block;
+  margin-bottom: 6px;
+}
+
+.info-item p {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--glass-text);
+  margin: 0;
+}
+
+:deep(.glass-tabs-enhanced) .el-tabs__header {
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  padding: 6px;
+  margin-bottom: 20px;
+}
+
+:deep(.glass-tabs-enhanced) .el-tabs__nav-wrap::after {
+  display: none;
+}
+</style>
