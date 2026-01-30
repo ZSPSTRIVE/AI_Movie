@@ -1,0 +1,4 @@
+# TVBox Proxy Server
+node_modules/
+*.log
+.env

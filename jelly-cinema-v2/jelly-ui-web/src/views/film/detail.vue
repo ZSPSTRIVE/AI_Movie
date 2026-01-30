@@ -3,8 +3,9 @@ import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getFilmDetail, incrementPlayCount } from '@/api/film'
 import { chat } from '@/api/ai'
+import tvboxService from '@/services/tvboxService'
 import type { Film } from '@/types/film'
-import VideoPlayer from '@/components/VideoPlayer.vue'
+import TVBoxPlayer from '@/components/TVBoxPlayer.vue'
 
 const route = useRoute()
 
@@ -19,11 +20,19 @@ const filmId = computed(() => String(route.params.id))
 
 onMounted(async () => {
   try {
-    const res = await getFilmDetail(filmId.value)
-    film.value = res.data
-    // 增加播放量
-    if (film.value?.id) {
-      incrementPlayCount(film.value.id)
+    // 优先使用TVBox服务
+    const filmData = await tvboxService.getDetail(filmId.value)
+    if (filmData) {
+      film.value = filmData
+    } else {
+      // 降级使用原有API
+      const res = await getFilmDetail(filmId.value)
+      film.value = res.data
+    }
+    
+    // 增加播放量（仅数字ID才调用后端API）
+    if (film.value?.id && !isNaN(Number(film.value.id))) {
+      incrementPlayCount(Number(film.value.id))
     }
   } catch (error) {
     console.error('获取电影详情失败:', error)
@@ -72,8 +81,8 @@ async function handleAiAsk() {
         <div class="flex-1 space-y-6">
           <!-- 播放器 -->
           <div class="aspect-video bg-black border-3 border-black shadow-brutal rounded-2xl overflow-hidden">
-            <VideoPlayer
-              :src="film.videoUrl || ''"
+            <TVBoxPlayer
+              :film-id="filmId"
               :poster="film.coverUrl"
             />
           </div>
