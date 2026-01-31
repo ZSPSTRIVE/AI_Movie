@@ -120,12 +120,7 @@ const routes: RouteRecordRaw[] = [
         component: () => import('@/views/admin/GroupAudit.vue'),
         meta: { title: '群组审计' }
       },
-      {
-        path: 'films',
-        name: 'AdminFilms',
-        component: () => import('@/views/admin/FilmManage.vue'),
-        meta: { title: '影片管理' }
-      },
+
       {
         path: 'homepage',
         name: 'AdminHomepage',

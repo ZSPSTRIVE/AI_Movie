@@ -25,6 +25,10 @@ app.use(router)
 app.use(ElementPlus)
 app.directive('img-fallback', imgFallback)
 
+import SvgIcon from '@/components/SvgIcon.vue'
+app.component('svg-icon', SvgIcon)
+
+
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)

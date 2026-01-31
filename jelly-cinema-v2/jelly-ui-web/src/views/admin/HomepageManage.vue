@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { get, post, put, del } from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Refresh, MagicStick, Search, ArrowUp, ArrowDown } from '@element-plus/icons-vue'
 
 interface HomepageContent {
   id: number
@@ -154,76 +153,68 @@ async function handleDelete(row: HomepageContent) {
 
 function getContentTypeLabel(type: string) {
   const map: Record<string, string> = {
-    movie: '电影',
-    tv_series: '电视剧',
-    variety: '综艺',
-    anime: '动漫'
+    movie: '电影', tv_series: '电视剧', variety: '综艺', anime: '动漫'
   }
   return map[type] || type
 }
 
 function getSectionTypeLabel(type: string) {
   const map: Record<string, string> = {
-    recommend: '推荐',
-    hot: '热门',
-    new: '新上线',
-    trending: '趋势'
+    recommend: '推荐', hot: '热门', new: '新上线', trending: '趋势'
   }
   return map[type] || type
 }
 </script>
 
 <template>
-  <div class="h-full flex flex-col gap-6">
+  <div class="h-full flex flex-col gap-6 p-6 bg-gray-50">
     <!-- 顶部操作栏 -->
-    <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-orange-500/30">
-          <el-icon size="24" color="white"><HomeFilled /></el-icon>
+        <div class="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center text-orange-600">
+          <el-icon size="24"><svg-icon name="icon-shouye-zhihui" /></el-icon>
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-wide">首页内容管理</h2>
-          <p class="text-gray-400 text-sm mt-1">管理和排序首页展示的影视内容</p>
+          <h2 class="text-2xl font-bold text-gray-900 tracking-wide">首页内容管理</h2>
+          <p class="text-gray-500 text-sm mt-1">管理和排序首页展示的影视内容</p>
         </div>
       </div>
       
       <div class="flex gap-3">
         <el-button 
-          type="primary" 
-          size="large"
           :loading="refreshLoading"
-          class="!rounded-xl !px-6 !font-bold shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 transition-all"
+          plain
+          class="!rounded-xl"
           @click="handleRefresh"
         >
           <el-icon class="mr-2"><Refresh /></el-icon>
           刷新内容库
         </el-button>
         <el-button 
-          type="success"
-          size="large" 
+          type="primary"
           :loading="aiSortLoading"
-          class="!rounded-xl !px-6 !font-bold shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all"
+          class="!rounded-xl !font-bold bg-gradient-to-r from-purple-600 to-indigo-600 border-none hover:opacity-90 transition-opacity"
           @click="handleAiSort"
         >
-          <el-icon class="mr-2"><MagicStick /></el-icon>
+          <el-icon class="mr-2"><svg-icon name="icon-zhuanshuguwen" /></el-icon>
           AI 智能排序
         </el-button>
       </div>
     </div>
 
     <!-- 筛选与数据区 -->
-    <div class="glass-card flex-1 rounded-2xl flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
+    <div class="bg-white flex-1 rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
       <!-- 筛选栏 -->
-      <div class="p-5 border-b border-white/5 flex gap-4 bg-white/5 backdrop-blur-sm">
-        <el-select v-model="contentType" placeholder="全部内容" clearable class="glass-select w-40" @change="handleFilter">
+      <div class="p-5 border-b border-gray-100 flex gap-4 bg-gray-50/50">
+        <el-select v-model="contentType" placeholder="全部内容" clearable class="w-40" @change="handleFilter">
           <template #prefix><el-icon><Film /></el-icon></template>
           <el-option v-for="item in contentTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-select v-model="sectionType" placeholder="全部板块" clearable class="glass-select w-40" @change="handleFilter">
+        <el-select v-model="sectionType" placeholder="全部板块" clearable class="w-40" @change="handleFilter">
           <template #prefix><el-icon><Menu /></el-icon></template>
           <el-option v-for="item in sectionTypeOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
-        <el-button class="glass-button-icon" @click="loadData">
+        <el-button @click="loadData">
           <el-icon><Search /></el-icon>
         </el-button>
       </div>
@@ -240,11 +231,11 @@ function getSectionTypeLabel(type: string) {
           <el-table-column prop="sortOrder" label="排序" width="80" align="center">
             <template #default="{ row }">
               <div class="flex flex-col items-center gap-1 group">
-                <el-button link size="small" class="!text-gray-500 hover:!text-amber-500 transition-colors opacity-0 group-hover:opacity-100" @click="updateSort(row, 'up')">
+                <el-button link size="small" class="!text-gray-400 hover:!text-blue-500 opacity-0 group-hover:opacity-100 transition-all" @click="updateSort(row, 'up')">
                   <el-icon><ArrowUp /></el-icon>
                 </el-button>
-                <span class="font-mono text-lg font-bold text-amber-500">{{ row.sortOrder }}</span>
-                <el-button link size="small" class="!text-gray-500 hover:!text-amber-500 transition-colors opacity-0 group-hover:opacity-100" @click="updateSort(row, 'down')">
+                <span class="font-mono text-lg font-bold text-gray-700">{{ row.sortOrder }}</span>
+                <el-button link size="small" class="!text-gray-400 hover:!text-blue-500 opacity-0 group-hover:opacity-100 transition-all" @click="updateSort(row, 'down')">
                   <el-icon><ArrowDown /></el-icon>
                 </el-button>
               </div>
@@ -254,50 +245,49 @@ function getSectionTypeLabel(type: string) {
           <el-table-column label="影片信息" min-width="320">
             <template #default="{ row }">
               <div class="flex items-center gap-4 py-1 group cursor-pointer hover:translate-x-1 transition-transform duration-300">
-                <div class="relative w-16 h-24 rounded-lg overflow-hidden shadow-lg border border-white/10 group-hover:shadow-amber-500/20 transition-all">
+                <div class="relative w-14 h-20 rounded overflow-hidden shadow border border-gray-200 group-hover:shadow-md transition-all">
                   <el-image 
                     :src="row.coverUrl" 
-                    class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    class="w-full h-full object-cover"
                     loading="lazy"
                   >
                     <template #error>
-                      <div class="flex items-center justify-center w-full h-full bg-gray-800 text-gray-600">
-                        <el-icon><Picture /></el-icon>
+                      <div class="flex items-center justify-center w-full h-full bg-gray-100 text-gray-400">
+                        <el-icon><svg-icon name="icon-shangchuantupian" /></el-icon>
                       </div>
                     </template>
                   </el-image>
-                  <div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
                 </div>
                 
-                <div class="flex-1 min-w-0 flex flex-col gap-1.5">
-                  <div class="text-base font-bold text-gray-100 truncate group-hover:text-amber-400 transition-colors">{{ row.title }}</div>
-                  <div class="flex items-center gap-2 text-xs text-gray-400">
-                    <span class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{{ row.year }}</span>
+                <div class="flex-1 min-w-0 flex flex-col gap-1">
+                  <div class="text-base font-bold text-gray-900 truncate group-hover:text-blue-600 transition-colors">{{ row.title }}</div>
+                  <div class="flex items-center gap-2 text-xs text-gray-500">
+                    <span class="bg-gray-100 px-1.5 py-0.5 rounded text-gray-600">{{ row.year }}</span>
                     <span>{{ row.region }}</span>
-                    <span class="text-blue-400/80">{{ row.sourceName }}</span>
+                    <span class="text-blue-500">{{ row.sourceName }}</span>
                   </div>
                 </div>
               </div>
             </template>
           </el-table-column>
 
-          <el-table-column label="分类" width="120">
+          <el-table-column label="分类" width="100">
             <template #default="{ row }">
-              <el-tag effect="dark" class="!bg-blue-500/20 !border-blue-500/30 !text-blue-300">{{ getContentTypeLabel(row.contentType) }}</el-tag>
+              <el-tag type="info" effect="plain">{{ getContentTypeLabel(row.contentType) }}</el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="板块" width="120">
+          <el-table-column label="板块" width="100">
             <template #default="{ row }">
-              <el-tag effect="dark" class="!bg-purple-500/20 !border-purple-500/30 !text-purple-300">{{ getSectionTypeLabel(row.sectionType) }}</el-tag>
+              <el-tag type="warning" effect="plain">{{ getSectionTypeLabel(row.sectionType) }}</el-tag>
             </template>
           </el-table-column>
 
           <el-table-column prop="rating" label="评分" width="100" align="center">
             <template #default="{ row }">
-              <div class="flex items-center justify-center gap-1 font-bold text-amber-400 text-lg">
+              <div class="flex items-center justify-center gap-1 font-bold text-orange-500 text-lg">
                 <span>{{ row.rating }}</span>
-                <el-icon size="14"><StarFilled /></el-icon>
+                <el-icon size="14"><svg-icon name="icon-xihuan" /></el-icon>
               </div>
             </template>
           </el-table-column>
@@ -305,35 +295,37 @@ function getSectionTypeLabel(type: string) {
           <el-table-column label="AI 推荐值" width="120" align="center">
             <template #default="{ row }">
               <div v-if="row.aiScore" class="flex flex-col items-center">
-                <span class="text-lg font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">{{ row.aiScore }}</span>
-                <el-tooltip v-if="row.aiReason" :content="row.aiReason" placement="top" effect="customized">
-                   <div class="text-xs text-gray-500 flex items-center gap-1 cursor-help hover:text-gray-300">
-                     Why? <el-icon><QuestionFilled /></el-icon>
+                <span class="text-lg font-bold text-purple-600">{{ row.aiScore }}</span>
+                <el-tooltip v-if="row.aiReason" :content="row.aiReason" placement="top">
+                   <div class="text-xs text-gray-400 flex items-center gap-1 cursor-help hover:text-gray-600">
+                     Why? <el-icon><svg-icon name="icon-bangzhuwendang" /></el-icon>
                    </div>
                 </el-tooltip>
               </div>
-              <span v-else class="text-gray-600">-</span>
+              <span v-else class="text-gray-300">-</span>
             </template>
           </el-table-column>
 
           <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
-              <div class="relative inline-flex items-center justify-center">
-                <div :class="['w-2 h-2 rounded-full mr-2', row.status === 1 ? 'bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]' : 'bg-gray-500']"></div>
-                <span :class="row.status === 1 ? 'text-green-400' : 'text-gray-400'">{{ row.status === 1 ? '上架' : '下架' }}</span>
-              </div>
+              <el-tag :type="row.status === 1 ? 'success' : 'info'" effect="light">
+                 {{ row.status === 1 ? '上架' : '下架' }}
+              </el-tag>
             </template>
           </el-table-column>
 
-          <el-table-column label="操作" width="160" fixed="right" align="center">
+          <el-table-column label="操作" width="140" fixed="right" align="center">
             <template #default="{ row }">
               <div class="flex items-center justify-center gap-2">
-                <el-button circle class="!bg-white/5 !border-white/10 !text-amber-500 hover:!bg-amber-500 hover:!text-white hover:!border-amber-500" @click="toggleStatus(row)">
-                  <el-icon><VideoPause v-if="row.status === 1" /><VideoPlay v-else /></el-icon>
-                </el-button>
+                <el-tooltip :content="row.status === 1 ? '下架' : '上架'" placement="top">
+                   <el-button circle size="small" :type="row.status === 1 ? 'warning' : 'success'" plain @click="toggleStatus(row)">
+                     <el-icon><VideoPause v-if="row.status === 1" /><VideoPlay v-else /></el-icon>
+                   </el-button>
+                </el-tooltip>
+                
                 <el-popconfirm title="确定要删除这条记录吗?" @confirm="handleDelete(row)">
                   <template #reference>
-                    <el-button circle class="!bg-white/5 !border-white/10 !text-red-500 hover:!bg-red-500 hover:!text-white hover:!border-red-500">
+                    <el-button circle size="small" type="danger" plain>
                       <el-icon><Delete /></el-icon>
                     </el-button>
                   </template>
@@ -345,7 +337,7 @@ function getSectionTypeLabel(type: string) {
       </div>
 
       <!-- 分页 -->
-      <div class="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+      <div class="p-4 border-t border-gray-100 flex justify-end">
         <el-pagination
           v-model:current-page="pageNum"
           v-model:page-size="pageSize"
@@ -359,9 +351,3 @@ function getSectionTypeLabel(type: string) {
     </div>
   </div>
 </template>
-
-<style scoped>
-.p-6 {
-  padding: 1.5rem;
-}
-</style>

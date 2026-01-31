@@ -163,23 +163,23 @@ async function handleDelete(row: UserListItem) {
 </script>
 
 <template>
-  <div class="h-full flex flex-col gap-6">
+  <div class="h-full flex flex-col gap-6 p-6 bg-gray-50">
     <!-- 顶部统计/操作卡片 -->
-    <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
       <div class="flex items-center gap-4">
-        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
-          <el-icon size="24" color="white"><UserFilled /></el-icon>
+        <div class="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center text-blue-600">
+          <el-icon size="24"><svg-icon name="icon-gerenzhongxin-zhihui" /></el-icon>
         </div>
         <div>
-          <h2 class="text-2xl font-bold text-white tracking-wide">用户管理</h2>
-          <p class="text-gray-400 text-sm mt-1">管理系统注册用户及权限状态</p>
+          <h2 class="text-2xl font-bold text-gray-900 tracking-wide">用户管理</h2>
+          <p class="text-gray-500 text-sm mt-1">管理系统注册用户及权限状态</p>
         </div>
       </div>
       
       <el-button 
         type="primary" 
         size="large"
-        class="!rounded-xl !px-6 !font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all"
+        class="!rounded-xl !px-6 !font-bold"
         @click="handleAdd"
       >
         <el-icon class="mr-2"><Plus /></el-icon>
@@ -188,24 +188,24 @@ async function handleDelete(row: UserListItem) {
     </div>
 
     <!-- 数据区域 -->
-    <div class="glass-card flex-1 rounded-2xl flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
+    <div class="bg-white flex-1 rounded-2xl shadow-sm border border-gray-100 flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
       <!-- 搜索栏 -->
-      <div class="p-5 border-b border-white/5 flex gap-4 bg-white/5 backdrop-blur-sm justify-between">
+      <div class="p-5 border-b border-gray-100 flex gap-4 bg-gray-50/50 justify-between">
         <div class="flex gap-4">
            <el-input 
              v-model="keyword" 
              placeholder="搜索用户名/昵称/手机号" 
              clearable 
-             class="glass-input w-64"
+             class="w-64"
              @keyup.enter="handleSearch"
            >
              <template #prefix><el-icon><Search /></el-icon></template>
            </el-input>
-           <el-select v-model="statusFilter" placeholder="用户状态" clearable class="glass-select w-32" @change="handleSearch">
+           <el-select v-model="statusFilter" placeholder="用户状态" clearable class="w-32" @change="handleSearch">
              <el-option label="正常" :value="0" />
              <el-option label="封禁" :value="1" />
            </el-select>
-           <el-button class="glass-button-icon" @click="handleSearch">
+           <el-button circle @click="handleSearch">
              <el-icon><Search /></el-icon>
            </el-button>
         </div>
@@ -225,9 +225,9 @@ async function handleDelete(row: UserListItem) {
           <el-table-column label="用户信息" min-width="200">
             <template #default="{ row }">
               <div class="flex items-center gap-3">
-                <el-avatar :size="40" :src="row.avatar" class="border-2 border-white/10">{{ row.nickname?.[0] }}</el-avatar>
+                <el-avatar :size="40" :src="row.avatar" class="bg-gray-100 text-gray-400">{{ row.nickname?.[0] }}</el-avatar>
                 <div class="flex flex-col">
-                  <span class="font-bold text-gray-200">{{ row.nickname }}</span>
+                  <span class="font-bold text-gray-900">{{ row.nickname }}</span>
                   <span class="text-xs text-gray-500">{{ row.username }}</span>
                 </div>
               </div>
@@ -239,8 +239,8 @@ async function handleDelete(row: UserListItem) {
           <el-table-column label="状态" width="100" align="center">
             <template #default="{ row }">
               <el-tag 
-                effect="dark"
-                :class="row.status === 0 ? '!bg-green-500/20 !border-green-500/30 !text-green-400' : '!bg-red-500/20 !border-red-500/30 !text-red-400'"
+                :type="row.status === 0 ? 'success' : 'danger'"
+                effect="light"
               >
                 {{ row.status === 0 ? '正常' : '封禁' }}
               </el-tag>
@@ -249,23 +249,23 @@ async function handleDelete(row: UserListItem) {
 
           <el-table-column label="注册时间" width="160" align="center">
             <template #default="{ row }">
-              <span class="text-gray-400 font-mono text-xs">{{ formatTime(row.createTime) }}</span>
+              <span class="text-gray-500 font-mono text-xs">{{ formatTime(row.createTime) }}</span>
             </template>
           </el-table-column>
 
           <el-table-column label="操作" width="240" fixed="right" align="center">
             <template #default="{ row }">
               <div class="flex items-center justify-center gap-2">
-                <el-button size="small" link class="!text-blue-400 hover:!text-blue-300" @click="showDetail(row)">详情</el-button>
-                <el-button size="small" link class="!text-amber-400 hover:!text-amber-300" @click="handleEdit(row)">编辑</el-button>
+                <el-button size="small" type="primary" link @click="showDetail(row)">详情</el-button>
+                <el-button size="small" type="warning" link @click="handleEdit(row)">编辑</el-button>
                 
-                <el-button v-if="row.status === 0" size="small" link class="!text-red-400 hover:!text-red-300" @click="openBanDialog(row)">封禁</el-button>
-                <el-button v-else size="small" link class="!text-green-400 hover:!text-green-300" @click="handleUnban(row)">解封</el-button>
+                <el-button v-if="row.status === 0" size="small" type="danger" link @click="openBanDialog(row)">封禁</el-button>
+                <el-button v-else size="small" type="success" link @click="handleUnban(row)">解封</el-button>
                 
                 <el-dropdown trigger="click">
-                  <el-button size="small" link class="!text-gray-400 hover:!text-white">更多 <el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                  <el-button size="small" type="info" link>更多 <el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
                   <template #dropdown>
-                    <el-dropdown-menu class="glass-dropdown">
+                    <el-dropdown-menu>
                       <el-dropdown-item @click="handleResetPassword(row)">重置密码</el-dropdown-item>
                       <el-dropdown-item @click="handleForceLogout(row)">强制下线</el-dropdown-item>
                       <el-dropdown-item divided @click="handleDelete(row)">
@@ -281,7 +281,7 @@ async function handleDelete(row: UserListItem) {
       </div>
 
       <!-- 分页 -->
-      <div class="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+      <div class="p-4 border-t border-gray-100 flex justify-end">
         <el-pagination
           v-model:current-page="pageNum"
           v-model:page-size="pageSize"
@@ -294,32 +294,32 @@ async function handleDelete(row: UserListItem) {
       </div>
     </div>
 
-    <!-- 用户详情抽屉 (保持原有逻辑，仅调整样式建议在 index.scss 全局覆盖 el-drawer) -->
-    <el-drawer v-model="drawerVisible" title="用户详情" size="400px" class="glass-drawer">
+    <!-- 用户详情抽屉 -->
+    <el-drawer v-model="drawerVisible" title="用户详情" size="400px">
       <div v-loading="detailLoading">
         <template v-if="userDetail">
           <!-- 基本信息 -->
           <div class="text-center mb-8">
             <div class="relative inline-block">
-               <el-avatar :size="80" :src="userDetail.avatar" class="ring-4 ring-white/10">{{ userDetail.nickname?.[0] }}</el-avatar>
-               <div :class="['absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#1E293B]', userDetail.status === 0 ? 'bg-green-500' : 'bg-red-500']"></div>
+               <el-avatar :size="80" :src="userDetail.avatar" class="bg-gray-100 text-gray-400 text-2xl">{{ userDetail.nickname?.[0] }}</el-avatar>
+               <div :class="['absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-white', userDetail.status === 0 ? 'bg-green-500' : 'bg-red-500']"></div>
             </div>
-            <h3 class="text-xl font-bold text-white mt-3">{{ userDetail.nickname }}</h3>
-            <p class="text-gray-400 text-sm mt-1">{{ userDetail.signature || '暂无签名' }}</p>
+            <h3 class="text-xl font-bold text-gray-900 mt-3">{{ userDetail.nickname }}</h3>
+            <p class="text-gray-500 text-sm mt-1">{{ userDetail.signature || '暂无签名' }}</p>
           </div>
 
-          <el-descriptions :column="1" border size="large" class="glass-descriptions">
+          <el-descriptions :column="1" border size="large">
             <el-descriptions-item label="用户ID">{{ userDetail.id }}</el-descriptions-item>
             <el-descriptions-item label="用户名">{{ userDetail.username }}</el-descriptions-item>
             <el-descriptions-item label="手机号">{{ userDetail.phone || '-' }}</el-descriptions-item>
             <el-descriptions-item label="邮箱">{{ userDetail.email || '-' }}</el-descriptions-item>
             <el-descriptions-item label="角色">
-               <el-tag size="small" effect="dark" class="!bg-blue-500/20 !border-blue-500/30">
+               <el-tag size="small" :type="userDetail.role === 'ROLE_ADMIN' ? 'danger' : 'info'">
                  {{ userDetail.role === 'ROLE_ADMIN' ? '管理员' : '普通用户' }}
                </el-tag>
             </el-descriptions-item>
             <el-descriptions-item v-if="userDetail.status === 1" label="封禁原因">
-              <span class="text-red-400">{{ userDetail.banReason }}</span>
+              <span class="text-red-500">{{ userDetail.banReason }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="注册时间">{{ formatTime(userDetail.createTime) }}</el-descriptions-item>
           </el-descriptions>
@@ -327,8 +327,8 @@ async function handleDelete(row: UserListItem) {
       </div>
     </el-drawer>
 
-    <!-- 弹窗部分保持原有逻辑，样式由全局 CSS 控制 -->
-    <el-dialog v-model="banDialogVisible" title="封禁用户" width="400px" class="glass-dialog">
+    <!-- 弹窗 -->
+    <el-dialog v-model="banDialogVisible" title="封禁用户" width="400px">
       <el-form :model="banForm" label-width="80px">
         <el-form-item label="封禁时长">
           <el-radio-group v-model="banForm.duration">
@@ -348,7 +348,7 @@ async function handleDelete(row: UserListItem) {
       </template>
     </el-dialog>
 
-    <el-dialog v-model="userDialogVisible" :title="userDialogTitle" width="500px" class="glass-dialog">
+    <el-dialog v-model="userDialogVisible" :title="userDialogTitle" width="500px">
       <el-form :model="userForm" label-width="80px">
         <template v-if="!userForm.id">
           <el-form-item label="用户名" required>

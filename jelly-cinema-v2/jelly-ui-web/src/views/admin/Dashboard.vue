@@ -34,28 +34,35 @@ function renderUserTrendChart() {
   
   const chart = echarts.init(userTrendChart.value)
   chart.setOption({
-    title: { text: '近7日新增用户', left: 'center', textStyle: { color: '#fff', fontSize: 14 } },
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', backgroundColor: 'rgba(255, 255, 255, 0.9)', textStyle: { color: '#333' } },
     xAxis: {
       type: 'category',
       data: stats.value.userTrend.map(i => i.date),
-      axisLabel: { color: '#aaa' },
-      axisLine: { lineStyle: { color: '#444' } }
+      axisLabel: { color: '#64748b' },
+      axisLine: { lineStyle: { color: '#e2e8f0' } }
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#aaa' },
-      splitLine: { lineStyle: { color: '#333' } }
+      axisLabel: { color: '#64748b' },
+      splitLine: { lineStyle: { color: '#f1f5f9' } }
     },
     series: [{
       data: stats.value.userTrend.map(i => i.value),
       type: 'line',
       smooth: true,
-      areaStyle: { opacity: 0.3 },
-      itemStyle: { color: '#409eff' }
+      areaStyle: { 
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: 'rgba(59, 130, 246, 0.2)' },
+          { offset: 1, color: 'rgba(59, 130, 246, 0.01)' }
+        ])
+      },
+      itemStyle: { color: '#3b82f6' },
+      lineStyle: { width: 3 }
     }],
-    grid: { left: 50, right: 20, bottom: 30, top: 50 }
+    grid: { left: 40, right: 20, bottom: 20, top: 40, containLabel: true }
   })
+  
+  window.addEventListener('resize', () => chart.resize())
 }
 
 function renderMessageDistChart() {
@@ -63,135 +70,145 @@ function renderMessageDistChart() {
   
   const chart = echarts.init(messageDistChart.value)
   chart.setOption({
-    title: { text: '消息时段分布', left: 'center', textStyle: { color: '#fff', fontSize: 14 } },
-    tooltip: { trigger: 'axis' },
+    tooltip: { trigger: 'axis', backgroundColor: 'rgba(255, 255, 255, 0.9)', textStyle: { color: '#333' } },
     xAxis: {
       type: 'category',
       data: stats.value.messageDist.map(i => i.date),
-      axisLabel: { color: '#aaa' },
-      axisLine: { lineStyle: { color: '#444' } }
+      axisLabel: { color: '#64748b' },
+      axisLine: { lineStyle: { color: '#e2e8f0' } }
     },
     yAxis: {
       type: 'value',
-      axisLabel: { color: '#aaa' },
-      splitLine: { lineStyle: { color: '#333' } }
+      axisLabel: { color: '#64748b' },
+      splitLine: { lineStyle: { color: '#f1f5f9' } }
     },
     series: [{
       data: stats.value.messageDist.map(i => i.value),
       type: 'bar',
-      itemStyle: { color: '#67c23a' }
+      itemStyle: { 
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: '#10b981' },
+          { offset: 1, color: 'rgba(16, 185, 129, 0.2)' }
+        ]),
+        borderRadius: [4, 4, 0, 0]
+      },
+      barWidth: '40%'
     }],
-    grid: { left: 50, right: 20, bottom: 30, top: 50 }
+    grid: { left: 40, right: 20, bottom: 20, top: 40, containLabel: true }
   })
+  
+  window.addEventListener('resize', () => chart.resize())
 }
 </script>
 
 <template>
-  <div class="p-2" v-loading="loading">
-    <!-- 统计卡片 - Neo-Brutalism -->
-    <div class="grid grid-cols-4 gap-6 mb-6">
-      <div class="bg-pop-blue border-3 border-black shadow-brutal rounded-2xl p-5 text-white hover:translate-x-1 hover:-translate-y-1 hover:shadow-brutal-sm transition-all">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-full border-3 border-black bg-white flex items-center justify-center text-pop-blue">
-            <el-icon size="28"><User /></el-icon>
-          </div>
-          <div>
-            <div class="text-3xl font-black">{{ stats?.onlineCount || 0 }}</div>
-            <div class="font-bold text-sm opacity-90">实时在线</div>
-          </div>
+  <div class="p-8 h-full overflow-y-auto bg-gray-50" v-loading="loading">
+    <!-- 欢迎语 -->
+    <div class="mb-8 animate-fade-in-down">
+      <h1 class="text-3xl font-bold text-gray-900 mb-2">仪表盘</h1>
+      <p class="text-gray-500">系统运营概况与数据统计</p>
+    </div>
+
+    <!-- 统计卡片 -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+      <!-- 实时在线 -->
+      <div class="stat-card group">
+        <div>
+           <div class="stat-label">实时在线</div>
+           <div class="stat-value text-gray-900">{{ stats?.onlineCount || 0 }}</div>
+        </div>
+        <div class="stat-icon bg-blue-50 text-blue-600 group-hover:bg-blue-600 group-hover:text-white">
+           <el-icon size="24"><svg-icon name="icon-gerenzhongxin-zhihui" /></el-icon>
         </div>
       </div>
       
-      <div class="bg-pop-green border-3 border-black shadow-brutal rounded-2xl p-5 text-black hover:translate-x-1 hover:-translate-y-1 hover:shadow-brutal-sm transition-all">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-full border-3 border-black bg-white flex items-center justify-center text-pop-green">
-            <el-icon size="28"><ChatDotRound /></el-icon>
-          </div>
-          <div>
-            <div class="text-3xl font-black">{{ stats?.todayMessageCount || 0 }}</div>
-            <div class="font-bold text-sm opacity-90">今日消息</div>
-          </div>
+      <!-- 今日消息 -->
+      <div class="stat-card group">
+        <div>
+           <div class="stat-label">今日消息</div>
+           <div class="stat-value text-gray-900">{{ stats?.todayMessageCount || 0 }}</div>
+        </div>
+        <div class="stat-icon bg-green-50 text-green-600 group-hover:bg-green-600 group-hover:text-white">
+           <el-icon size="24"><svg-icon name="icon-xiaoxi-zhihui" /></el-icon>
         </div>
       </div>
       
-      <div class="bg-pop-orange border-3 border-black shadow-brutal rounded-2xl p-5 text-black hover:translate-x-1 hover:-translate-y-1 hover:shadow-brutal-sm transition-all">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-full border-3 border-black bg-white flex items-center justify-center text-pop-orange">
-            <el-icon size="28"><UserFilled /></el-icon>
-          </div>
-          <div>
-            <div class="text-3xl font-black">{{ stats?.todayNewUsers || 0 }} / {{ stats?.totalUsers || 0 }}</div>
-            <div class="font-bold text-sm opacity-90">新增/总用户</div>
-          </div>
+      <!-- 用户总量 -->
+      <div class="stat-card group">
+        <div>
+           <div class="stat-label">总用户数</div>
+           <div class="stat-value text-gray-900">{{ stats?.totalUsers || 0 }}</div>
+           <div class="text-xs text-green-600 mt-1 flex items-center font-medium">
+             <el-icon class="mr-1"><svg-icon name="icon-a-xiala2" style="transform: rotate(180deg)" /></el-icon>
+             今日 +{{ stats?.todayNewUsers || 0 }}
+           </div>
+        </div>
+        <div class="stat-icon bg-purple-50 text-purple-600 group-hover:bg-purple-600 group-hover:text-white">
+           <el-icon size="24"><svg-icon name="icon-shujukanban" /></el-icon>
         </div>
       </div>
       
-      <div class="bg-pop-red border-3 border-black shadow-brutal rounded-2xl p-5 text-white hover:translate-x-1 hover:-translate-y-1 hover:shadow-brutal-sm transition-all">
-        <div class="flex items-center gap-4">
-          <div class="w-14 h-14 rounded-full border-3 border-black bg-white flex items-center justify-center text-pop-red">
-            <el-icon size="28"><Warning /></el-icon>
-          </div>
-          <div>
-            <div class="text-3xl font-black">{{ stats?.pendingReports || 0 }}</div>
-            <div class="font-bold text-sm opacity-90">待处理举报</div>
-          </div>
+      <!-- 待办举报 -->
+      <div class="stat-card group">
+        <div>
+           <div class="stat-label">待处理举报</div>
+           <div class="stat-value text-gray-900">{{ stats?.pendingReports || 0 }}</div>
+        </div>
+        <div class="stat-icon bg-red-50 text-red-600 group-hover:bg-red-600 group-hover:text-white">
+           <el-icon size="24"><svg-icon name="icon-jubao" /></el-icon>
         </div>
       </div>
     </div>
 
-    <!-- 图表区域 - Neo-Brutalism -->
-    <div class="grid grid-cols-2 gap-6 mb-6">
-      <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6">
-        <div class="bg-pop-purple border-2 border-black rounded-xl px-4 py-2 inline-block mb-4">
-          <h3 class="text-lg font-black text-white uppercase">用户增长趋势</h3>
+    <!-- 图表区域 -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">用户增长趋势</h3>
+          <el-tag size="small" type="primary" effect="plain" round>近7日</el-tag>
         </div>
         <div ref="userTrendChart" class="w-full h-80"></div>
       </div>
-      <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6">
-        <div class="bg-pop-yellow border-2 border-black rounded-xl px-4 py-2 inline-block mb-4">
-          <h3 class="text-lg font-black text-black uppercase">消息活跃度</h3>
+      
+      <div class="chart-card">
+        <div class="chart-header">
+          <h3 class="chart-title">消息活跃度</h3>
+           <el-tag size="small" type="success" effect="plain" round>近7日</el-tag>
         </div>
         <div ref="messageDistChart" class="w-full h-80"></div>
       </div>
     </div>
 
-    <!-- 快捷入口 - Neo-Brutalism -->
-    <div>
-      <div class="bg-pop-pink border-3 border-black rounded-2xl px-6 py-3 inline-block mb-4 shadow-brutal-sm">
-        <h3 class="text-lg font-black text-white uppercase flex items-center">
-          <el-icon class="mr-2"><Lightning /></el-icon> 快捷操作
-        </h3>
-      </div>
-      <div class="grid grid-cols-5 gap-6">
-        <router-link to="/admin/users" class="group flex flex-col items-center gap-3 p-6 bg-white border-3 border-black shadow-brutal-sm rounded-2xl hover:bg-pop-blue hover:text-white hover:shadow-brutal hover:translate-x-1 hover:-translate-y-1 transition-all">
-          <div class="w-16 h-16 rounded-full border-3 border-black bg-pop-blue/10 group-hover:bg-white flex items-center justify-center transition-colors">
-            <el-icon size="32" class="text-pop-blue"><User /></el-icon>
+    <!-- 快捷入口 -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+      <h3 class="text-lg font-bold text-gray-900 mb-6">快捷管理</h3>
+      <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+        <router-link to="/admin/users" class="quick-link group">
+          <div class="quick-icon bg-blue-50 text-blue-600 group-hover:scale-110">
+            <el-icon size="20"><svg-icon name="icon-gerenzhongxin-zhihui" /></el-icon>
           </div>
-          <span class="font-bold text-lg">用户管理</span>
+          <span class="quick-text">用户管理</span>
         </router-link>
-        <router-link to="/admin/films" class="group flex flex-col items-center gap-3 p-6 bg-white border-3 border-black shadow-brutal-sm rounded-2xl hover:bg-pop-purple hover:text-white hover:shadow-brutal hover:translate-x-1 hover:-translate-y-1 transition-all">
-          <div class="w-16 h-16 rounded-full border-3 border-black bg-pop-purple/10 group-hover:bg-white flex items-center justify-center transition-colors">
-            <el-icon size="32" class="text-pop-purple"><Film /></el-icon>
+        
+        <router-link to="/admin/sensitive" class="quick-link group">
+          <div class="quick-icon bg-yellow-50 text-yellow-600 group-hover:scale-110">
+            <el-icon size="20"><svg-icon name="icon-anquanbaozhang" /></el-icon>
           </div>
-          <span class="font-bold text-lg">影片管理</span>
+          <span class="quick-text">敏感词库</span>
         </router-link>
-        <router-link to="/admin/sensitive" class="group flex flex-col items-center gap-3 p-6 bg-white border-3 border-black shadow-brutal-sm rounded-2xl hover:bg-pop-yellow hover:text-black hover:shadow-brutal hover:translate-x-1 hover:-translate-y-1 transition-all">
-          <div class="w-16 h-16 rounded-full border-3 border-black bg-pop-yellow/10 group-hover:bg-white flex items-center justify-center transition-colors">
-            <el-icon size="32" class="text-pop-yellow"><Edit /></el-icon>
+        
+        <router-link to="/admin/reports" class="quick-link group">
+          <div class="quick-icon bg-red-50 text-red-600 group-hover:scale-110">
+             <el-icon size="20"><svg-icon name="icon-jubao" /></el-icon>
           </div>
-          <span class="font-bold text-lg">敏感词库</span>
+          <span class="quick-text">举报处理</span>
         </router-link>
-        <router-link to="/admin/reports" class="group flex flex-col items-center gap-3 p-6 bg-white border-3 border-black shadow-brutal-sm rounded-2xl hover:bg-pop-red hover:text-white hover:shadow-brutal hover:translate-x-1 hover:-translate-y-1 transition-all">
-          <div class="w-16 h-16 rounded-full border-3 border-black bg-pop-red/10 group-hover:bg-white flex items-center justify-center transition-colors">
-            <el-icon size="32" class="text-pop-red"><Warning /></el-icon>
+        
+        <router-link to="/admin/groups" class="quick-link group">
+          <div class="quick-icon bg-purple-50 text-purple-600 group-hover:scale-110">
+            <el-icon size="20"><svg-icon name="icon-xiaoxi-zhihui" /></el-icon>
           </div>
-          <span class="font-bold text-lg">举报处理</span>
-        </router-link>
-        <router-link to="/admin/groups" class="group flex flex-col items-center gap-3 p-6 bg-white border-3 border-black shadow-brutal-sm rounded-2xl hover:bg-pop-green hover:text-black hover:shadow-brutal hover:translate-x-1 hover:-translate-y-1 transition-all">
-          <div class="w-16 h-16 rounded-full border-3 border-black bg-pop-green/10 group-hover:bg-white flex items-center justify-center transition-colors">
-            <el-icon size="32" class="text-pop-green"><ChatDotRound /></el-icon>
-          </div>
-          <span class="font-bold text-lg">群组审计</span>
+          <span class="quick-text">群组审计</span>
         </router-link>
       </div>
     </div>
@@ -200,26 +217,42 @@ function renderMessageDistChart() {
 
 <style scoped>
 .stat-card {
-  @apply flex items-center gap-4 p-5 rounded-lg text-white;
-}
-
-.stat-icon {
-  @apply w-14 h-14 rounded-full bg-white/20 flex items-center justify-center;
-}
-
-.stat-value {
-  @apply text-2xl font-bold;
+  @apply bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex items-center justify-between transition-all hover:shadow-md cursor-pointer;
 }
 
 .stat-label {
-  @apply text-sm opacity-80;
+  @apply text-sm text-gray-500 mb-1 font-medium;
+}
+
+.stat-value {
+  @apply text-3xl font-bold;
+}
+
+.stat-icon {
+  @apply w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300;
 }
 
 .chart-card {
-  @apply bg-gray-800 rounded-lg p-4;
+  @apply bg-white p-6 rounded-2xl shadow-sm border border-gray-100;
+}
+
+.chart-header {
+  @apply flex items-center justify-between mb-6;
+}
+
+.chart-title {
+  @apply text-lg font-bold text-gray-900;
 }
 
 .quick-link {
-  @apply flex flex-col items-center gap-2 p-4 bg-gray-800 rounded-lg text-gray-300 hover:text-primary hover:bg-gray-700 transition-colors;
+  @apply flex flex-col items-center gap-3 p-6 rounded-xl border border-gray-100 bg-gray-50 hover:bg-white hover:shadow-md transition-all cursor-pointer;
+}
+
+.quick-icon {
+  @apply w-12 h-12 rounded-full flex items-center justify-center transition-transform duration-300;
+}
+
+.quick-text {
+  @apply text-gray-600 font-medium group-hover:text-gray-900;
 }
 </style>

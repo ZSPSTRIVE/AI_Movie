@@ -478,6 +478,15 @@ onMounted(() => {
   padding: 4px 12px !important;
 }
 
+:deep(.el-input__inner) {
+  color: #000 !important;
+  caret-color: #000 !important;
+}
+
+:deep(.el-input__inner::placeholder) {
+  color: #94a3b8 !important;
+}
+
 :deep(.el-input__wrapper:hover) {
   box-shadow: 0 0 0 1px #cbd5e1 !important;
 }

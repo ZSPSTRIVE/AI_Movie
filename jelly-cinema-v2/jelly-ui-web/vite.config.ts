@@ -56,6 +56,23 @@ export default defineConfig({
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
       },
+      // 社区模块 -> jelly-community (9301)
+      '/api/post': {
+        target: 'http://localhost:9301',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/api/comment': {
+        target: 'http://localhost:9301',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 认证模块 -> jelly-auth (9100)
+      '/api/auth': {
+        target: 'http://localhost:9100',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
       // 其他admin请求 -> jelly-admin (9600)
       '/api/admin': {
         target: 'http://localhost:9600',

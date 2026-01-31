@@ -2,7 +2,6 @@
 import { ref, onMounted } from 'vue'
 import { get, post, put, del } from '@/utils/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { Plus, Edit, Delete, Refresh } from '@element-plus/icons-vue'
 
 interface TvboxSource {
   id: number
@@ -122,139 +121,151 @@ function formatDateTime(dt: string | null) {
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- 标题和操作按钮 -->
-    <div class="flex justify-between items-center mb-6">
-      <h2 class="text-xl font-bold">采集源配置</h2>
+  <div class="h-full flex flex-col gap-6 p-6 bg-gray-50">
+    <!-- 顶部标题卡片 -->
+    <div class="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-cyan-50 flex items-center justify-center text-cyan-600">
+          <el-icon size="24"><svg-icon name="icon-api" /></el-icon>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-gray-900 tracking-wide">采集源配置</h2>
+          <p class="text-gray-500 text-sm mt-1">配置 TVBox 第三方资源接口</p>
+        </div>
+      </div>
+      
       <div class="flex gap-3">
-        <el-button @click="loadData">
-          <el-icon class="mr-1"><Refresh /></el-icon>
-          刷新
+        <el-button @click="loadData" plain class="!rounded-xl">
+           <el-icon class="mr-1"><Refresh /></el-icon>刷新状态
         </el-button>
-        <el-button type="primary" @click="handleAdd">
-          <el-icon class="mr-1"><Plus /></el-icon>
-          添加采集源
+        <el-button type="primary" class="!rounded-xl !font-bold" @click="handleAdd">
+          <el-icon class="mr-1"><Plus /></el-icon>添加采集源
         </el-button>
       </div>
     </div>
 
-    <!-- 数据表格 -->
-    <el-table :data="tableData" v-loading="loading" size="small" stripe>
-      <el-table-column prop="priority" label="优先级" width="80" sortable>
-        <template #default="{ row }">
-          <span class="font-mono font-bold">{{ row.priority }}</span>
-        </template>
-      </el-table-column>
+    <!-- 数据表格区域 -->
+    <div class="bg-white flex-1 rounded-2xl shadow-sm border border-gray-100 overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
+      <el-table 
+        :data="tableData" 
+        v-loading="loading" 
+        height="100%"
+        style="width: 100%"
+        :row-style="{ height: '64px' }"
+      >
+        <el-table-column prop="priority" label="优先级" width="80" sortable align="center">
+          <template #default="{ row }">
+            <span class="font-mono font-bold bg-gray-100 text-gray-600 px-2 py-1 rounded">{{ row.priority }}</span>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="sourceName" label="源名称" width="120">
-        <template #default="{ row }">
-          <span class="font-medium">{{ row.sourceName }}</span>
-        </template>
-      </el-table-column>
+        <el-table-column prop="sourceName" label="源名称" width="160">
+          <template #default="{ row }">
+            <span class="font-bold text-gray-800">{{ row.sourceName }}</span>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="apiUrl" label="API地址" min-width="300">
-        <template #default="{ row }">
-          <el-tooltip :content="row.apiUrl" placement="top">
-            <span class="text-xs text-gray-500 truncate block">{{ row.apiUrl }}</span>
-          </el-tooltip>
-        </template>
-      </el-table-column>
+        <el-table-column prop="apiUrl" label="API地址" min-width="300">
+          <template #default="{ row }">
+            <div class="flex items-center gap-2 cursor-pointer text-gray-500 hover:text-blue-600 transition-colors" @click="ElMessage.info(row.apiUrl)">
+               <el-tag size="small" type="info" effect="plain">{{ row.apiType.toUpperCase() }}</el-tag>
+               <span class="truncate">{{ row.apiUrl }}</span>
+            </div>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="apiType" label="类型" width="80">
-        <template #default="{ row }">
-          <el-tag size="small" type="info">{{ row.apiType.toUpperCase() }}</el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column label="状态" width="100" align="center">
+          <template #default="{ row }">
+            <el-switch 
+              :model-value="row.enabled === 1"
+              @change="toggleEnabled(row)"
+              inline-prompt
+              active-text="开"
+              inactive-text="关"
+            />
+          </template>
+        </el-table-column>
 
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-switch 
-            :model-value="row.enabled === 1"
-            @change="toggleEnabled(row)"
-            size="small"
-          />
-        </template>
-      </el-table-column>
+        <el-table-column label="采集状态" width="120" align="center">
+          <template #default="{ row }">
+            <el-popover v-if="row.fetchStatus === 1" placement="top" :width="200" trigger="hover" :content="row.errorMsg || '未知错误'">
+               <template #reference>
+                  <el-tag type="danger" effect="plain" class="cursor-help">采集失败 <el-icon><svg-icon name="icon-bangzhuwendang" /></el-icon></el-tag>
+               </template>
+            </el-popover>
+            <el-tag v-else :type="getFetchStatusLabel(row.fetchStatus).type as any" effect="light">
+              {{ getFetchStatusLabel(row.fetchStatus).label }}
+            </el-tag>
+          </template>
+        </el-table-column>
 
-      <el-table-column label="采集状态" width="100">
-        <template #default="{ row }">
-          <el-tag :type="getFetchStatusLabel(row.fetchStatus).type as any" size="small">
-            {{ getFetchStatusLabel(row.fetchStatus).label }}
-          </el-tag>
-        </template>
-      </el-table-column>
+        <el-table-column prop="filmCount" label="资源量" width="100" align="center">
+          <template #default="{ row }">
+            <span class="text-blue-600 font-bold">{{ row.filmCount }}</span>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="filmCount" label="电影数" width="80">
-        <template #default="{ row }">
-          <span class="text-blue-500 font-medium">{{ row.filmCount }}</span>
-        </template>
-      </el-table-column>
+        <el-table-column label="其它信息" width="180">
+          <template #default="{ row }">
+             <div class="flex flex-col text-xs text-gray-400">
+                <span>间隔: {{ row.fetchInterval }}分钟</span>
+                <span>上次: {{ formatDateTime(row.lastFetchTime).split(' ')[0] }}</span>
+             </div>
+          </template>
+        </el-table-column>
 
-      <el-table-column prop="fetchInterval" label="间隔(分)" width="90" />
-
-      <el-table-column label="上次采集" width="160">
-        <template #default="{ row }">
-          <span class="text-xs text-gray-400">{{ formatDateTime(row.lastFetchTime) }}</span>
-        </template>
-      </el-table-column>
-
-      <el-table-column label="操作" width="120" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="handleEdit(row)">
-            <el-icon><Edit /></el-icon>
-          </el-button>
-          <el-button link type="danger" size="small" @click="handleDelete(row)">
-            <el-icon><Delete /></el-icon>
-          </el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+        <el-table-column label="操作" width="140" fixed="right" align="center">
+          <template #default="{ row }">
+            <div class="flex items-center justify-center gap-2">
+               <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
+               <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
+            </div>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
 
     <!-- 编辑弹窗 -->
     <el-dialog v-model="dialogVisible" :title="dialogTitle" width="500px">
       <el-form :model="formData" label-width="100px">
         <el-form-item label="源名称" required>
-          <el-input v-model="formData.sourceName" placeholder="如：量子资源" />
+          <el-input v-model="formData.sourceName" placeholder="给采集源起个名字" />
         </el-form-item>
         <el-form-item label="API地址" required>
-          <el-input v-model="formData.apiUrl" placeholder="采集API地址" />
+          <el-input v-model="formData.apiUrl" placeholder="https://example.com/api.json" />
         </el-form-item>
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="API类型">
               <el-select v-model="formData.apiType" style="width: 100%">
-                <el-option label="JSON" value="json" />
-                <el-option label="XML" value="xml" />
+                <el-option label="JSON 接口" value="json" />
+                <el-option label="XML 接口" value="xml" />
               </el-select>
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="优先级">
-              <el-input-number v-model="formData.priority" :min="1" :max="999" style="width: 100%" />
+              <el-input-number v-model="formData.priority" :min="1" :max="999" style="width: 100%" controls-position="right" />
             </el-form-item>
           </el-col>
         </el-row>
         <el-form-item label="采集间隔">
-          <el-input-number v-model="formData.fetchInterval" :min="10" :max="1440" style="width: 150px" />
-          <span class="ml-2 text-gray-400">分钟</span>
+           <div class="flex items-center gap-2">
+              <el-input-number v-model="formData.fetchInterval" :min="10" :max="1440" controls-position="right" />
+              <span class="text-gray-500">分钟</span>
+           </div>
         </el-form-item>
         <el-form-item label="启用状态">
           <el-switch v-model="formData.enabled" :active-value="1" :inactive-value="0" />
         </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="formData.remark" type="textarea" :rows="2" placeholder="可选" />
+        <el-form-item label="备注说明">
+          <el-input v-model="formData.remark" type="textarea" :rows="2" placeholder="可选备注" />
         </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSave">保存</el-button>
+        <el-button type="primary" @click="handleSave">保存配置</el-button>
       </template>
     </el-dialog>
   </div>
 </template>
-
-<style scoped>
-.p-6 {
-  padding: 1.5rem;
-}
-</style>

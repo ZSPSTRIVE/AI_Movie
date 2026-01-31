@@ -211,9 +211,7 @@ const sectionLabels: Record<string, string> = {
 
 <style scoped>
 .homepage-config {
-  padding: 24px;
-  background: #f5f7fa;
-  min-height: 100vh;
+  /* 适配 Layout，移除自身背景和内边距 */
 }
 
 .header-bar {

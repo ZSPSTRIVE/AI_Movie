@@ -49,6 +49,7 @@ declare module 'vue' {
     ReportModal: typeof import('./components/ReportModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SvgIcon: typeof import('./components/SvgIcon.vue')['default']
     TVBoxPlayer: typeof import('./components/TVBoxPlayer.vue')['default']
     VideoPlayer: typeof import('./components/VideoPlayer.vue')['default']
   }
