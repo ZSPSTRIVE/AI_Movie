@@ -24,10 +24,45 @@ export default defineConfig({
     }
   },
   server: {
-    port: 3000,
+    port: 5174,
     host: true,
     open: true,
     proxy: {
+      // TVBox采集源和首页内容管理 -> jelly-film (9201)
+      '/api/admin/tvbox-source': {
+        target: 'http://localhost:9201',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/api/admin/homepage': {
+        target: 'http://localhost:9201',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 影片相关 -> jelly-film (9201)
+      '/api/film': {
+        target: 'http://localhost:9201',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      '/api/admin/film': {
+        target: 'http://localhost:9201',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // AI相关 -> jelly-ai (9500) 
+      '/api/ai': {
+        target: 'http://localhost:9500',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 其他admin请求 -> jelly-admin (9600)
+      '/api/admin': {
+        target: 'http://localhost:9600',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // 默认其他请求 -> gateway (8080)
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,

@@ -13,6 +13,8 @@ const menuItems = [
   { path: '/admin', icon: 'Odometer', title: '仪表盘' },
   { path: '/admin/users', icon: 'User', title: '用户管理' },
   { path: '/admin/films', icon: 'Film', title: '影片管理' },
+  { path: '/admin/homepage', icon: 'HomeFilled', title: '首页管理' },
+  { path: '/admin/tvbox-sources', icon: 'Connection', title: '采集源配置' },
   { path: '/admin/sensitive', icon: 'Edit', title: '敏感词库' },
   { path: '/admin/reports', icon: 'Warning', title: '举报处理' },
   { path: '/admin/groups', icon: 'ChatDotRound', title: '群组审计' },
@@ -33,72 +35,88 @@ function handleLogout() {
 </script>
 
 <template>
-  <div class="admin-layout bg-nb-bg">
-    <!-- 侧边栏 - Neo-Brutalism -->
-    <aside :class="['sidebar bg-white border-r-3 border-black shadow-brutal flex flex-col transition-all duration-300', { 'w-64': !isCollapsed, 'w-20': isCollapsed }]">
+  <div class="admin-layout">
+    <!-- 侧边栏 - Glass Stone -->
+    <aside :class="['sidebar glass-card border-r-0 mr-4 my-4 ml-4 flex flex-col transition-all duration-300', { 'w-64': !isCollapsed, 'w-24': isCollapsed }]">
       <!-- Logo -->
-      <div class="h-18 flex items-center justify-center border-b-3 border-black bg-pop-yellow">
-        <router-link to="/admin" class="flex items-center gap-2 hover:animate-shake">
-          <span v-if="!isCollapsed" class="text-lg font-black text-black uppercase">Admin Panel</span>
-          <span v-else class="text-xl font-black text-black">A</span>
+      <div class="h-20 flex items-center justify-center border-b border-white/10">
+        <router-link to="/admin" class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-600 to-orange-700 flex items-center justify-center shadow-lg shadow-orange-900/50">
+            <el-icon size="24" color="#FFF"><Film /></el-icon>
+          </div>
+          <span v-if="!isCollapsed" class="text-xl font-bold tracking-wide text-white drop-shadow-md">JELLY ADMIN</span>
         </router-link>
       </div>
 
       <!-- 菜单 -->
-      <nav class="flex-1 py-4 space-y-2 px-2">
+      <nav class="flex-1 py-6 space-y-2 px-3">
         <router-link
           v-for="item in menuItems"
           :key="item.path"
           :to="item.path"
-          :class="['flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-transparent transition-all font-bold', { 
-            'bg-pop-blue text-white border-black shadow-brutal-sm translate-x-1 -translate-y-1': route.path === item.path,
-            'text-nb-text hover:bg-gray-100 hover:border-black': route.path !== item.path
+          :class="['flex items-center gap-4 px-4 py-3.5 rounded-xl transition-all duration-300 group', { 
+            'bg-gradient-to-r from-amber-700/80 to-orange-600/80 text-white shadow-lg shadow-orange-900/20 ring-1 ring-orange-500/50': route.path === item.path,
+            'text-gray-400 hover:bg-white/5 hover:text-white': route.path !== item.path
           }]"
         >
-          <el-icon size="20"><component :is="item.icon" /></el-icon>
-          <span v-if="!isCollapsed">{{ item.title }}</span>
+          <el-icon size="20" :class="route.path === item.path ? 'text-white' : 'text-gray-500 group-hover:text-amber-500 transition-colors'"><component :is="item.icon" /></el-icon>
+          <span v-if="!isCollapsed" class="font-medium tracking-wide">{{ item.title }}</span>
         </router-link>
       </nav>
 
       <!-- 底部 -->
-      <div class="border-t-3 border-black py-4 px-2 bg-gray-100">
-        <router-link to="/" class="flex items-center gap-3 px-4 py-3 rounded-xl border-2 border-black bg-white hover:bg-pop-green hover:shadow-brutal-sm transition-all font-bold text-black justify-center">
-          <el-icon size="20"><House /></el-icon>
-          <span v-if="!isCollapsed">返回前台</span>
+      <div class="p-4 border-t border-white/10">
+        <router-link to="/" class="flex items-center gap-3 px-4 py-3 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 transition-all text-gray-300 hover:text-white justify-center group">
+          <el-icon size="18" class="group-hover:text-amber-500 transition-colors"><House /></el-icon>
+          <span v-if="!isCollapsed" class="font-medium">返回前台</span>
         </router-link>
       </div>
     </aside>
 
     <!-- 主内容区 -->
-    <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- 顶部栏 - Neo-Brutalism -->
-      <header class="h-18 px-6 flex items-center justify-between bg-white border-b-3 border-black">
-        <div class="flex items-center gap-4">
-          <el-button circle class="!border-2 !border-black !bg-pop-purple !text-white hover:!translate-x-0.5 hover:!-translate-y-0.5 transition-all" @click="isCollapsed = !isCollapsed">
-            <el-icon><Fold v-if="!isCollapsed" /><Expand v-else /></el-icon>
-          </el-button>
+    <div class="flex-1 flex flex-col overflow-hidden mr-4 my-4">
+      <!-- 顶部栏 - Glass Stone -->
+      <header class="h-20 px-8 flex items-center justify-between glass-card mb-4 rounded-2xl">
+        <div class="flex items-center gap-6">
+          <button class="w-10 h-10 rounded-xl bg-white/5 hover:bg-white/10 flex items-center justify-center text-gray-400 hover:text-white transition-all border border-white/10" @click="isCollapsed = !isCollapsed">
+            <el-icon size="20"><Fold v-if="!isCollapsed" /><Expand v-else /></el-icon>
+          </button>
           
           <!-- 面包屑 -->
-          <el-breadcrumb separator="/">
+          <el-breadcrumb separator="/" class="glass-breadcrumb">
             <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
-              <span class="font-bold text-black">{{ item.title }}</span>
+              <span class="font-medium text-gray-300">{{ item.title }}</span>
             </el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
-        <div class="flex items-center gap-4">
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-4">
+             <el-button circle class="!bg-white/5 !border-white/10 !text-gray-400 hover:!text-amber-500 hover:!bg-white/10 hover:!border-amber-500/30">
+                <el-icon><Bell /></el-icon>
+             </el-button>
+             <el-button circle class="!bg-white/5 !border-white/10 !text-gray-400 hover:!text-amber-500 hover:!bg-white/10 hover:!border-amber-500/30">
+                <el-icon><Setting /></el-icon>
+             </el-button>
+          </div>
+          
+          <div class="h-8 w-px bg-white/10"></div>
+
           <el-dropdown trigger="click">
-            <div class="flex items-center gap-2 cursor-pointer bg-pop-yellow border-2 border-black rounded-full px-3 py-1 hover:shadow-brutal-sm transition-all">
-              <el-avatar :size="32" :src="userStore.avatar" class="!border-2 !border-black bg-white">{{ userStore.nickname?.[0] }}</el-avatar>
-              <span class="font-bold text-black">{{ userStore.nickname }}</span>
-              <el-icon><ArrowDown /></el-icon>
+            <div class="flex items-center gap-3 cursor-pointer py-1 px-2 rounded-xl hover:bg-white/5 transition-all">
+              <el-avatar :size="36" :src="userStore.avatar" class="!bg-amber-700 !text-white ring-2 ring-amber-500/30">{{ userStore.nickname?.[0] }}</el-avatar>
+              <div class="flex flex-col">
+                 <span class="text-sm font-bold text-gray-200">{{ userStore.nickname }}</span>
+                 <span class="text-xs text-gray-500">Administrator</span>
+              </div>
+              <el-icon class="text-gray-500"><ArrowDown /></el-icon>
             </div>
             <template #dropdown>
-              <el-dropdown-menu class="!border-3 !border-black !shadow-brutal !rounded-xl">
+              <el-dropdown-menu class="glass-dropdown">
                 <el-dropdown-item @click="router.push('/user')">
                   <el-icon><User /></el-icon>个人中心
                 </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout" class="!text-pop-red">
+                <el-dropdown-item divided @click="handleLogout" class="!text-red-400 hover:!bg-red-900/20">
                   <el-icon><SwitchButton /></el-icon>退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -108,9 +126,13 @@ function handleLogout() {
       </header>
 
       <!-- 页面内容 -->
-      <main class="flex-1 overflow-auto p-6 bg-nb-bg">
-        <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6 min-h-full">
-          <router-view />
+      <main class="flex-1 overflow-auto glass-card rounded-2xl relative">
+        <div class="absolute inset-0 overflow-auto p-6 scroll-smooth">
+          <router-view v-slot="{ Component }">
+             <transition name="fade-transform" mode="out-in">
+               <component :is="Component" />
+             </transition>
+          </router-view>
         </div>
       </main>
     </div>

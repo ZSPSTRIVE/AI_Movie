@@ -48,6 +48,28 @@ public class ChatServiceImpl implements ChatService {
             ---
             """;
 
+    private static final String FILM_CONTEXT_PROMPT = """
+            你是果冻影院的 AI 影评助手，正在帮助用户了解以下电影：
+            
+            电影名称：{title}
+            类型：{category}
+            地区：{region}
+            年份：{year}
+            导演：{director}
+            主演：{actors}
+            剧情简介：{description}
+            
+            ---
+            请基于以上信息回答用户的问题。你可以：
+            1. 解析剧情要点和看点
+            2. 介绍演员和导演背景（如果你知道）
+            3. 分析影片类型和风格
+            4. 推荐类似电影
+            
+            如果某些信息缺失，可以基于电影标题、类型、年份做合理推测，但要明确告知用户这是推测。
+            保持回答简洁、准确、友好。
+            """;
+
     @Override
     public String chat(ChatRequestDTO dto) {
         List<ChatMessage> messages = buildMessages(dto);
@@ -88,13 +110,27 @@ public class ChatServiceImpl implements ChatService {
     private List<ChatMessage> buildMessages(ChatRequestDTO dto) {
         List<ChatMessage> messages = new ArrayList<>();
 
-        // 系统提示词
+        // 系统提示词 - 优先级：电影上下文 > RAG > 默认
         String systemPrompt = DEFAULT_SYSTEM_PROMPT;
-        if (Boolean.TRUE.equals(dto.getEnableRag())) {
-            // RAG 检索
+        
+        // 1. 如果有电影上下文，使用电影专用提示词
+        if (dto.getFilmContext() != null) {
+            ChatRequestDTO.FilmContext ctx = dto.getFilmContext();
+            systemPrompt = FILM_CONTEXT_PROMPT
+                .replace("{title}", ctx.getTitle() != null ? ctx.getTitle() : "未知")
+                .replace("{category}", ctx.getCategory() != null ? ctx.getCategory() : "未知")
+                .replace("{region}", ctx.getRegion() != null ? ctx.getRegion() : "未知")
+                .replace("{year}", ctx.getYear() != null ? ctx.getYear() : "未知")
+                .replace("{director}", ctx.getDirector() != null ? ctx.getDirector() : "未知")
+                .replace("{actors}", ctx.getActors() != null ? ctx.getActors() : "未知")
+                .replace("{description}", ctx.getDescription() != null ? ctx.getDescription() : "暂无剧情简介");
+        } 
+        // 2. 否则如果启用RAG，使用RAG检索
+        else if (Boolean.TRUE.equals(dto.getEnableRag())) {
             String context = ragService.retrieve(dto.getPrompt());
             systemPrompt = RAG_SYSTEM_PROMPT.replace("{context}", context);
         }
+        
         messages.add(SystemMessage.from(systemPrompt));
 
         // 历史对话

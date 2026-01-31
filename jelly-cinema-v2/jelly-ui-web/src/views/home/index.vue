@@ -2,38 +2,108 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { getRecommendFilm, getHotRank } from '@/api/film'
+import { 
+  getHomepageRecommend, 
+  getHomepageHot,
+  getHomepageAiBest,
+  getHomepageNew,
+  getHomepageTrending,
+  getHomepageSections
+} from '@/api/homepage'
 import tvboxService from '@/services/tvboxService'
-import type { Film } from '@/types/film'
+import { normalizeImageUrl } from '@/utils/image'
+import type { Film } from '@/types/film' // Assuming type Film is compatible or needs update. using any for now to be safe with new fields
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 
-const recommendList = ref<Film[]>([])
-const hotRankList = ref<Film[]>([])
+// 定义扩展的Film类型以支持新字段
+interface HomepageFilm extends Film {
+  aiScore?: number
+  aiReason?: string
+  aiBest?: number
+  trendingScore?: number
+}
+
+const recommendList = ref<HomepageFilm[]>([])
+const hotRankList = ref<HomepageFilm[]>([])
+const aiBestList = ref<HomepageFilm[]>([])
+const newReleaseList = ref<HomepageFilm[]>([])
+const trendingList = ref<HomepageFilm[]>([])
+
 const loading = ref(true)
 
 onMounted(async () => {
   try {
-    // 优先使用 TVBox 数据
-    const tvboxData = await tvboxService.getRecommend(18)
-    if (tvboxData && tvboxData.length > 0) {
-      recommendList.value = tvboxData
-    } else {
-      // 降级使用原有API
-      const recRes = await getRecommendFilm(18)
-      recommendList.value = recRes.data || []
-    }
+    loading.value = true
     
-    // 热门榜单
-    const hotRes = await getHotRank(10)
-    hotRankList.value = hotRes.data || []
+    // 并行获取所有板块数据
+    try {
+      // 1. 获取分板块数据(如果后端实现了聚合接口)
+      const sectionRes = await getHomepageSections()
+      if (sectionRes.data) {
+        aiBestList.value = transfromData(sectionRes.data.ai_best)
+        hotRankList.value = transfromData(sectionRes.data.hot)
+        newReleaseList.value = transfromData(sectionRes.data.new)
+        trendingList.value = transfromData(sectionRes.data.trending)
+        recommendList.value = transfromData(sectionRes.data.recommend)
+      } else {
+        throw new Error('聚合接口返回空')
+      }
+    } catch (sectionError) {
+      console.warn('聚合接口获取失败，尝试单独获取:', sectionError)
+      
+      // 降级：单独获取各个板块
+      const [aiRes, hotRes, newRes, trendRes, recRes] = await Promise.allSettled([
+        getHomepageAiBest(6),
+        getHomepageHot(10),
+        getHomepageNew(12),
+        getHomepageTrending(8),
+        getHomepageRecommend(12)
+      ])
+      
+      if (aiRes.status === 'fulfilled' && aiRes.value.data) aiBestList.value = transfromData(aiRes.value.data)
+      if (hotRes.status === 'fulfilled' && hotRes.value.data) hotRankList.value = transfromData(hotRes.value.data)
+      if (newRes.status === 'fulfilled' && newRes.value.data) newReleaseList.value = transfromData(newRes.value.data)
+      if (trendRes.status === 'fulfilled' && trendRes.value.data) trendingList.value = transfromData(trendRes.value.data)
+      if (recRes.status === 'fulfilled' && recRes.value.data) recommendList.value = transfromData(recRes.value.data)
+    }
+
+    // 如果推荐数据仍为空（可能是初始化系统），尝试使用TVBox兜底
+    if (recommendList.value.length === 0) {
+       const tvboxData = await tvboxService.getRecommend(12)
+       recommendList.value = tvboxData
+    }
+
   } catch (error) {
-    console.error('Failed to load data:', error)
+    console.error('Failed to load homepage data:', error)
+    ElMessage.error('加载部分首页数据失败')
   } finally {
     loading.value = false
   }
 })
 
-function goToDetail(id: number) {
+// 数据转换工具
+function transfromData(data: any[]): HomepageFilm[] {
+  if (!data) return []
+  return data.map((item: any) => ({
+    id: item.tvboxId || item.id,
+    title: item.title,
+    coverUrl: normalizeImageUrl(item.coverUrl, item.title),
+    rating: item.rating,
+    year: item.year,
+    region: item.region,
+    description: item.description,
+    playCount: 0,
+    aiScore: item.aiScore,
+    aiReason: item.aiReason,
+    aiBest: item.aiBest,
+    trendingScore: item.trendingScore
+    // ... maps other fields
+  }))
+}
+
+function goToDetail(id: string | number) {
   router.push(`/film/${id}`)
 }
 
@@ -64,7 +134,92 @@ function formatPlayCount(count: number): string {
       </div>
     </section>
 
-    <!-- 推荐电影 - Glass -->
+    <!-- AI 精选推荐 - Dark Premium Style -->
+    <section class="section ai-section" v-if="aiBestList.length > 0">
+      <div class="section-header">
+        <h2 class="section-title ai-title">
+            <el-icon><MagicStick /></el-icon> AI 精选推荐
+        </h2>
+        <span class="ai-badge">基于深度学习分析</span>
+      </div>
+      <div class="ai-grid">
+        <div v-for="film in aiBestList" :key="film.id" class="ai-card" @click="goToDetail(film.id)">
+            <div class="ai-poster-wrapper">
+                <img :src="film.coverUrl" :alt="film.title" v-img-fallback="film.title" class="ai-poster" />
+                <div class="ai-score-overlay">
+                    <span class="score-val">{{ film.aiScore }}</span>
+                    <span class="score-label">AI评分</span>
+                </div>
+            </div>
+            <div class="ai-info">
+                <h3 class="ai-film-title">{{ film.title }}</h3>
+                <p class="ai-reason">
+                    <el-icon><ChatLineRound /></el-icon> {{ film.aiReason || '暂无推荐理由' }}
+                </p>
+            </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 热门 & 趋势 (双栏布局) -->
+    <div class="dual-section-row">
+        <!-- 热门榜单 -->
+        <section class="section half-section">
+            <div class="section-header">
+                <h2 class="section-title">热门榜单</h2>
+                <router-link to="/film?sort=hot" class="section-link">更多</router-link>
+            </div>
+            <div class="rank-list-compact">
+                 <div v-for="(film, index) in hotRankList.slice(0, 5)" :key="film.id" class="rank-item-compact" @click="goToDetail(film.id)">
+                    <span class="rank-num" :class="{ top: index < 3 }">{{ index + 1 }}</span>
+                    <img :src="film.coverUrl" v-img-fallback="film.title" class="rank-thumb" />
+                    <div class="rank-info">
+                         <div class="rank-title">{{ film.title }}</div>
+                         <div class="rank-sub">{{ film.year }} · {{ film.rating }}分</div>
+                    </div>
+                 </div>
+            </div>
+        </section>
+
+        <!-- 趋势话题 -->
+        <section class="section half-section">
+            <div class="section-header">
+                <h2 class="section-title">趋势话题</h2>
+            </div>
+            <div class="trending-grid">
+                <div v-for="film in trendingList.slice(0, 4)" :key="film.id" class="trend-card" @click="goToDetail(film.id)">
+                    <div class="trend-poster">
+                        <img :src="film.coverUrl" v-img-fallback="film.title" />
+                        <div class="trend-tag">热议</div>
+                    </div>
+                    <div class="trend-title">{{ film.title }}</div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <!-- 新片上架 -->
+    <section class="section">
+      <div class="section-header">
+        <h2 class="section-title">新片上架</h2>
+        <router-link to="/film?sort=new" class="section-link">查看全部 →</router-link>
+      </div>
+
+      <!-- 横向滚动容器 -->
+      <div class="scroll-container">
+        <div class="scroll-wrapper">
+             <div v-for="film in newReleaseList" :key="film.id" class="film-card-mini" @click="goToDetail(film.id)">
+                <div class="film-poster-mini">
+                    <img :src="film.coverUrl" v-img-fallback="film.title" loading="lazy" />
+                    <div class="film-rating-mini">{{ film.rating }}</div>
+                </div>
+                <div class="film-title-mini">{{ film.title }}</div>
+             </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 为你推荐 -->
     <section class="section">
       <div class="section-header">
         <h2 class="section-title">为你推荐</h2>
@@ -85,89 +240,22 @@ function formatPlayCount(count: number): string {
           @click="goToDetail(film.id)"
         >
           <div class="film-poster">
-            <img :src="film.coverUrl" :alt="film.title" />
+            <img :src="film.coverUrl" :alt="film.title" v-img-fallback="film.title" loading="lazy" />
             <div class="film-overlay">
               <p class="film-desc">{{ film.description }}</p>
             </div>
             <div v-if="film.isVip" class="vip-badge">VIP</div>
             <div class="film-rating">{{ film.rating }}</div>
+            <div v-if="film.aiScore" class="ai-tiny-badge">AI {{ film.aiScore }}</div>
           </div>
           <h3 class="film-title">{{ film.title }}</h3>
           <p class="film-meta">
-            <span>{{ formatPlayCount(film.playCount) }}次</span>
+            <span>{{ formatPlayCount(film.playCount) }}次播放</span>
           </p>
         </div>
       </div>
     </section>
 
-    <!-- 热门榜单 - Glass -->
-    <section class="rank-section mt-12">
-      <!-- 热播榜 -->
-      <div class="glass-rank-card">
-        <div class="rank-header rank-hot">
-          <el-icon><TrendCharts /></el-icon>
-          <h3>热播榜</h3>
-        </div>
-        <div class="rank-list">
-          <div
-            v-for="(film, index) in hotRankList.slice(0, 5)"
-            :key="film.id"
-            class="rank-item"
-            @click="goToDetail(film.id)"
-          >
-            <span class="rank-num" :class="{ top: index < 3 }">{{ index + 1 }}</span>
-            <div class="rank-info">
-              <p class="rank-name">{{ film.title }}</p>
-              <p class="rank-score">{{ film.rating }}分</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 新上线 -->
-      <div class="glass-rank-card">
-        <div class="rank-header rank-new">
-          <el-icon><Calendar /></el-icon>
-          <h3>新上线</h3>
-        </div>
-        <div class="rank-list">
-          <div
-            v-for="(film, index) in recommendList.slice(0, 5)"
-            :key="film.id"
-            class="rank-item"
-            @click="goToDetail(film.id)"
-          >
-            <span class="rank-num">{{ index + 1 }}</span>
-            <div class="rank-info">
-              <p class="rank-name">{{ film.title }}</p>
-              <p class="rank-score">{{ film.year }}年</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- 高分推荐 -->
-      <div class="glass-rank-card">
-        <div class="rank-header rank-top">
-          <el-icon><Star /></el-icon>
-          <h3>高分推荐</h3>
-        </div>
-        <div class="rank-list">
-          <div
-            v-for="(film, index) in hotRankList.slice(5, 10)"
-            :key="film.id"
-            class="rank-item"
-            @click="goToDetail(film.id)"
-          >
-            <span class="rank-num">{{ index + 1 }}</span>
-            <div class="rank-info">
-              <p class="rank-name">{{ film.title }}</p>
-              <p class="rank-score">{{ film.rating }}分</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
     </div><!-- .page-container -->
   </div>
 </template>
@@ -177,25 +265,25 @@ function formatPlayCount(count: number): string {
 .home-page {
   width: 100%;
   min-height: 100vh;
+  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: linear-gradient(180deg, #f8fafc 0%, #f1f5f9 100%);
 }
 
 .page-container {
   width: 100%;
-  max-width: none;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 24px 20px 60px 20px;
+  padding: 24px 32px 60px 32px;
 }
 
 @media (max-width: 768px) {
   .page-container {
-    padding: 24px 12px 60px 12px;
+    padding: 16px 16px 60px 16px;
   }
 }
 
-.home-page {
-  display: flex;
-  flex-direction: column;
-  gap: 40px;
+.home-page .section {
+  margin-bottom: 32px;
 }
 
 /* ─── Hero Section ─── */
@@ -578,35 +666,323 @@ function formatPlayCount(count: number): string {
   margin: 0;
 }
 
-/* ─── Responsive ─── */
-@media (max-width: 1024px) {
-  .film-grid {
-    grid-template-columns: repeat(4, 1fr);
-  }
-  
-  .rank-section {
-    grid-template-columns: 1fr;
-  }
+/* ─── AI Section ─── */
+.ai-section {
+    background: linear-gradient(145deg, #1e1b4b 0%, #312e81 100%);
+    border-radius: 20px;
+    padding: 24px;
+    color: white;
+    margin-bottom: 30px;
+    box-shadow: 0 10px 30px rgba(49, 46, 129, 0.4);
+    position: relative;
+    overflow: hidden;
 }
 
-@media (max-width: 768px) {
-  .film-grid {
+.ai-section::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(139, 92, 246, 0.2) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.ai-title {
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.ai-badge {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    margin-left: 12px;
+    backdrop-filter: blur(4px);
+}
+
+.ai-grid {
+    display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 12px;
-  }
-  
-  .hero-title {
-    font-size: 28px;
-  }
-  
-  .hero-subtitle {
-    font-size: 15px;
-  }
+    gap: 20px;
+    position: relative;
+    z-index: 2;
 }
 
-@media (max-width: 480px) {
-  .film-grid {
+.ai-card {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    display: flex;
+    gap: 16px;
+    cursor: pointer;
+    transition: all 0.3s;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-card:hover {
+    background: rgba(255, 255, 255, 0.2);
+    transform: translateY(-2px);
+}
+
+.ai-poster-wrapper {
+    width: 80px;
+    height: 120px;
+    border-radius: 8px;
+    overflow: hidden;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.ai-poster {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.ai-score-overlay {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(0,0,0,0.7);
+    padding: 2px 0;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+}
+
+.score-val {
+    color: #a78bfa;
+    font-weight: bold;
+    font-size: 14px;
+    line-height: 1;
+}
+
+.score-label {
+    color: #ccc;
+    font-size: 8px;
+    transform: scale(0.8);
+}
+
+.ai-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+.ai-film-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 8px 0;
+    color: white;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+.ai-reason {
+    font-size: 13px;
+    color: #c7d2fe;
+    line-height: 1.4;
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+
+/* ─── Dual Section ─── */
+.dual-section-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+    margin-bottom: 30px;
+}
+
+.half-section {
+    background: #fff;
+    padding: 20px;
+    border-radius: 16px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+}
+
+/* ─── Compact Rank List ─── */
+.rank-list-compact {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.rank-item-compact {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    padding: 6px;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+
+.rank-item-compact:hover {
+    background: #f8fafc;
+}
+
+.rank-thumb {
+    width: 48px;
+    height: 64px;
+    border-radius: 4px;
+    object-fit: cover;
+}
+
+.rank-info .rank-title {
+    font-size: 14px;
+    font-weight: 500;
+    color: #334155;
+    margin-bottom: 4px;
+}
+
+.rank-info .rank-sub {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* ─── Trending Grid ─── */
+.trending-grid {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
-  }
+    gap: 12px;
+}
+
+.trend-card {
+    cursor: pointer;
+}
+
+.trend-poster {
+    aspect-ratio: 16/9;
+    background: #eee;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 6px;
+}
+
+.trend-poster img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.3s;
+}
+
+.trend-card:hover img {
+    transform: scale(1.05);
+}
+
+.trend-tag {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #ef4444;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 4px;
+}
+
+.trend-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* ─── Scroll Container ─── */
+.scroll-container {
+    overflow-x: auto;
+    padding-bottom: 12px;
+    scrollbar-width: none; /* Firefox */
+}
+.scroll-container::-webkit-scrollbar {
+    display: none; /* Chrome */
+}
+
+.scroll-wrapper {
+    display: flex;
+    gap: 16px;
+}
+
+.film-card-mini {
+    width: 140px;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.film-poster-mini {
+    aspect-ratio: 2/3;
+    border-radius: 8px;
+    overflow: hidden;
+    position: relative;
+    margin-bottom: 8px;
+}
+
+.film-poster-mini img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.film-rating-mini {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    background: rgba(0,0,0,0.6);
+    color: #fbbf24;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+}
+
+.film-title-mini {
+    font-size: 13px;
+    color: #334155;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.ai-tiny-badge {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    background: #8b5cf6;
+    color: white;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 10px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+}
+
+/* Responsive adjustments */
+@media (max-width: 1024px) {
+    .ai-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    .dual-section-row {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 640px) {
+    .ai-grid {
+        grid-template-columns: 1fr;
+    }
 }
 </style>

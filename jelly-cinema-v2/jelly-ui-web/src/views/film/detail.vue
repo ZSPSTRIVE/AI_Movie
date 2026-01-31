@@ -1,9 +1,10 @@
-<script setup lang="ts">
+﻿<script setup lang="ts">
 import { ref, onMounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { getFilmDetail, incrementPlayCount } from '@/api/film'
 import { chat } from '@/api/ai'
 import tvboxService from '@/services/tvboxService'
+import { normalizeImageUrl } from '@/utils/image'
 import type { Film } from '@/types/film'
 import TVBoxPlayer from '@/components/TVBoxPlayer.vue'
 
@@ -23,11 +24,19 @@ onMounted(async () => {
     // 优先使用TVBox服务
     const filmData = await tvboxService.getDetail(filmId.value)
     if (filmData) {
-      film.value = filmData
+      film.value = {
+        ...filmData,
+        coverUrl: normalizeImageUrl(filmData.coverUrl, filmData.title),
+      }
     } else {
       // 降级使用原有API
       const res = await getFilmDetail(filmId.value)
       film.value = res.data
+        ? {
+            ...res.data,
+            coverUrl: normalizeImageUrl(res.data.coverUrl, res.data.title),
+          }
+        : res.data
     }
     
     // 增加播放量（仅数字ID才调用后端API）
@@ -48,13 +57,21 @@ async function handleAiAsk() {
     aiLoading.value = true
     aiResponse.value = ''
     
-    // 构建包含电影上下文的提示
-    const prompt = `关于电影《${film.value.title}》(${film.value.year}年, 导演: ${film.value.director}, 主演: ${film.value.actors}): ${aiQuestion.value}`
-    
+    // 使用新的filmContext结构传递电影信息
     const res = await chat({
-      prompt,
+      prompt: aiQuestion.value,
       filmId: film.value.id,
-      enableRag: true
+      filmContext: {
+        tvboxId: film.value.id,
+        title: film.value.title,
+        description: film.value.description,
+        actors: film.value.actors,
+        director: film.value.director,
+        year: film.value.year,
+        region: film.value.region,
+        category: (film.value as any).category,
+      },
+      enableRag: false
     })
     
     aiResponse.value = res.data || '抱歉，AI 暂时无法回答这个问题。'

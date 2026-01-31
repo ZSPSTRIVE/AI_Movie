@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { searchFilm } from '@/api/film'
+import { normalizeImageUrl } from '@/utils/image'
 import type { Film } from '@/types/film'
 
 const route = useRoute()
@@ -24,7 +25,10 @@ async function doSearch() {
   loading.value = true
   try {
     const res = await searchFilm(keyword.value)
-    filmList.value = res.data || []
+    filmList.value = (res.data || []).map((film) => ({
+      ...film,
+      coverUrl: normalizeImageUrl(film.coverUrl, film.title),
+    }))
   } finally {
     loading.value = false
   }
@@ -64,6 +68,7 @@ function goToDetail(id: number) {
           <img
             :src="film.coverUrl"
             :alt="film.title"
+            v-img-fallback="film.title"
             class="w-full h-full object-cover"
           />
           <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent opacity-0 group-hover:opacity-100 transition-opacity">

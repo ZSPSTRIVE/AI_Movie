@@ -157,52 +157,66 @@ function initPlayer(url: string) {
   // 判断是否是HLS流
   const isHlsStream = url.includes('.m3u8') || url.includes('/play/') || url.includes('index.m3u8')
   
-  // 使用代理URL绕过CORS限制
-  let playUrl = url
-  if (isHlsStream && url.startsWith('http')) {
-    playUrl = `http://localhost:3001/api/tvbox/m3u8?url=${encodeURIComponent(url)}`
-    console.log('Using proxy URL:', playUrl)
-  }
-  
   if (isHlsStream && Hls.isSupported()) {
     console.log('Using HLS.js')
     
-    hlsInstance = new Hls({
-      enableWorker: true,
-      lowLatencyMode: false,
-      backBufferLength: 90,
-      maxBufferLength: 30,
-      maxMaxBufferLength: 60,
-    })
-    
-    hlsInstance.loadSource(playUrl)
-    hlsInstance.attachMedia(video)
-    
-    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      console.log('HLS manifest parsed')
-      videoLoading.value = false
-      video.play().catch(e => console.log('Auto-play blocked:', e.message))
-    })
-    
-    hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-      if (data.fatal) {
-        console.error('HLS fatal error:', data.type, data.details)
+    // 先尝试直接播放，失败后降级到代理
+    const tryPlay = (playUrl: string, useProxy: boolean) => {
+      destroyHls()
+      
+      hlsInstance = new Hls({
+        enableWorker: true,
+        lowLatencyMode: false,
+        backBufferLength: 90,
+        maxBufferLength: 30,
+        maxMaxBufferLength: 60,
+        xhrSetup: (xhr: XMLHttpRequest) => {
+          // 设置请求头尝试绕过CORS
+          if (!useProxy) {
+            xhr.withCredentials = false
+          }
+        },
+      })
+      
+      console.log('Trying URL:', playUrl, 'useProxy:', useProxy)
+      hlsInstance.loadSource(playUrl)
+      hlsInstance.attachMedia(video)
+      
+      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+        console.log('HLS manifest parsed successfully!')
         videoLoading.value = false
-        
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-          // 网络错误，尝试重新加载
-          setTimeout(() => hlsInstance?.startLoad(), 1000)
-        } else if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-          hlsInstance?.recoverMediaError()
-        } else {
-          error.value = '播放失败，请尝试其他线路'
+        video.play().catch(e => console.log('Auto-play blocked:', e.message))
+      })
+      
+      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+        if (data.fatal) {
+          console.error('HLS fatal error:', data.type, data.details)
+          
+          // 如果直接播放失败且还没用代理，尝试代理模式
+          if (!useProxy && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
+            console.log('Direct play failed, trying proxy...')
+            const proxyUrl = `http://localhost:3001/api/tvbox/m3u8?url=${encodeURIComponent(url)}`
+            tryPlay(proxyUrl, true)
+            return
+          }
+          
+          videoLoading.value = false
+          
+          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+            hlsInstance?.recoverMediaError()
+          } else {
+            error.value = '播放失败，请尝试其他线路'
+          }
         }
-      }
-    })
+      })
+      
+      hlsInstance.on(Hls.Events.FRAG_LOADED, () => {
+        videoLoading.value = false
+      })
+    }
     
-    hlsInstance.on(Hls.Events.FRAG_LOADED, () => {
-      videoLoading.value = false
-    })
+    // 先尝试直接播放
+    tryPlay(url, false)
     
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari原生HLS支持

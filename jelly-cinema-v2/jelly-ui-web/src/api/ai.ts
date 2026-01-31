@@ -2,6 +2,20 @@ import { get, post } from '@/utils/request'
 import type { R } from '@/types/common'
 
 /**
+ * 电影上下文信息
+ */
+export interface FilmContext {
+  tvboxId?: string
+  title?: string
+  description?: string
+  actors?: string
+  director?: string
+  year?: string
+  region?: string
+  category?: string
+}
+
+/**
  * AI 对话请求
  */
 export interface ChatRequest {
@@ -10,6 +24,7 @@ export interface ChatRequest {
   model?: string
   enableRag?: boolean
   filmId?: number
+  filmContext?: FilmContext  // 新增电影上下文
 }
 
 /**

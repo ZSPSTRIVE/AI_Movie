@@ -9,6 +9,7 @@ import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import App from './App.vue'
 import router from './router'
 import './styles/index.scss'
+import { imgFallback } from './directives/imgFallback'
 
 const app = createApp(App)
 
@@ -22,6 +23,7 @@ app.use(router)
 
 // Element Plus
 app.use(ElementPlus)
+app.directive('img-fallback', imgFallback)
 
 // 注册所有图标
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {

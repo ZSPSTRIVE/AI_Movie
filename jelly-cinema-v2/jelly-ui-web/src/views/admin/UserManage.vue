@@ -47,7 +47,7 @@ async function loadData() {
       status: statusFilter.value
     })
     tableData.value = res.data?.records || []
-    total.value = res.data?.total || 0
+    total.value = Number(res.data?.total) || 0
   } finally {
     loading.value = false
   }
@@ -163,132 +163,172 @@ async function handleDelete(row: UserListItem) {
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- 搜索栏 -->
-    <div class="flex justify-between mb-4">
-      <div class="flex gap-4">
-        <el-input v-model="keyword" placeholder="搜索用户名/昵称/手机号" clearable style="width: 250px" @keyup.enter="handleSearch">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-select v-model="statusFilter" placeholder="用户状态" clearable style="width: 120px" @change="handleSearch">
-          <el-option label="正常" :value="0" />
-          <el-option label="封禁" :value="1" />
-        </el-select>
-        <el-button type="primary" @click="handleSearch">搜索</el-button>
+  <div class="h-full flex flex-col gap-6">
+    <!-- 顶部统计/操作卡片 -->
+    <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-blue-500/30">
+          <el-icon size="24" color="white"><UserFilled /></el-icon>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-wide">用户管理</h2>
+          <p class="text-gray-400 text-sm mt-1">管理系统注册用户及权限状态</p>
+        </div>
       </div>
-      <el-button type="primary" @click="handleAdd">
-        <el-icon class="mr-1"><Plus /></el-icon>新增用户
+      
+      <el-button 
+        type="primary" 
+        size="large"
+        class="!rounded-xl !px-6 !font-bold shadow-lg shadow-blue-500/20 hover:shadow-blue-500/40 transition-all"
+        @click="handleAdd"
+      >
+        <el-icon class="mr-2"><Plus /></el-icon>
+        新增用户
       </el-button>
     </div>
 
-    <!-- 用户表格 -->
-    <el-table :data="tableData" v-loading="loading" size="small" stripe>
-      <el-table-column prop="id" label="ID" width="80" />
-      <el-table-column label="用户" min-width="180">
-        <template #default="{ row }">
-          <div class="flex items-center gap-2">
-            <el-avatar :size="32" :src="row.avatar">{{ row.nickname?.[0] }}</el-avatar>
-            <div>
-              <div class="font-medium">{{ row.nickname }}</div>
-              <div class="text-xs text-gray-400">{{ row.username }}</div>
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="phone" label="手机号" width="130" />
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 0 ? 'success' : 'danger'" size="small">
-            {{ row.status === 0 ? '正常' : '封禁' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="注册时间" width="160">
-        <template #default="{ row }">{{ formatTime(row.createTime) }}</template>
-      </el-table-column>
-      <el-table-column label="最后登录" width="160">
-        <template #default="{ row }">{{ formatTime(row.lastLoginTime) }}</template>
-      </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="showDetail(row)">详情</el-button>
-          <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 0" link type="danger" size="small" @click="openBanDialog(row)">封禁</el-button>
-          <el-button v-else link type="success" size="small" @click="handleUnban(row)">解封</el-button>
-          <el-dropdown trigger="click">
-            <el-button link type="primary" size="small">更多</el-button>
-            <template #dropdown>
-              <el-dropdown-menu>
-                <el-dropdown-item @click="handleResetPassword(row)">重置密码</el-dropdown-item>
-                <el-dropdown-item @click="handleForceLogout(row)">强制下线</el-dropdown-item>
-                <el-dropdown-item divided @click="handleDelete(row)">
-                  <span class="text-red-500">删除用户</span>
-                </el-dropdown-item>
-              </el-dropdown-menu>
-            </template>
-          </el-dropdown>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 数据区域 -->
+    <div class="glass-card flex-1 rounded-2xl flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
+      <!-- 搜索栏 -->
+      <div class="p-5 border-b border-white/5 flex gap-4 bg-white/5 backdrop-blur-sm justify-between">
+        <div class="flex gap-4">
+           <el-input 
+             v-model="keyword" 
+             placeholder="搜索用户名/昵称/手机号" 
+             clearable 
+             class="glass-input w-64"
+             @keyup.enter="handleSearch"
+           >
+             <template #prefix><el-icon><Search /></el-icon></template>
+           </el-input>
+           <el-select v-model="statusFilter" placeholder="用户状态" clearable class="glass-select w-32" @change="handleSearch">
+             <el-option label="正常" :value="0" />
+             <el-option label="封禁" :value="1" />
+           </el-select>
+           <el-button class="glass-button-icon" @click="handleSearch">
+             <el-icon><Search /></el-icon>
+           </el-button>
+        </div>
+      </div>
 
-    <!-- 分页 -->
-    <div class="flex justify-end mt-4">
-      <el-pagination
-        v-model:current-page="pageNum"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[20, 50, 100]"
-        layout="total, sizes, prev, pager, next"
-        @change="loadData"
-      />
+      <!-- 用户表格 -->
+      <div class="flex-1 overflow-hidden p-4">
+        <el-table 
+          :data="tableData" 
+          v-loading="loading" 
+          height="100%"
+          style="width: 100%"
+          :row-style="{ height: '72px' }"
+        >
+          <el-table-column prop="id" label="ID" width="80" align="center" show-overflow-tooltip />
+          
+          <el-table-column label="用户信息" min-width="200">
+            <template #default="{ row }">
+              <div class="flex items-center gap-3">
+                <el-avatar :size="40" :src="row.avatar" class="border-2 border-white/10">{{ row.nickname?.[0] }}</el-avatar>
+                <div class="flex flex-col">
+                  <span class="font-bold text-gray-200">{{ row.nickname }}</span>
+                  <span class="text-xs text-gray-500">{{ row.username }}</span>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="phone" label="手机号" width="140" align="center" />
+          
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag 
+                effect="dark"
+                :class="row.status === 0 ? '!bg-green-500/20 !border-green-500/30 !text-green-400' : '!bg-red-500/20 !border-red-500/30 !text-red-400'"
+              >
+                {{ row.status === 0 ? '正常' : '封禁' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="注册时间" width="160" align="center">
+            <template #default="{ row }">
+              <span class="text-gray-400 font-mono text-xs">{{ formatTime(row.createTime) }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="240" fixed="right" align="center">
+            <template #default="{ row }">
+              <div class="flex items-center justify-center gap-2">
+                <el-button size="small" link class="!text-blue-400 hover:!text-blue-300" @click="showDetail(row)">详情</el-button>
+                <el-button size="small" link class="!text-amber-400 hover:!text-amber-300" @click="handleEdit(row)">编辑</el-button>
+                
+                <el-button v-if="row.status === 0" size="small" link class="!text-red-400 hover:!text-red-300" @click="openBanDialog(row)">封禁</el-button>
+                <el-button v-else size="small" link class="!text-green-400 hover:!text-green-300" @click="handleUnban(row)">解封</el-button>
+                
+                <el-dropdown trigger="click">
+                  <el-button size="small" link class="!text-gray-400 hover:!text-white">更多 <el-icon class="el-icon--right"><ArrowDown /></el-icon></el-button>
+                  <template #dropdown>
+                    <el-dropdown-menu class="glass-dropdown">
+                      <el-dropdown-item @click="handleResetPassword(row)">重置密码</el-dropdown-item>
+                      <el-dropdown-item @click="handleForceLogout(row)">强制下线</el-dropdown-item>
+                      <el-dropdown-item divided @click="handleDelete(row)">
+                        <span class="text-red-500">删除用户</span>
+                      </el-dropdown-item>
+                    </el-dropdown-menu>
+                  </template>
+                </el-dropdown>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+        <el-pagination
+          v-model:current-page="pageNum"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          @change="loadData"
+          background
+        />
+      </div>
     </div>
 
-    <!-- 用户详情抽屉 -->
-    <el-drawer v-model="drawerVisible" title="用户详情" size="400px">
+    <!-- 用户详情抽屉 (保持原有逻辑，仅调整样式建议在 index.scss 全局覆盖 el-drawer) -->
+    <el-drawer v-model="drawerVisible" title="用户详情" size="400px" class="glass-drawer">
       <div v-loading="detailLoading">
         <template v-if="userDetail">
           <!-- 基本信息 -->
-          <div class="text-center mb-6">
-            <el-avatar :size="72" :src="userDetail.avatar">{{ userDetail.nickname?.[0] }}</el-avatar>
-            <h3 class="text-lg font-medium mt-2">{{ userDetail.nickname }}</h3>
-            <p class="text-gray-400 text-sm">{{ userDetail.signature || '暂无签名' }}</p>
+          <div class="text-center mb-8">
+            <div class="relative inline-block">
+               <el-avatar :size="80" :src="userDetail.avatar" class="ring-4 ring-white/10">{{ userDetail.nickname?.[0] }}</el-avatar>
+               <div :class="['absolute bottom-0 right-0 w-4 h-4 rounded-full border-2 border-[#1E293B]', userDetail.status === 0 ? 'bg-green-500' : 'bg-red-500']"></div>
+            </div>
+            <h3 class="text-xl font-bold text-white mt-3">{{ userDetail.nickname }}</h3>
+            <p class="text-gray-400 text-sm mt-1">{{ userDetail.signature || '暂无签名' }}</p>
           </div>
 
-          <el-descriptions :column="1" border size="small">
+          <el-descriptions :column="1" border size="large" class="glass-descriptions">
             <el-descriptions-item label="用户ID">{{ userDetail.id }}</el-descriptions-item>
             <el-descriptions-item label="用户名">{{ userDetail.username }}</el-descriptions-item>
             <el-descriptions-item label="手机号">{{ userDetail.phone || '-' }}</el-descriptions-item>
             <el-descriptions-item label="邮箱">{{ userDetail.email || '-' }}</el-descriptions-item>
-            <el-descriptions-item label="状态">
-              <el-tag :type="userDetail.status === 0 ? 'success' : 'danger'" size="small">
-                {{ userDetail.status === 0 ? '正常' : '封禁' }}
-              </el-tag>
+            <el-descriptions-item label="角色">
+               <el-tag size="small" effect="dark" class="!bg-blue-500/20 !border-blue-500/30">
+                 {{ userDetail.role === 'ROLE_ADMIN' ? '管理员' : '普通用户' }}
+               </el-tag>
             </el-descriptions-item>
             <el-descriptions-item v-if="userDetail.status === 1" label="封禁原因">
-              {{ userDetail.banReason }}
+              <span class="text-red-400">{{ userDetail.banReason }}</span>
             </el-descriptions-item>
             <el-descriptions-item label="注册时间">{{ formatTime(userDetail.createTime) }}</el-descriptions-item>
           </el-descriptions>
-
-          <!-- 好友列表 -->
-          <h4 class="font-medium mt-6 mb-2">好友列表 ({{ userDetail.friends?.length || 0 }})</h4>
-          <div class="flex flex-wrap gap-2">
-            <el-tag v-for="f in userDetail.friends" :key="f.id" size="small">{{ f.nickname }}</el-tag>
-            <span v-if="!userDetail.friends?.length" class="text-gray-400 text-sm">暂无好友</span>
-          </div>
-
-          <!-- 群组列表 -->
-          <h4 class="font-medium mt-6 mb-2">加入的群组 ({{ userDetail.groups?.length || 0 }})</h4>
-          <div class="flex flex-wrap gap-2">
-            <el-tag v-for="g in userDetail.groups" :key="g.id" type="info" size="small">{{ g.name }}</el-tag>
-            <span v-if="!userDetail.groups?.length" class="text-gray-400 text-sm">暂无群组</span>
-          </div>
         </template>
       </div>
     </el-drawer>
 
-    <!-- 封禁弹窗 -->
-    <el-dialog v-model="banDialogVisible" title="封禁用户" width="400px">
+    <!-- 弹窗部分保持原有逻辑，样式由全局 CSS 控制 -->
+    <el-dialog v-model="banDialogVisible" title="封禁用户" width="400px" class="glass-dialog">
       <el-form :model="banForm" label-width="80px">
         <el-form-item label="封禁时长">
           <el-radio-group v-model="banForm.duration">
@@ -308,8 +348,7 @@ async function handleDelete(row: UserListItem) {
       </template>
     </el-dialog>
 
-    <!-- 新增/编辑用户弹窗 -->
-    <el-dialog v-model="userDialogVisible" :title="userDialogTitle" width="500px">
+    <el-dialog v-model="userDialogVisible" :title="userDialogTitle" width="500px" class="glass-dialog">
       <el-form :model="userForm" label-width="80px">
         <template v-if="!userForm.id">
           <el-form-item label="用户名" required>
@@ -329,7 +368,7 @@ async function handleDelete(row: UserListItem) {
           <el-input v-model="userForm.phone" placeholder="请输入手机号" />
         </el-form-item>
         <el-form-item label="角色">
-          <el-select v-model="userForm.role" placeholder="请选择角色">
+          <el-select v-model="userForm.role" placeholder="请选择角色" class="w-full">
             <el-option label="普通用户" value="ROLE_USER" />
             <el-option label="管理员" value="ROLE_ADMIN" />
           </el-select>

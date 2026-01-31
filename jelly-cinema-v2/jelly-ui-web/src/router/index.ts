@@ -125,6 +125,24 @@ const routes: RouteRecordRaw[] = [
         name: 'AdminFilms',
         component: () => import('@/views/admin/FilmManage.vue'),
         meta: { title: '影片管理' }
+      },
+      {
+        path: 'homepage',
+        name: 'AdminHomepage',
+        component: () => import('@/views/admin/HomepageManage.vue'),
+        meta: { title: '首页内容管理' }
+      },
+      {
+        path: 'homepage-config',
+        name: 'AdminHomepageConfig',
+        component: () => import('@/views/admin/HomepageConfig.vue'),
+        meta: { title: '首页运营(商业化)' }
+      },
+      {
+        path: 'tvbox-sources',
+        name: 'AdminTvboxSources',
+        component: () => import('@/views/admin/TvboxSourceManage.vue'),
+        meta: { title: '采集源配置' }
       }
     ]
   },
@@ -163,10 +181,10 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, _from, next) => {
   NProgress.start()
-  
+
   // 设置页面标题
   document.title = to.meta.title ? `${to.meta.title} - 果冻影院` : '果冻影院'
-  
+
   // 权限检查
   if (to.meta.requireAuth) {
     const userStore = useUserStore()
@@ -175,7 +193,7 @@ router.beforeEach((to, _from, next) => {
       return
     }
   }
-  
+
   next()
 })
 

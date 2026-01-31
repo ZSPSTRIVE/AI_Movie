@@ -19,7 +19,7 @@ service.interceptors.request.use(
     console.log('请求拦截器 - URL:', config.url, 'Token:', userStore.token ? '有' : '无')
     if (userStore.token) {
       // Sa-Token 不需要 Bearer 前缀
-      ;(config.headers as any).Authorization = userStore.token
+      ; (config.headers as any).Authorization = userStore.token
     } else {
       console.warn('请求未携带Token:', config.url)
     }
@@ -41,14 +41,14 @@ service.interceptors.request.use(
 
 // 响应拦截器
 service.interceptors.response.use(
-  (response: AxiosResponse<R>) => {
+  (response: AxiosResponse<any>) => {
     const res = response.data
-    
+
     // 成功
     if (res.code === 200) {
       return res
     }
-    
+
     // Token 过期
     if (res.code === 401) {
       ElMessageBox.confirm('登录已过期，请重新登录', '提示', {
@@ -62,13 +62,20 @@ service.interceptors.response.use(
       })
       return Promise.reject(new Error(res.msg || '未授权'))
     }
-    
+
     // 其他错误
     ElMessage.error(res.msg || '请求失败')
     return Promise.reject(new Error(res.msg || '请求失败'))
   },
   (error) => {
     console.error('响应错误:', error)
+
+    // 如果是 IM 相关的接口报错，不显示全局提示
+    if (error.config && error.config.url && error.config.url.includes('/im/')) {
+      console.warn('IM服务异常，已忽略全局提示:', error.config.url)
+      return Promise.reject(error)
+    }
+
     let message = error.message
     if (error.response?.status === 404) {
       message = '请求的资源不存在'

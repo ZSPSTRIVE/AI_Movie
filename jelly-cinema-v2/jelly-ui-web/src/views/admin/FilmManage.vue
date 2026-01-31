@@ -164,73 +164,152 @@ async function toggleStatus(row: Film) {
 </script>
 
 <template>
-  <div class="p-6">
-    <!-- 工具栏 -->
-    <div class="flex justify-between mb-4">
-      <div class="flex gap-4">
-        <el-input v-model="keyword" placeholder="搜索影片名称" clearable style="width: 250px" @keyup.enter="handleSearch">
-          <template #prefix><el-icon><Search /></el-icon></template>
-        </el-input>
-        <el-button type="primary" @click="handleSearch">搜索</el-button>
+  <div class="h-full flex flex-col gap-6">
+    <!-- 顶部统计/操作卡片 -->
+    <div class="glass-card p-6 rounded-2xl flex flex-col md:flex-row justify-between items-center gap-4 animate-fade-in-down">
+      <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/30">
+          <el-icon size="24" color="white"><VideoCameraFilled /></el-icon>
+        </div>
+        <div>
+          <h2 class="text-2xl font-bold text-white tracking-wide">影片管理</h2>
+          <p class="text-gray-400 text-sm mt-1">管理系统所有影视资源及元数据</p>
+        </div>
       </div>
-      <el-button type="primary" @click="handleAdd">
-        <el-icon class="mr-1"><Plus /></el-icon>添加影片
+      
+      <el-button 
+        type="primary" 
+        size="large"
+        class="!rounded-xl !px-6 !font-bold shadow-lg shadow-green-500/20 hover:shadow-green-500/40 transition-all"
+        @click="handleAdd"
+      >
+        <el-icon class="mr-2"><Plus /></el-icon>
+        添加影片
       </el-button>
     </div>
 
-    <!-- 影片表格 -->
-    <el-table :data="tableData" v-loading="loading" size="small" stripe>
-      <el-table-column prop="id" label="ID" width="70" />
-      <el-table-column label="影片" min-width="250">
-        <template #default="{ row }">
-          <div class="flex items-center gap-3">
-            <img :src="row.coverUrl" :alt="row.title" class="w-12 h-16 object-cover rounded" />
-            <div>
-              <div class="font-medium">{{ row.title }}</div>
-              <div class="text-xs text-gray-400">{{ row.year }} · {{ row.region }}</div>
-            </div>
-          </div>
-        </template>
-      </el-table-column>
-      <el-table-column prop="director" label="导演" width="100" />
-      <el-table-column prop="rating" label="评分" width="80">
-        <template #default="{ row }">
-          <span class="text-orange-400">{{ row.rating }}</span>
-        </template>
-      </el-table-column>
-      <el-table-column prop="playCount" label="播放量" width="100" />
-      <el-table-column label="状态" width="80">
-        <template #default="{ row }">
-          <el-tag :type="row.status === 0 ? 'success' : 'info'" size="small">
-            {{ row.status === 0 ? '上架' : '下架' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
-        <template #default="{ row }">
-          <el-button link type="primary" size="small" @click="handleEdit(row)">编辑</el-button>
-          <el-button link :type="row.status === 0 ? 'warning' : 'success'" size="small" @click="toggleStatus(row)">
-            {{ row.status === 0 ? '下架' : '上架' }}
-          </el-button>
-          <el-button link type="danger" size="small" @click="handleDelete(row)">删除</el-button>
-        </template>
-      </el-table-column>
-    </el-table>
+    <!-- 数据区域 -->
+    <div class="glass-card flex-1 rounded-2xl flex flex-col overflow-hidden animate-fade-in-up" style="animation-delay: 0.1s">
+       <!-- 搜索栏 -->
+      <div class="p-5 border-b border-white/5 flex gap-4 bg-white/5 backdrop-blur-sm justify-between">
+        <div class="flex gap-4">
+           <el-input 
+             v-model="keyword" 
+             placeholder="搜索影片名称" 
+             clearable 
+             class="glass-input w-72"
+             @keyup.enter="handleSearch"
+           >
+             <template #prefix><el-icon><Search /></el-icon></template>
+           </el-input>
+           <el-button class="glass-button-icon" @click="handleSearch">
+             <el-icon><Search /></el-icon>
+           </el-button>
+        </div>
+      </div>
 
-    <!-- 分页 -->
-    <div class="flex justify-end mt-4">
-      <el-pagination
-        v-model:current-page="pageNum"
-        v-model:page-size="pageSize"
-        :total="total"
-        :page-sizes="[20, 50, 100]"
-        layout="total, sizes, prev, pager, next"
-        @change="loadData"
-      />
+      <!-- 影片表格 -->
+      <div class="flex-1 overflow-hidden p-4">
+        <el-table 
+          :data="tableData" 
+          v-loading="loading" 
+          height="100%"
+          style="width: 100%"
+          :row-style="{ height: '88px' }"
+        >
+          <el-table-column prop="id" label="ID" width="70" align="center" />
+          
+          <el-table-column label="影片信息" min-width="280">
+            <template #default="{ row }">
+              <div class="flex items-center gap-4 py-1 group cursor-pointer hover:translate-x-1 transition-transform duration-300">
+                <div class="relative w-12 h-16 rounded overflow-hidden shadow border border-white/10 group-hover:shadow-green-500/20 transition-all">
+                  <el-image 
+                    :src="row.coverUrl" 
+                    class="w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  <div class="absolute inset-0 bg-black/20 group-hover:bg-transparent transition-colors"></div>
+                </div>
+                
+                <div class="flex-1 min-w-0 flex flex-col gap-1">
+                  <div class="text-base font-bold text-gray-100 truncate group-hover:text-green-400 transition-colors">{{ row.title }}</div>
+                  <div class="flex items-center gap-2 text-xs text-gray-400">
+                    <span class="bg-white/5 px-1.5 py-0.5 rounded border border-white/5">{{ row.year }}</span>
+                    <span>{{ row.region }}</span>
+                  </div>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="director" label="导演" width="120" show-overflow-tooltip>
+             <template #default="{ row }">
+                <span class="text-gray-300">{{ row.director || '-' }}</span>
+             </template>
+          </el-table-column>
+
+          <el-table-column prop="rating" label="评分" width="80" align="center">
+            <template #default="{ row }">
+              <span class="text-amber-400 font-bold text-lg">{{ row.rating }}</span>
+            </template>
+          </el-table-column>
+
+          <el-table-column prop="playCount" label="播放量" width="100" align="center">
+             <template #default="{ row }">
+                <span class="font-mono text-gray-400">{{ row.playCount }}</span>
+             </template>
+          </el-table-column>
+
+          <el-table-column label="状态" width="100" align="center">
+            <template #default="{ row }">
+              <el-tag 
+                effect="dark"
+                :class="row.status === 0 ? '!bg-green-500/20 !border-green-500/30 !text-green-400' : '!bg-gray-500/20 !border-gray-500/30 !text-gray-400'"
+              >
+                {{ row.status === 0 ? '上架' : '下架' }}
+              </el-tag>
+            </template>
+          </el-table-column>
+
+          <el-table-column label="操作" width="200" fixed="right" align="center">
+            <template #default="{ row }">
+              <div class="flex items-center justify-center gap-2">
+                <el-button size="small" link class="!text-amber-400 hover:!text-amber-300" @click="handleEdit(row)">编辑</el-button>
+                <el-button 
+                  size="small" 
+                  link 
+                  :class="row.status === 0 ? '!text-gray-400 hover:!text-white' : '!text-green-400 hover:!text-green-300'" 
+                  @click="toggleStatus(row)"
+                >
+                  {{ row.status === 0 ? '下架' : '上架' }}
+                </el-button>
+                <el-popconfirm title="确定要删除该影片吗？" @confirm="handleDelete(row)">
+                  <template #reference>
+                    <el-button size="small" link class="!text-red-400 hover:!text-red-300">删除</el-button>
+                  </template>
+                </el-popconfirm>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 分页 -->
+      <div class="p-4 border-t border-white/5 bg-white/5 flex justify-end">
+        <el-pagination
+          v-model:current-page="pageNum"
+          v-model:page-size="pageSize"
+          :total="total"
+          :page-sizes="[20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          @change="loadData"
+          background
+        />
+      </div>
     </div>
 
     <!-- 编辑弹窗 -->
-    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px">
+    <el-dialog v-model="dialogVisible" :title="dialogTitle" width="600px" class="glass-dialog">
       <el-form :model="formData" label-width="80px">
         <el-form-item label="影片名称" required>
           <el-input v-model="formData.title" placeholder="请输入影片名称" />
@@ -238,12 +317,12 @@ async function toggleStatus(row: Film) {
         <el-row :gutter="20">
           <el-col :span="12">
             <el-form-item label="上映年份">
-              <el-input-number v-model="formData.year" :min="1900" :max="2030" />
+              <el-input-number v-model="formData.year" :min="1900" :max="2030" class="w-full" />
             </el-form-item>
           </el-col>
           <el-col :span="12">
             <el-form-item label="评分">
-              <el-input-number v-model="formData.rating" :min="0" :max="10" :step="0.1" />
+              <el-input-number v-model="formData.rating" :min="0" :max="10" :step="0.1" class="w-full" />
             </el-form-item>
           </el-col>
         </el-row>
@@ -257,7 +336,7 @@ async function toggleStatus(row: Film) {
           <el-input v-model="formData.actors" placeholder="主要演员，用逗号分隔" />
         </el-form-item>
         <el-form-item label="封面图">
-          <div class="flex gap-3 items-start">
+          <div class="flex gap-3 items-start w-full">
             <el-upload
               class="cover-uploader"
               action="/api/admin/upload/image"
@@ -266,14 +345,14 @@ async function toggleStatus(row: Film) {
               :before-upload="beforeCoverUpload"
               accept="image/*"
             >
-              <img v-if="formData.coverUrl" :src="formData.coverUrl" class="w-20 h-28 object-cover rounded border" />
-              <div v-else class="w-20 h-28 border-2 border-dashed border-gray-300 rounded flex items-center justify-center text-gray-400 hover:border-blue-400 cursor-pointer">
+              <img v-if="formData.coverUrl" :src="formData.coverUrl" class="w-20 h-28 object-cover rounded border border-white/10" />
+              <div v-else class="w-20 h-28 border-2 border-dashed border-white/20 rounded-lg flex items-center justify-center text-gray-500 hover:border-green-500/50 hover:text-green-500 cursor-pointer transition-all bg-white/5">
                 <el-icon size="24"><Plus /></el-icon>
               </div>
             </el-upload>
             <div class="flex-1">
               <el-input v-model="formData.coverUrl" placeholder="或输入封面图片URL" size="small" />
-              <div class="text-xs text-gray-400 mt-1">点击左侧上传或输入图片地址</div>
+              <div class="text-xs text-gray-500 mt-1">点击左侧上传或输入图片地址</div>
             </div>
           </div>
         </el-form-item>
@@ -286,13 +365,13 @@ async function toggleStatus(row: Film) {
           <!-- 视频链接输入 -->
           <template v-if="videoSourceType === 'link'">
             <el-input v-model="formData.videoUrl" placeholder="输入视频播放地址" />
-            <div class="text-xs text-gray-400 mt-1">支持：mp4直链、m3u8流媒体、哔哩哔哩链接、网页嵌入链接等</div>
+            <div class="text-xs text-gray-500 mt-1">支持：mp4直链、m3u8流媒体、哔哩哔哩链接、网页嵌入链接等</div>
           </template>
           
           <!-- 视频上传 -->
           <template v-else>
             <el-upload
-              class="video-uploader"
+              class="video-uploader w-full"
               action="/api/admin/upload/video"
               :show-file-list="false"
               :on-success="handleVideoUploadSuccess"
@@ -308,13 +387,13 @@ async function toggleStatus(row: Film) {
                 </template>
                 <template v-else-if="formData.videoUrl && videoSourceType === 'upload'">
                   <el-icon size="32" class="text-green-500"><VideoPlay /></el-icon>
-                  <span class="mt-2 text-sm text-green-600">视频已上传</span>
-                  <span class="text-xs text-gray-400 mt-1">点击重新上传</span>
+                  <span class="mt-2 text-sm text-green-500">视频已上传</span>
+                  <span class="text-xs text-gray-500 mt-1">点击重新上传</span>
                 </template>
                 <template v-else>
                   <el-icon size="32"><Upload /></el-icon>
                   <span class="mt-2 text-sm">点击上传视频</span>
-                  <span class="text-xs text-gray-400 mt-1">支持 mp4、webm 等格式，最大 500MB</span>
+                  <span class="text-xs text-gray-500 mt-1">支持 mp4、webm 等格式，最大 500MB</span>
                 </template>
               </div>
             </el-upload>
@@ -336,7 +415,7 @@ async function toggleStatus(row: Film) {
 .upload-area {
   width: 100%;
   min-height: 120px;
-  border: 2px dashed #d9d9d9;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -344,21 +423,23 @@ async function toggleStatus(row: Film) {
   justify-content: center;
   cursor: pointer;
   transition: all 0.3s;
-  color: #999;
+  color: #94a3b8;
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .upload-area:hover {
-  border-color: #409eff;
-  color: #409eff;
+  border-color: #10b981;
+  color: #10b981;
+  background: rgba(16, 185, 129, 0.05);
 }
 
 .upload-area.has-video {
-  border-color: #67c23a;
-  background: #f0f9eb;
+  border-color: #10b981;
+  background: rgba(16, 185, 129, 0.1);
 }
 
 .cover-uploader :deep(.el-upload) {
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
 }
 </style>
