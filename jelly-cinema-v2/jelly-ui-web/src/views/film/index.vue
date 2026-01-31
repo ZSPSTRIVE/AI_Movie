@@ -92,10 +92,10 @@ async function fetchFilms() {
       const startIndex = (pageNum - 1) * pageSize
       const pagedList = filteredList.slice(startIndex, startIndex + pageSize)
       
-      filmList.value = Object.freeze(pagedList.map((film) => ({
+      filmList.value = pagedList.map((film) => ({
         ...film,
         coverUrl: normalizeImageUrl(film.coverUrl, film.title),
-      }))) as any
+      }))
       total.value = filteredList.length
       console.log('显示数据:', filmList.value.length, '条')
     } else {
@@ -178,7 +178,7 @@ function formatPlayCount(count: number): string {
     <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
       <div v-for="film in filmList" :key="film.id" class="cursor-pointer group" @click="goToDetail(film.id)">
         <div class="relative aspect-[2/3] rounded-xl overflow-hidden transition-all duration-300 film-card">
-          <img :src="film.coverUrl" :alt="film.title" v-img-fallback="film.title" class="w-full h-full object-cover" />
+          <img :src="film.coverUrl" :alt="film.title" v-img-fallback="film.title" loading="lazy" class="w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
             <div class="absolute bottom-0 left-0 right-0 p-3">
               <p class="text-xs text-white/90 font-medium line-clamp-3 leading-relaxed">{{ film.description }}</p>

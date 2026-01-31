@@ -13,19 +13,7 @@ const COLORS = [
   '#22c55e',
 ]
 
-const BAD_HOSTS = [
-  'img.example.com',
-  'via.placeholder.com',
-  'example.com',
-  'viptulz.com',      // 连接超时
-  'imgwolong.com',    // 连接超时
-  'hongniuzyimage.com', // 连接超时
-  'img.guangsuimage.com', // 连接超时
-  'img.ffzy888.com',  // 连接超时
-  'xinlangtupian.com', // 连接超时
-  'y2s52n7.com',       // DNS错误
-  'ikunzyapi.com'      // 常见失效
-]
+const BAD_HOSTS = ['img.example.com', 'via.placeholder.com', 'example.com']
 
 function pickColor(seed: string): string {
   let hash = 0
