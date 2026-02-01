@@ -75,6 +75,22 @@ onMounted(async () => {
        recommendList.value = tvboxData
     }
 
+    // 同样为热门、新片、趋势添加兜底
+    if (hotRankList.value.length === 0) {
+       const hotData = await tvboxService.getRecommend(10)
+       hotRankList.value = hotData
+    }
+    
+    if (newReleaseList.value.length === 0) {
+       const newData = await tvboxService.getList(1, 12)
+       newReleaseList.value = newData.list
+    }
+
+    if (trendingList.value.length === 0) {
+       const trendData = await tvboxService.getRecommend(8)
+       trendingList.value = trendData
+    }
+
   } catch (error) {
     console.error('Failed to load homepage data:', error)
     ElMessage.error('加载部分首页数据失败')

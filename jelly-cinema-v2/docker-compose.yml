@@ -107,6 +107,47 @@ services:
       - minio_data:/data
     command: server /data --console-address ":9001"
 
+  # Milvus 向量数据库 (用于 RAG)
+  milvus-etcd:
+    image: quay.io/coreos/etcd:v3.5.5
+    container_name: jelly-milvus-etcd
+    restart: always
+    environment:
+      - ETCD_AUTO_COMPACTION_MODE=revision
+      - ETCD_AUTO_COMPACTION_RETENTION=1000
+      - ETCD_QUOTA_BACKEND_BYTES=4294967296
+      - ETCD_SNAPSHOT_COUNT=50000
+    volumes:
+      - milvus_etcd:/etcd
+    command: etcd -advertise-client-urls=http://127.0.0.1:2379 -listen-client-urls http://0.0.0.0:2379 --data-dir /etcd
+
+  milvus-minio:
+    image: minio/minio:RELEASE.2023-03-20T20-16-18Z
+    container_name: jelly-milvus-minio
+    restart: always
+    environment:
+      MINIO_ACCESS_KEY: minioadmin
+      MINIO_SECRET_KEY: minioadmin
+    volumes:
+      - milvus_minio:/minio_data
+    command: minio server /minio_data
+
+  milvus:
+    image: milvusdb/milvus:v2.3.3
+    container_name: jelly-milvus
+    restart: always
+    environment:
+      ETCD_ENDPOINTS: milvus-etcd:2379
+      MINIO_ADDRESS: milvus-minio:9000
+    ports:
+      - "19530:19530"
+      - "9091:9091"
+    volumes:
+      - milvus_data:/var/lib/milvus
+    depends_on:
+      - milvus-etcd
+      - milvus-minio
+
 volumes:
   mysql_data:
   redis_data:
@@ -115,3 +156,6 @@ volumes:
   rocketmq_broker_logs:
   rocketmq_broker_store:
   minio_data:
+  milvus_etcd:
+  milvus_minio:
+  milvus_data:

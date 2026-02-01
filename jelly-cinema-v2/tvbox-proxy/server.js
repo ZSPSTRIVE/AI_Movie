@@ -2,6 +2,8 @@ const express = require('express');
 const axios = require('axios');
 const cors = require('cors');
 const { XMLParser } = require('fast-xml-parser');
+const http = require('http');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
@@ -31,25 +33,72 @@ let sourcesCache = null;
 let sourcesCacheTime = 0;
 const SOURCES_CACHE_TTL = 60 * 1000; // 1分钟缓存
 
+// 启动时清除缓存并打印源信息
+console.log('=== TVBox Proxy Starting ===');
+console.log('Default API sources:');
+DEFAULT_API_SOURCES.forEach(s => console.log(`  - ${s.name}: ${s.api}`));
+
 async function getApiSources() {
     // 检查缓存
     if (sourcesCache && Date.now() - sourcesCacheTime < SOURCES_CACHE_TTL) {
         return sourcesCache;
     }
 
+    // 已知失效的域名（404/403/超时）
+    const invalidDomains = [
+        'ysso.cc',
+        'yunpan6.com',
+        'mqtv.cc',
+        'czzymovie.com',
+        '5weiting.com',
+        'film.symx.club',
+        'dy.jmzp.net.cn',
+        // 这些是格式错误的多URL拼接
+        'y2s52n7.com',
+    ];
+
+    // 验证URL是否有效
+    function isValidApiUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        // 检查是否包含逗号（多URL拼接错误）
+        if (url.includes(',')) {
+            console.warn('Skipping malformed URL (contains comma):', url.substring(0, 50));
+            return false;
+        }
+        // 必须是有效的HTTP(S) URL
+        if (!url.startsWith('http://') && !url.startsWith('https://')) {
+            console.warn('Skipping invalid URL (no protocol):', url.substring(0, 50));
+            return false;
+        }
+        // 检查已知失效域名
+        for (const domain of invalidDomains) {
+            if (url.includes(domain)) {
+                console.warn('Skipping known invalid domain:', domain);
+                return false;
+            }
+        }
+        return true;
+    }
+
     try {
         // 尝试从数据库加载
         const rows = await db.query('SELECT * FROM t_tvbox_source WHERE enabled = 1 ORDER BY priority ASC');
         if (rows && rows.length > 0) {
-            sourcesCache = rows.map(row => ({
-                name: row.source_name,
-                api: row.api_url,
-                type: row.api_type || 'json',
-                priority: row.priority
-            }));
-            sourcesCacheTime = Date.now();
-            console.log(`Loaded ${sourcesCache.length} sources from DB`);
-            return sourcesCache;
+            const validSources = rows
+                .filter(row => isValidApiUrl(row.api_url))
+                .map(row => ({
+                    name: row.source_name,
+                    api: row.api_url,
+                    type: row.api_type || 'json',
+                    priority: row.priority
+                }));
+
+            if (validSources.length > 0) {
+                sourcesCache = validSources;
+                sourcesCacheTime = Date.now();
+                console.log(`Loaded ${validSources.length} valid sources from DB (filtered from ${rows.length} total)`);
+                return sourcesCache;
+            }
         }
     } catch (e) {
         console.error('Failed to load sources from DB, using fallback:', e.message);
@@ -73,6 +122,51 @@ const xmlParser = new XMLParser({
 const cacheStore = new Map();
 const filmIndex = new Map();
 const siteApiCache = new Map();
+
+const axiosClient = axios.create({
+    httpAgent: new http.Agent({ keepAlive: true, maxSockets: 128 }),
+    httpsAgent: new https.Agent({ keepAlive: true, maxSockets: 128 }),
+});
+
+function sleep(ms) {
+    return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function isRetryableAxiosError(error) {
+    const code = error?.code;
+    const message = String(error?.message || '').toLowerCase();
+    if (code && ['ECONNRESET', 'ETIMEDOUT', 'ECONNABORTED', 'EAI_AGAIN', 'ENOTFOUND', 'EPIPE'].includes(code)) {
+        return true;
+    }
+    if (message.includes('socket disconnected') || message.includes('tls connection was established') || message.includes('network socket disconnected')) {
+        return true;
+    }
+    const status = error?.response?.status;
+    if (status && [429, 500, 502, 503, 504].includes(status)) {
+        return true;
+    }
+    return false;
+}
+
+async function axiosGetWithRetry(url, config, options) {
+    const retries = options?.retries ?? 2;
+    const baseDelayMs = options?.baseDelayMs ?? 350;
+
+    let lastError;
+    for (let attempt = 0; attempt <= retries; attempt++) {
+        try {
+            return await axiosClient.get(url, config);
+        } catch (error) {
+            lastError = error;
+            if (attempt >= retries || !isRetryableAxiosError(error)) {
+                throw error;
+            }
+            const delay = baseDelayMs * Math.pow(2, attempt) + Math.floor(Math.random() * 120);
+            await sleep(delay);
+        }
+    }
+    throw lastError;
+}
 
 function getCache(key) {
     const entry = cacheStore.get(key);
@@ -172,9 +266,46 @@ function generatePlayCount() {
     return Math.floor(Math.random() * 100000);
 }
 
+/**
+ * 解析 vod_play_url 格式的播放链接
+ * 格式: "剧集名1$url1#剧集名2$url2$$$剧集名1$url1#剧集名2$url2"
+ * 多个播放源用 $$$ 分隔，每个源内的剧集用 # 分隔
+ */
+function parseEpisodes(playUrl, playFrom) {
+    if (!playUrl) return [];
+
+    const sources = playUrl.split('$$$');
+    const sourceNames = playFrom ? playFrom.split('$$$') : [];
+    const episodes = [];
+
+    for (let i = 0; i < sources.length; i++) {
+        const sourceName = sourceNames[i] || `源${i + 1}`;
+        const episodeList = sources[i].split('#');
+
+        for (const ep of episodeList) {
+            const parts = ep.split('$');
+            if (parts.length >= 2) {
+                const name = parts[0];
+                const url = parts[1];
+                if (url && (url.startsWith('http') || url.startsWith('//'))) {
+                    episodes.push({
+                        name: name,
+                        url: url.startsWith('//') ? 'https:' + url : url,
+                        source: sourceName,
+                        // 标记是否为 m3u8 格式
+                        isM3u8: url.includes('.m3u8') || sourceName.toLowerCase().includes('m3u8'),
+                    });
+                }
+            }
+        }
+    }
+
+    return episodes;
+}
+
 async function fetchRemote(url) {
     try {
-        const response = await axios.get(url, {
+        const response = await axiosGetWithRetry(url, {
             timeout: REQUEST_TIMEOUT_MS,
             responseType: 'arraybuffer',
             headers: {
@@ -182,7 +313,7 @@ async function fetchRemote(url) {
                 'Accept': 'application/json,text/plain,*/*',
             },
             validateStatus: status => status >= 200 && status < 400,
-        });
+        }, { retries: 2 });
         return Buffer.from(response.data).toString('utf8');
     } catch (error) {
         console.error(`Failed to fetch ${url}:`, error.message);
@@ -255,6 +386,37 @@ async function getAllSites() {
     const cached = getCache(cacheKey);
     if (cached) return cached;
 
+    // 已知无效的域名或 URL 模式
+    const invalidPatterns = [
+        'ysso.cc',
+        'yunpan6.com',
+        'mqtv.cc',
+        'czzymovie.com',
+        '5weiting.com',
+        'film.symx.club',
+        'dy.jmzp.net.cn',
+        'y2s52n7.com',
+    ];
+
+    // 验证站点是否有效
+    function isValidSite(site) {
+        const api = site.api || site.ext || '';
+        if (!api) return false;
+        // 检查 URL 是否包含逗号（格式错误）
+        if (api.includes(',')) {
+            console.warn('Skipping malformed site URL (contains comma):', api.substring(0, 50));
+            return false;
+        }
+        // 检查已知无效域名
+        for (const pattern of invalidPatterns) {
+            if (api.includes(pattern)) {
+                console.warn('Skipping known invalid site:', pattern);
+                return false;
+            }
+        }
+        return true;
+    }
+
     const results = await Promise.allSettled(
         TV_SOURCES.map(async (sourceUrl) => {
             const data = await fetchTVBoxSource(sourceUrl);
@@ -265,9 +427,15 @@ async function getAllSites() {
 
     const sites = [];
     const seen = new Set();
+    let skippedCount = 0;
     for (const result of results) {
         if (result.status !== 'fulfilled') continue;
         for (const site of result.value) {
+            // 过滤无效站点
+            if (!isValidSite(site)) {
+                skippedCount++;
+                continue;
+            }
             const dedupeKey = `${site.key}|${site.api}|${site.type}`;
             if (seen.has(dedupeKey)) continue;
             seen.add(dedupeKey);
@@ -275,16 +443,33 @@ async function getAllSites() {
         }
     }
 
+    console.log(`Loaded ${sites.length} valid sites (skipped ${skippedCount} invalid)`);
     setCache(cacheKey, sites, CACHE_TTL_MS);
     return sites;
 }
 
 function buildApiCandidates(site) {
+    // 已知无效的域名或 URL 模式
+    const invalidPatterns = [
+        'ysso.cc', 'yunpan6.com', 'mqtv.cc', 'czzymovie.com',
+        '5weiting.com', 'film.symx.club', 'dy.jmzp.net.cn', 'y2s52n7.com',
+    ];
+
+    // 验证 URL 是否有效
+    function isValidUrl(url) {
+        if (!url || typeof url !== 'string') return false;
+        if (url.includes(',')) return false; // 格式错误
+        for (const pattern of invalidPatterns) {
+            if (url.includes(pattern)) return false;
+        }
+        return true;
+    }
+
     const candidates = [];
-    if (isHttpUrl(site.api)) {
+    if (isHttpUrl(site.api) && isValidUrl(site.api)) {
         candidates.push(normalizeUrl(site.api));
     }
-    if (typeof site.ext === 'string' && isHttpUrl(site.ext)) {
+    if (typeof site.ext === 'string' && isHttpUrl(site.ext) && isValidUrl(site.ext)) {
         const extUrl = normalizeUrl(site.ext);
         candidates.push(extUrl);
         const trimmed = extUrl.replace(/\/+$/g, '');
@@ -505,19 +690,101 @@ function parsePlayInfo(vod) {
         console.log('No valid playable URLs found');
     }
 
-    // 优先选择m3u8直链
+    // 被封锁的 CDN 域名列表（这些域名返回 403 或无法播放）
+    const blockedDomains = [
+        'xluuss.com',
+        'gsuus.com',
+        'ffzy-play',
+        'ffzy-online',
+        'ffzyread',
+        'svipsvip',
+        '/share/',  // /share/ 间接链接通常也有问题
+    ];
+
+    // 检查 URL 是否来自被封锁的域名
+    function isBlockedUrl(url) {
+        if (!url) return true;
+        for (const blocked of blockedDomains) {
+            if (url.includes(blocked)) return true;
+        }
+        return false;
+    }
+
+    // 重新排序 episodes：把未封锁的放前面，封锁的放后面
+    const unblockedEpisodes = episodes.filter(ep => ep.url && !isBlockedUrl(ep.url));
+    const blockedEpisodes = episodes.filter(ep => ep.url && isBlockedUrl(ep.url));
+    const reorderedEpisodes = [...unblockedEpisodes, ...blockedEpisodes];
+
+    console.log(`Episodes reordered: ${unblockedEpisodes.length} unblocked, ${blockedEpisodes.length} blocked`);
+
+    // 优先选择 m3u8 直链，跳过被封锁的域名
     let bestUrl = '';
-    for (const ep of episodes) {
-        if (ep.url && (ep.url.includes('.m3u8') || ep.url.includes('index.m3u8'))) {
+
+    // 第一优先级：包含 .m3u8 且不在封锁列表中
+    for (const ep of reorderedEpisodes) {
+        if (!ep.url) continue;
+        if (isBlockedUrl(ep.url)) continue;
+        if (ep.url.includes('.m3u8') || ep.url.includes('index.m3u8')) {
             bestUrl = ep.url;
+            console.log('Selected URL (priority 1 - unblocked m3u8):', ep.url.substring(0, 80));
             break;
         }
     }
-    if (!bestUrl && episodes.length > 0) {
-        bestUrl = episodes[0].url;
+
+    // 第二优先级：任何不在封锁列表中的链接
+    if (!bestUrl) {
+        for (const ep of reorderedEpisodes) {
+            if (!ep.url) continue;
+            if (!isBlockedUrl(ep.url)) {
+                bestUrl = ep.url;
+                console.log('Selected URL (priority 2 - unblocked):', ep.url.substring(0, 80));
+                break;
+            }
+        }
     }
 
-    return { playUrl: bestUrl, episodes };
+    // 第三优先级：封锁列表中的 m3u8（备选）
+    if (!bestUrl) {
+        for (const ep of reorderedEpisodes) {
+            if (!ep.url) continue;
+            if (ep.url.includes('.m3u8')) {
+                bestUrl = ep.url;
+                console.log('Selected URL (priority 3 - blocked m3u8):', ep.url.substring(0, 80));
+                break;
+            }
+        }
+    }
+
+    // 最后：任何可用的链接
+    if (!bestUrl && reorderedEpisodes.length > 0) {
+        bestUrl = reorderedEpisodes[0].url;
+        console.log('Selected URL (fallback):', bestUrl?.substring(0, 80));
+    }
+
+    return { playUrl: bestUrl, episodes: reorderedEpisodes };
+}
+
+function isM3u8Url(url) {
+    if (!url) return false;
+    const s = String(url);
+    return s.includes('.m3u8') || s.includes('index.m3u8');
+}
+
+function pickShareReferer(episodes) {
+    if (!Array.isArray(episodes)) return null;
+    for (const ep of episodes) {
+        const u = ep?.url;
+        if (typeof u === 'string' && u.includes('/share/')) {
+            return u;
+        }
+    }
+    return null;
+}
+
+function buildM3u8ProxyUrl(m3u8Url, referer) {
+    const base = `http://localhost:${PORT}`;
+    const refererQuery = referer ? `&referer=${encodeURIComponent(referer)}` : '';
+    return `${base}/api/tvbox/m3u8?url=${encodeURIComponent(m3u8Url)}${refererQuery}`;
 }
 
 function dedupeFilms(list) {
@@ -578,10 +845,10 @@ async function fetchFromDirectApi(source) {
     try {
         const url = `${source.api}?ac=detail&pg=1`;
         console.log('Fetching from direct API:', source.name);
-        const response = await axios.get(url, {
-            timeout: 15000,
+        const response = await axiosGetWithRetry(url, {
+            timeout: REQUEST_TIMEOUT_MS + 5000,
             headers: { 'User-Agent': 'okhttp/4.10.0' },
-        });
+        }, { retries: 2 });
         const data = response.data;
         const list = data.list || [];
 
@@ -720,6 +987,8 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
                     sourceName: cached.siteKey,
                     language: vod.vod_lang || '国语',
                     duration: 0,
+                    // 添加解析后的播放列表
+                    episodes: parseEpisodes(vod.vod_play_url, vod.vod_play_from),
                 };
 
                 return res.json({
@@ -734,10 +1003,10 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
                 try {
                     const detailUrl = `${cached.apiUrl}?ac=detail&ids=${cached.vodId}`;
                     console.log('Fetching fresh detail:', detailUrl);
-                    const response = await axios.get(detailUrl, {
-                        timeout: 15000,
+                    const response = await axiosGetWithRetry(detailUrl, {
+                        timeout: REQUEST_TIMEOUT_MS + 5000,
                         headers: { 'User-Agent': 'okhttp/4.10.0' },
-                    });
+                    }, { retries: 2 });
                     const list = response.data.list || [];
                     if (list.length > 0) {
                         const vod = list[0];
@@ -792,8 +1061,57 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
         }
 
         const sites = await getAllSites();
-        const site = sites.find((item) => item.key === siteKey);
+        let site = sites.find((item) => item.key === siteKey);
+
+        // 如果 TVBox 源中没有，尝试从直接 API 源获取
         if (!site) {
+            const apiSources = await getApiSources();
+            const apiSource = apiSources.find((s) => s.name === siteKey);
+            if (apiSource) {
+                console.log('Found in API sources:', siteKey);
+                try {
+                    const detailUrl = `${apiSource.api}?ac=detail&ids=${vodId}`;
+                    console.log('Fetching from API source:', detailUrl);
+                    const response = await axiosGetWithRetry(detailUrl, {
+                        timeout: REQUEST_TIMEOUT_MS + 5000,
+                        headers: { 'User-Agent': 'okhttp/4.10.0' },
+                    }, { retries: 2 });
+                    const list = response.data.list || [];
+                    if (list.length > 0) {
+                        const vod = list[0];
+                        const film = {
+                            id: id,
+                            title: vod.vod_name || 'Unknown',
+                            coverUrl: vod.vod_pic || PLACEHOLDER_COVER,
+                            description: (vod.vod_content || vod.vod_blurb || '').replace(/<[^>]+>/g, ''),
+                            year: extractYear(vod.vod_year),
+                            rating: safeNumber(vod.vod_score, generateRating()),
+                            playCount: generatePlayCount(),
+                            isVip: false,
+                            director: vod.vod_director || '未知',
+                            actors: vod.vod_actor || '未知',
+                            region: vod.vod_area || '未知',
+                            sourceKey: siteKey,
+                            sourceName: siteKey,
+                            language: vod.vod_lang || '国语',
+                            duration: 0,
+                            // 添加解析后的播放列表
+                            episodes: parseEpisodes(vod.vod_play_url, vod.vod_play_from),
+                        };
+
+                        // 缓存到 filmIndex
+                        filmIndex.set(id, { siteKey, vodId, vod, apiUrl: apiSource.api });
+
+                        return res.json({
+                            code: 200,
+                            data: film,
+                            message: 'success',
+                        });
+                    }
+                } catch (apiError) {
+                    console.error('API source fetch failed:', apiError.message);
+                }
+            }
             return res.status(404).json({
                 code: 404,
                 data: null,
@@ -840,6 +1158,10 @@ app.get('/api/tvbox/play/:id', async (req, res) => {
 
             if (playInfo.playUrl && playInfo.playUrl.startsWith('http')) {
                 console.log('Direct m3u8 URL found:', playInfo.playUrl.substring(0, 80));
+
+                // 直接返回原始 URL，不使用任何代理
+                console.log('Direct playback (no proxy):', playInfo.playUrl.substring(0, 80));
+
                 return res.json({
                     code: 200,
                     data: playInfo,
@@ -852,10 +1174,10 @@ app.get('/api/tvbox/play/:id', async (req, res) => {
                 console.log('Fetching fresh detail from API:', cached.apiUrl);
                 try {
                     const detailUrl = `${cached.apiUrl}?ac=detail&ids=${cached.vodId}`;
-                    const response = await axios.get(detailUrl, {
-                        timeout: 15000,
+                    const response = await axiosGetWithRetry(detailUrl, {
+                        timeout: REQUEST_TIMEOUT_MS + 5000,
                         headers: { 'User-Agent': 'okhttp/4.10.0' },
-                    });
+                    }, { retries: 2 });
                     const list = response.data.list || [];
                     if (list.length > 0) {
                         const freshPlayInfo = parsePlayInfo(list[0]);
@@ -970,28 +1292,41 @@ app.get('/api/tvbox/search', async (req, res) => {
 app.get('/api/tvbox/m3u8', async (req, res) => {
     try {
         const url = req.query.url;
+        const refererParam = req.query.referer;
         if (!url) {
             return res.status(400).send('Missing url parameter');
         }
 
         console.log('Proxying m3u8:', url);
 
+        // 如果 URL 是播放器页面（没有 .m3u8 后缀），自动加上 /index.m3u8
+        let finalUrl = url;
         const urlObj = new URL(url);
+        const pathname = urlObj.pathname;
+
+        // 检测是否为播放器页面地址（通常是 /play/xxx 格式，没有扩展名）
+        if (!pathname.includes('.') && (pathname.includes('/play/') || pathname.includes('/hls/'))) {
+            // 尝试添加 /index.m3u8
+            finalUrl = url.endsWith('/') ? url + 'index.m3u8' : url + '/index.m3u8';
+            console.log('Auto-appended /index.m3u8:', finalUrl);
+        }
+
         const host = urlObj.host;
 
         // 域名特定的Referer映射（针对有防盗链的CDN）
         const domainRefererMap = {
-            'ffzy-plays.com': 'https://www.ffzyplay.com/',
-            'ffzy-online.com': 'https://www.ffzyplay.com/',
-            'vip.ffzy-plays.com': 'https://www.ffzyplay.com/',
-            'vip.ffzy-play2.com': 'https://www.ffzyplay.com/',
-            'ffzy-play2.com': 'https://www.ffzyplay.com/',
-            'ffzyapi.com': 'https://www.ffzyplay.com/',
+            // FFZY 系列 CDN - 使用通配模式
+            'ffzy': 'https://www.ffzyplay.com/',
+            // 其他资源站
             'hongniuzy': 'https://www.hongniuzy.com/',
             'lziapi': 'https://www.lziapi.com/',
+            'lz15uu': 'https://www.lziapi.com/',  // 量子资源 CDN
             'guangsuapi': 'https://www.guangsu.com/',
             'xinlangapi': 'https://www.xinlang.com/',
             'wolongzy': 'https://www.wolongzy.tv/',
+            'xluuss': 'https://www.guangsu.com/',
+            'gsuus': 'https://www.guangsu.com/',
+            'svipsvip': 'https://www.ffzyplay.com/',
         };
 
         // 根据域名获取特定Referer
@@ -1006,68 +1341,74 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
 
         const specificReferer = getDomainReferer(host);
 
-        // 多种Referer策略，针对不同CDN
+        // 多种策略，针对严格防盗链 CDN (如 ffzy)
+        // 策略矩阵：UA x Headers x Referer
+        const userAgents = [
+            // 1. 移动端 UA (通常限制更宽松)
+            'Mozilla/5.0 (Linux; Android 13; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+            // 2. iOS UA
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1',
+            // 3. Desktop Chrome
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
+            // 4. 播放器 UA (模拟 OkHttp)
+            'okhttp/4.12.0',
+            // 5. 空白 UA
+            '',
+        ];
+
         const refererStrategies = [
-            // 1. 使用域名特定的Referer（如果有）
+            // 带参数传入的 referer
+            ...(refererParam ? [{ referer: String(refererParam), origin: (() => { try { return new URL(String(refererParam)).origin; } catch { return null; } })() }] : []),
+            // 域名特定 referer
             ...(specificReferer ? [{ referer: specificReferer, origin: specificReferer.replace(/\/$/, '') }] : []),
-            // 2. 使用URL的origin
-            { referer: urlObj.origin, origin: urlObj.origin },
-            // 3. 使用完整的URL作为Referer
-            { referer: url, origin: urlObj.origin },
-            // 4. 使用host带斜杠
-            { referer: `https://${host}/`, origin: `https://${host}` },
-            // 5. 空Referer（某些CDN允许）
-            { referer: '', origin: null },
-            // 6. 无Referer
+            // 自身 origin
+            { referer: urlObj.origin + '/', origin: urlObj.origin },
+            // 完全裸请求
             { referer: null, origin: null },
-            // 7. 常用播放器/解析源的Referer
-            { referer: 'https://jx.xmflv.com/', origin: 'https://jx.xmflv.com' },
-            { referer: 'https://www.iqiyi.com/', origin: 'https://www.iqiyi.com' },
-            { referer: 'https://v.qq.com/', origin: 'https://v.qq.com' },
+            // 空串
+            { referer: '', origin: null },
         ];
 
         let response = null;
         let successStrategy = null;
 
+        // 双重循环：先试不同 referer，每种 referer 试多个 UA
+        outerLoop:
         for (const strategy of refererStrategies) {
-            try {
-                // 完整的浏览器指纹模拟，绕过严格的防盗链检测
-                const headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36',
-                    'Accept': '*/*',
-                    'Accept-Encoding': 'gzip, deflate, br, zstd',
-                    'Accept-Language': 'zh-CN,zh;q=0.9,en;q=0.8',
-                    'Cache-Control': 'no-cache',
-                    'Pragma': 'no-cache',
-                    'Sec-CH-UA': '"Google Chrome";v="131", "Chromium";v="131", "Not_A Brand";v="24"',
-                    'Sec-CH-UA-Mobile': '?0',
-                    'Sec-CH-UA-Platform': '"Windows"',
-                    'Sec-Fetch-Dest': 'empty',
-                    'Sec-Fetch-Mode': 'cors',
-                    'Sec-Fetch-Site': 'cross-site',
-                    'Connection': 'keep-alive',
-                    'DNT': '1',
-                };
+            for (const ua of userAgents) {
+                try {
+                    // 最简化 headers，避免被特征识别
+                    const headers = {
+                        'User-Agent': ua || 'Mozilla/5.0',
+                        'Accept': '*/*',
+                        'Accept-Language': 'zh-CN,zh;q=0.9',
+                        'Connection': 'keep-alive',
+                    };
 
-                if (strategy.referer) headers['Referer'] = strategy.referer;
-                if (strategy.origin) headers['Origin'] = strategy.origin;
+                    if (strategy.referer) headers['Referer'] = strategy.referer;
+                    if (strategy.origin) headers['Origin'] = strategy.origin;
 
-                response = await axios.get(url, {
-                    timeout: 15000,
-                    headers,
-                    responseType: 'text',
-                    maxRedirects: 5,
-                    validateStatus: (status) => status >= 200 && status < 400,
-                });
+                    // 尝试不带 Sec-Fetch 等复杂 headers
+                    response = await axiosGetWithRetry(finalUrl, {
+                        timeout: REQUEST_TIMEOUT_MS + 5000,
+                        headers,
+                        responseType: 'text',
+                        maxRedirects: 5,
+                        validateStatus: (status) => status >= 200 && status < 400,
+                        // 禁用代理以避免额外指纹
+                        proxy: false,
+                    }, { retries: 1, baseDelayMs: 200 });
 
-                if (response.status === 200 && response.data) {
-                    successStrategy = strategy;
-                    console.log('M3U8 fetched successfully with strategy:', strategy.referer || 'no-referer');
-                    break;
+                    if (response.status === 200 && response.data) {
+                        successStrategy = strategy;
+                        console.log(`M3U8 fetched OK: UA="${ua.substring(0, 30)}..." Referer="${strategy.referer || 'none'}"`);
+                        break outerLoop;
+                    }
+                } catch (e) {
+                    // 继续尝试下一个组合
                 }
-            } catch (e) {
-                console.log('Strategy failed:', strategy.referer, e.message);
             }
+            console.log('All UA strategies failed for referer:', strategy.referer);
         }
 
         if (!response || !response.data) {
@@ -1077,30 +1418,90 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
 
         let content = response.data;
 
+        // 验证 M3U8 内容有效性
+        if (typeof content === 'string' && !content.includes('#EXTM3U')) {
+            // 如果返回的是 HTML，尝试提取其中的 m3u8 链接
+            // 常见模式：var main = "xxx.m3u8"; 或 <video src="xxx.m3u8">
+            const m3u8Match = content.match(/["']([^"']+\.m3u8[^"']*)["']/) ||
+                content.match(/src=["']([^"']+\.m3u8[^"']*)["']/);
+
+            if (m3u8Match && m3u8Match[1]) {
+                let realM3u8Url = m3u8Match[1];
+                // 处理相对路径
+                if (!realM3u8Url.startsWith('http')) {
+                    if (realM3u8Url.startsWith('/')) {
+                        realM3u8Url = new URL(url).origin + realM3u8Url;
+                    } else {
+                        realM3u8Url = url.substring(0, url.lastIndexOf('/') + 1) + realM3u8Url;
+                    }
+                }
+
+                console.log('Extracted real M3U8 URL from HTML:', realM3u8Url);
+
+                // 递归调用自己去获取真正的 m3u8
+                // 注意：这里简单的重定向客户端，或者再次发起请求
+                // 为了简单起见，我们重定向客户端到代理接口，参数为真正的URL
+                const redirectUrl = `/api/tvbox/m3u8?url=${encodeURIComponent(realM3u8Url)}${refererParam ? '&referer=' + encodeURIComponent(refererParam) : ''}`;
+                return res.redirect(redirectUrl);
+            }
+
+            console.error('Invalid M3U8 content: missing #EXTM3U tag');
+            // Log first 100 chars to debug
+            console.log('Invalid content start:', content.substring(0, 100).replace(/\n/g, '\\n'));
+            return res.status(502).send('Invalid M3U8 content');
+        }
+
+        const effectiveReferer = (successStrategy && successStrategy.referer !== undefined) ? successStrategy.referer : (refererParam ? String(refererParam) : null);
+
         // 如果是m3u8文件，需要将相对路径转换为代理URL
-        if (url.includes('.m3u8')) {
-            const baseUrl = url.substring(0, url.lastIndexOf('/') + 1);
+        if (finalUrl.includes('.m3u8') || content.includes('#EXTINF')) {
+            const m3u8UrlObj = new URL(finalUrl);
+            const baseUrl = finalUrl.substring(0, finalUrl.lastIndexOf('/') + 1);
+            const origin = m3u8UrlObj.origin;
+
+            // 辅助函数：解析相对路径为完整URL
+            function resolveUrl(path) {
+                if (!path) return null;
+                // 已经是完整URL
+                if (path.startsWith('http://') || path.startsWith('https://')) {
+                    return path;
+                }
+                // 已经是代理URL，不要再代理
+                if (path.includes('/api/tvbox/')) {
+                    return null;
+                }
+                // 绝对路径 (以/开头)
+                if (path.startsWith('/')) {
+                    return origin + path;
+                }
+                // 相对路径
+                return baseUrl + path;
+            }
 
             // 处理m3u8中的相对路径
             content = content.split('\n').map(line => {
                 line = line.trim();
-                if (!line || line.startsWith('#')) {
-                    // 处理#EXT-X-KEY等包含URI的行
+                if (!line) return line;
+
+                // 处理注释行中的URI
+                if (line.startsWith('#')) {
                     if (line.includes('URI="')) {
                         line = line.replace(/URI="([^"]+)"/g, (match, uri) => {
-                            if (uri.startsWith('http')) return match;
-                            const fullUrl = baseUrl + uri;
-                            return `URI="/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}"`;
+                            const fullUrl = resolveUrl(uri);
+                            if (!fullUrl) return match;
+                            const refererQuery = effectiveReferer ? `&referer=${encodeURIComponent(effectiveReferer)}` : '';
+                            return `URI="/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}${refererQuery}"`;
                         });
                     }
                     return line;
                 }
+
                 // 处理ts片段和子m3u8
-                if (!line.startsWith('http')) {
-                    const fullUrl = baseUrl + line;
-                    return `/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}`;
-                }
-                return `/api/tvbox/proxy?url=${encodeURIComponent(line)}`;
+                const fullUrl = resolveUrl(line);
+                if (!fullUrl) return line; // 如果解析失败，保持原样
+
+                const refererQuery = effectiveReferer ? `&referer=${encodeURIComponent(effectiveReferer)}` : '';
+                return `/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}${refererQuery}`;
             }).join('\n');
         }
 
@@ -1119,6 +1520,7 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
 app.get('/api/tvbox/proxy', async (req, res) => {
     try {
         const url = req.query.url;
+        const refererParam = req.query.referer;
         if (!url) {
             return res.status(400).send('Missing url parameter');
         }
@@ -1128,15 +1530,16 @@ app.get('/api/tvbox/proxy', async (req, res) => {
 
         // 域名特定的Referer映射
         const domainRefererMap = {
-            'ffzy-plays.com': 'https://www.ffzyplay.com/',
-            'ffzy-online.com': 'https://www.ffzyplay.com/',
-            'vip.ffzy-play2.com': 'https://www.ffzyplay.com/',
-            'ffzy-play2.com': 'https://www.ffzyplay.com/',
-            'ffzyapi.com': 'https://www.ffzyplay.com/',
+            // FFZY 系列 CDN - 使用通配模式
+            'ffzy': 'https://www.ffzyplay.com/',
+            'svipsvip': 'https://www.ffzyplay.com/',
+            // 其他资源站
             'hongniuzy': 'https://www.hongniuzy.com/',
             'lziapi': 'https://www.lziapi.com/',
             'guangsuapi': 'https://www.guangsu.com/',
             'wolongzy': 'https://www.wolongzy.tv/',
+            'xluuss': 'https://www.guangsu.com/',
+            'gsuus': 'https://www.guangsu.com/',
         };
 
         function getDomainReferer(hostname) {
@@ -1150,6 +1553,16 @@ app.get('/api/tvbox/proxy', async (req, res) => {
 
         // 多种策略尝试获取资源
         const strategies = [
+            ...(refererParam ? [{
+                referer: String(refererParam), origin: (() => {
+                    try {
+                        const o = new URL(String(refererParam));
+                        return o.origin;
+                    } catch {
+                        return null;
+                    }
+                })()
+            }] : []),
             ...(specificReferer ? [{ referer: specificReferer, origin: specificReferer.replace(/\/$/, '') }] : []),
             { referer: urlObj.origin, origin: urlObj.origin },
             { referer: url, origin: urlObj.origin },
@@ -1184,13 +1597,13 @@ app.get('/api/tvbox/proxy', async (req, res) => {
                 if (strategy.referer) headers['Referer'] = strategy.referer;
                 if (strategy.origin) headers['Origin'] = strategy.origin;
 
-                response = await axios.get(url, {
-                    timeout: 30000,
+                response = await axiosGetWithRetry(url, {
+                    timeout: REQUEST_TIMEOUT_MS + 20000,
                     headers,
                     responseType: 'arraybuffer',
                     maxRedirects: 5,
                     validateStatus: (status) => status >= 200 && status < 400,
-                });
+                }, { retries: 2, baseDelayMs: 500 });
 
                 if (response.status === 200 && response.data) break;
             } catch (e) {
@@ -1226,9 +1639,38 @@ app.get('/api/tvbox/proxy', async (req, res) => {
     }
 });
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
     console.log(`TVBox Proxy Server running on http://localhost:${PORT}`);
     console.log('CORS enabled for all origins');
+
+    // 启动时测试加载源
+    try {
+        const sources = await getApiSources();
+        console.log(`\n=== Active API Sources (${sources.length}) ===`);
+        sources.forEach(s => console.log(`  ✓ ${s.name}: ${s.api.substring(0, 50)}...`));
+    } catch (e) {
+        console.error('Failed to load sources on startup:', e.message);
+    }
+});
+
+// 调试端点：查看当前使用的源
+app.get('/api/tvbox/debug/sources', async (req, res) => {
+    try {
+        const sources = await getApiSources();
+        res.json({
+            code: 200,
+            count: sources.length,
+            sources: sources.map(s => ({
+                name: s.name,
+                api: s.api,
+                type: s.type,
+                priority: s.priority
+            })),
+            message: 'success'
+        });
+    } catch (e) {
+        res.status(500).json({ code: 500, message: e.message });
+    }
 });
 
 module.exports = app;

@@ -1,0 +1,47 @@
+# === Core Framework ===
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+pydantic-settings>=2.1.0
+python-dotenv>=1.0.0
+
+# === Vector Database ===
+pymilvus>=2.3.0
+
+# === AI/ML ===
+langchain>=0.1.0
+langchain-community>=0.0.10
+sentence-transformers>=2.2.0
+torch>=2.0.0
+transformers>=4.36.0
+
+# === Hybrid Search (BM25) ===
+rank-bm25>=0.2.2
+jieba>=0.42.1
+
+# === Caching ===
+redis>=5.0.0
+hiredis>=2.3.0
+
+# === Observability ===
+prometheus-client>=0.19.0
+structlog>=24.1.0
+
+# === Rate Limiting & Resilience ===
+slowapi>=0.1.9
+tenacity>=8.2.0
+
+# === Document Parsing ===
+python-docx>=1.1.0
+PyPDF2>=3.0.0
+python-multipart>=0.0.6
+
+# === Database ===
+pymysql>=1.1.0
+SQLAlchemy>=2.0.0
+
+# === HTTP Client ===
+httpx>=0.26.0
+
+# === Utilities ===
+numpy>=1.24.0

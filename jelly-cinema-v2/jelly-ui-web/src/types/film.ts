@@ -2,7 +2,7 @@
  * 电影信息
  */
 export interface Film {
-  id: number
+  id: number | string
   title: string
   coverUrl: string
   videoUrl: string

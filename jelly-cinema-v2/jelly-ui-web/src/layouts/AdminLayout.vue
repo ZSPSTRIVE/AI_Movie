@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import AIChatWidget from '@/components/ai/AIChatWidget.vue'
 import { ElMessageBox } from 'element-plus'
 
 const route = useRoute()
@@ -151,6 +152,9 @@ async function handleLogout() {
         </div>
       </main>
     </div>
+    
+    <!-- AI Chat Widget -->
+    <AIChatWidget />
   </div>
 </template>
 

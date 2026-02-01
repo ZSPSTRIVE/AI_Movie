@@ -6,7 +6,7 @@ import type { R } from '@/types/common'
 // 创建 axios 实例
 const service: AxiosInstance = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || '/api',
-  timeout: 30000,
+  timeout: 5000,
   headers: {
     'Content-Type': 'application/json'
   }

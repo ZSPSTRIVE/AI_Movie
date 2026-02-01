@@ -27,6 +27,12 @@
             <artifactId>jelly-common-mybatis</artifactId>
         </dependency>
         
+        <!-- Common API (Feign Clients) -->
+        <dependency>
+            <groupId>com.jelly.cinema</groupId>
+            <artifactId>jelly-common-api</artifactId>
+        </dependency>
+        
         <!-- Spring Boot Web -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

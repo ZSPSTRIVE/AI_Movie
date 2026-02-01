@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref, nextTick, onMounted, computed } from 'vue'
+import { useRouter } from 'vue-router'
 import { generateOutline, type NovelOutlineRequest } from '@/api/ai'
+import { ElMessage } from 'element-plus'
 import MarkdownIt from 'markdown-it'
+import { MagicStick, User, Service, Setting, Document, Loading, List, Refresh } from '@element-plus/icons-vue'
 
 const md = new MarkdownIt({
   html: true,
@@ -11,10 +14,16 @@ const md = new MarkdownIt({
 
 const activeTab = ref('chat')
 
+const router = useRouter()
+
 // ===== AI 对话 =====
 interface ChatMessage {
   role: 'user' | 'assistant'
   content: string
+}
+
+function goToFilmDetail(filmId: string | number) {
+  router.push(`/film/${filmId}`)
 }
 
 const chatMessages = ref<ChatMessage[]>([])
@@ -133,6 +142,86 @@ async function handleGenerateOutline() {
 }
 
 const styleOptions = ['轻松', '严肃', '悬疑', '浪漫', '热血', '治愈']
+
+// ===== RAG 知识库 =====
+const ragQuery = ref('')
+const ragResults = ref<Array<{
+  film_id: number
+  title: string
+  content: string
+  score: number
+}>>([])
+const ragLoading = ref(false)
+const syncLoading = ref(false)
+const syncStatus = ref<'idle' | 'success' | 'error'>('idle')
+const syncMessage = ref('')
+
+// Python RAG 服务地址
+const RAG_SERVICE_URL = 'http://localhost:8500'
+
+// 同步电影数据到向量库
+async function handleSyncFilms() {
+  syncLoading.value = true
+  syncStatus.value = 'idle'
+  try {
+    const res = await fetch(`${RAG_SERVICE_URL}/rag/sync`, { method: 'POST' })
+    const data = await res.json()
+    if (data.success) {
+      syncStatus.value = 'success'
+      syncMessage.value = `同步成功！共同步 ${data.count} 部电影`
+      ElMessage.success(syncMessage.value)
+    } else {
+      throw new Error(data.message || '同步失败')
+    }
+  } catch (e: any) {
+    syncStatus.value = 'error'
+    syncMessage.value = e.message || '同步失败，请检查 Python 服务是否运行'
+    ElMessage.error(syncMessage.value)
+  } finally {
+    syncLoading.value = false
+  }
+}
+
+// 知识库检索
+async function handleRagSearch() {
+  if (!ragQuery.value.trim()) return
+  
+  ragLoading.value = true
+  ragResults.value = []
+  try {
+    const res = await fetch(`${RAG_SERVICE_URL}/rag/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query: ragQuery.value, top_k: 5 })
+    })
+    const data = await res.json()
+    ragResults.value = data.results || []
+    if (ragResults.value.length === 0) {
+      ElMessage.info('未找到相关内容')
+    }
+  } catch (e: any) {
+    ElMessage.error('检索失败，请检查 Python 服务是否运行')
+  } finally {
+    ragLoading.value = false
+  }
+}
+
+// 检查 RAG 服务状态
+const ragServiceStatus = ref<'checking' | 'online' | 'offline'>('checking')
+
+async function checkRagService() {
+  try {
+    const res = await fetch(`${RAG_SERVICE_URL}/health`, { method: 'GET' })
+    const data = await res.json()
+    ragServiceStatus.value = data.status === 'healthy' ? 'online' : 'offline'
+  } catch {
+    ragServiceStatus.value = 'offline'
+  }
+}
+
+onMounted(() => {
+  checkRagService()
+})
 </script>
 
 <template>
@@ -347,20 +436,127 @@ const styleOptions = ['轻松', '严肃', '悬疑', '浪漫', '热血', '治愈'
         </div>
       </el-tab-pane>
 
-      <!-- 知识库 -->
-      <el-tab-pane label="知识库" name="knowledge">
-        <div class="bg-dark-card rounded-xl p-6 min-h-[500px]">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="text-lg font-bold text-white">文档管理</h3>
-            <el-upload action="/api/ai/rag/upload" :show-file-list="false">
-              <el-button type="primary">
-                <el-icon class="mr-1"><Upload /></el-icon>
-                上传文档
+      <!-- 知识库 RAG -->
+      <el-tab-pane label="📚 知识库 RAG" name="knowledge">
+        <div class="grid lg:grid-cols-2 gap-6">
+          <!-- 左侧：服务状态 & 同步 -->
+          <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6">
+            <h3 class="text-xl font-black mb-6 flex items-center gap-2">
+              ⚙️ RAG 服务控制
+            </h3>
+            
+            <!-- 服务状态 -->
+            <div class="mb-6 p-4 rounded-xl border-2 border-black" :class="{
+              'bg-green-100': ragServiceStatus === 'online',
+              'bg-red-100': ragServiceStatus === 'offline',
+              'bg-gray-100': ragServiceStatus === 'checking'
+            }">
+              <div class="flex items-center gap-3">
+                <span class="text-2xl">
+                  {{ ragServiceStatus === 'online' ? '✅' : ragServiceStatus === 'offline' ? '❌' : '⏳' }}
+                </span>
+                <div>
+                  <div class="font-bold">Python RAG 服务</div>
+                  <div class="text-sm text-gray-600">
+                    {{ ragServiceStatus === 'online' ? '运行中 (localhost:8500)' : 
+                       ragServiceStatus === 'offline' ? '未连接 - 请启动服务' : '检查中...' }}
+                  </div>
+                </div>
+                <el-button size="small" @click="checkRagService" class="ml-auto">刷新</el-button>
+              </div>
+            </div>
+            
+            <!-- 同步电影 -->
+            <div class="mb-6">
+              <h4 class="font-bold mb-3">🎬 同步电影数据到向量库</h4>
+              <p class="text-sm text-gray-600 mb-4">
+                将 MySQL 中的电影数据 (t_film) 向量化后存入 Milvus，用于语义检索。
+              </p>
+              <el-button 
+                type="primary" 
+                :loading="syncLoading" 
+                :disabled="ragServiceStatus !== 'online'"
+                @click="handleSyncFilms"
+                class="!bg-pop-blue !border-2 !border-black !font-bold"
+              >
+                <el-icon class="mr-1"><Refresh /></el-icon>
+                {{ syncLoading ? '同步中...' : '开始同步' }}
               </el-button>
-            </el-upload>
+              <el-alert 
+                v-if="syncStatus !== 'idle'" 
+                :type="syncStatus === 'success' ? 'success' : 'error'"
+                :title="syncMessage"
+                class="mt-4"
+                show-icon
+                closable
+              />
+            </div>
+            
+            <!-- 使用说明 -->
+            <div class="bg-gray-50 border-2 border-black rounded-xl p-4">
+              <h4 class="font-bold mb-2">💡 使用说明</h4>
+              <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
+                <li>启动 Python 服务: <code class="bg-gray-200 px-1 rounded">cd jelly-rag-python && uvicorn main:app --port 8500</code></li>
+                <li>点击"开始同步"将电影数据向量化</li>
+                <li>在右侧输入查询进行语义搜索</li>
+                <li>在 AI 对话中勾选"启用 RAG"可自动检索知识库</li>
+              </ol>
+            </div>
           </div>
           
-          <el-empty description="暂无知识库文档，上传文档后可启用 RAG 检索" />
+          <!-- 右侧：知识库检索 -->
+          <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6 flex flex-col">
+            <h3 class="text-xl font-black mb-6 flex items-center gap-2">
+              🔍 知识库检索测试
+            </h3>
+            
+            <!-- 搜索框 -->
+            <div class="flex gap-3 mb-6">
+              <el-input 
+                v-model="ragQuery" 
+                placeholder="输入查询内容，如：科幻电影、刘德华..." 
+                size="large"
+                :disabled="ragServiceStatus !== 'online'"
+                @keyup.enter="handleRagSearch"
+              />
+              <el-button 
+                type="primary" 
+                :loading="ragLoading" 
+                :disabled="ragServiceStatus !== 'online' || !ragQuery.trim()"
+                @click="handleRagSearch"
+                class="!bg-pop-green !text-black !border-2 !border-black !font-bold"
+              >
+                搜索
+              </el-button>
+            </div>
+            
+            <!-- 搜索结果 -->
+            <div class="flex-1 overflow-y-auto space-y-4" style="max-height: 400px;">
+              <div v-if="ragLoading" class="flex items-center justify-center py-12">
+                <el-icon class="is-loading text-4xl text-pop-purple"><Loading /></el-icon>
+              </div>
+              
+              <div v-else-if="ragResults.length > 0">
+                <div 
+                  v-for="(result, idx) in ragResults" 
+                  :key="idx"
+                  class="p-4 rounded-xl border-2 border-black bg-nb-bg hover:shadow-brutal-sm transition-shadow cursor-pointer rag-result"
+                  @click="goToFilmDetail(result.film_id)"
+                >
+                  <div class="flex items-start justify-between mb-2">
+                    <h4 class="font-bold text-lg">{{ result.title }}</h4>
+                    <span class="text-xs bg-pop-purple text-white px-2 py-1 rounded-full">
+                      相关度: {{ (result.score * 100).toFixed(1) }}%
+                    </span>
+                  </div>
+                  <p class="text-sm text-gray-600 line-clamp-3">{{ result.content }}</p>
+                  <div class="mt-2 text-xs text-gray-400">ID: {{ result.film_id }}</div>
+                </div>
+              </div>
+              
+              <el-empty v-else description="输入内容进行向量语义搜索" :image-size="80" />
+            </div>
+          </div>
         </div>
       </el-tab-pane>
     </el-tabs>
@@ -404,5 +600,19 @@ const styleOptions = ['轻松', '严肃', '悬疑', '浪漫', '热血', '治愈'
 .markdown-body :deep(pre code) {
   background-color: transparent;
   padding: 0;
+}
+
+.rag-result {
+  position: relative;
+}
+
+.rag-result::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 12px;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
+  opacity: 0.7;
+  pointer-events: none;
 }
 </style>

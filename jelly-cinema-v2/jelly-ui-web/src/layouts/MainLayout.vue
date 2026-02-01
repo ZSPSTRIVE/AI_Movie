@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useMessageStore } from '@/stores/message'
 import { ElMessage } from 'element-plus'
+import AIChatWidget from '@/components/ai/AIChatWidget.vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -160,6 +161,9 @@ function goToChat() {
         <p class="footer-slogan">影视 + 社交 + AI 一体化平台</p>
       </div>
     </footer>
+    
+    <!-- AI Chat Widget -->
+    <AIChatWidget />
   </div>
 </template>
 

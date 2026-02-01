@@ -116,7 +116,7 @@ function handlePageChange(page: number) {
   fetchFilms()
 }
 
-function goToDetail(id: number) {
+function goToDetail(id: string | number) {
   router.push(`/film/${id}`)
 }
 

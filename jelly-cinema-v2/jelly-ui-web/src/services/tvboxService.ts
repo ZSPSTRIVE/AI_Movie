@@ -1,4 +1,4 @@
-import axios from 'axios'
+﻿import axios from 'axios'
 import type { Film } from '@/types/film'
 
 // TVBox 代理服务器地址
@@ -9,6 +9,41 @@ const PROXY_BASE_URL = 'http://localhost:3001/api/tvbox'
  * 通过代理服务器访问真实的 TVBox 数据源
  */
 class TVBoxService {
+  private lastRecommendCache: Film[] = []
+  private titleIdIndex: Map<string, string> = new Map()
+
+  private isNumericId(id: number | string): boolean {
+    if (typeof id === 'number') return true
+    return typeof id === 'string' && /^\d+$/.test(id)
+  }
+
+  private normalizeTitle(title: string): string {
+    return String(title || '')
+      .toLowerCase()
+      .replace(/\s+/g, '')
+      .replace(/[\u3000]/g, '')
+  }
+
+  private updateTitleIndex(list: Film[]) {
+    for (const film of list) {
+      const id = film?.id
+      if (typeof id !== 'string' || this.isNumericId(id)) continue
+      const key = this.normalizeTitle(film.title)
+      if (!key) continue
+      this.titleIdIndex.set(key, id)
+    }
+  }
+
+  private findCachedIdByTitle(title: string): string | null {
+    const key = this.normalizeTitle(title)
+    if (!key) return null
+    const exact = this.titleIdIndex.get(key)
+    if (exact) return exact
+    for (const [k, id] of this.titleIdIndex.entries()) {
+      if (k.includes(key) || key.includes(k)) return id
+    }
+    return null
+  }
   /**
    * 获取推荐电影
    */
@@ -17,12 +52,21 @@ class TVBoxService {
       console.log('正在请求真实 TVBox 推荐数据...')
       const response = await axios.get(`${PROXY_BASE_URL}/recommend`, {
         params: { limit },
-        timeout: 20000,
+        timeout: 5000,
       })
       console.log('真实数据获取成功:', response.data.data?.length || 0)
-      return response.data.data || []
+      const data = response.data.data || []
+      if (Array.isArray(data) && data.length > 0) {
+        this.lastRecommendCache = data
+        this.titleIdIndex.clear()
+        this.updateTitleIndex(data)
+        return data
+      }
+      if (this.lastRecommendCache.length > 0) return this.lastRecommendCache
+      return this.getFallbackData()
     } catch (error) {
       console.error('Failed to fetch recommend, using fallback:', error)
+      if (this.lastRecommendCache.length > 0) return this.lastRecommendCache
       return this.getFallbackData()
     }
   }
@@ -34,9 +78,13 @@ class TVBoxService {
     try {
       const response = await axios.get(`${PROXY_BASE_URL}/list`, {
         params: { page, pageSize },
-        timeout: 20000,
+        timeout: 5000,
       })
-      return response.data.data || { list: [], total: 0 }
+      const data = response.data.data || { list: [], total: 0 }
+      if (Array.isArray(data.list) && data.list.length > 0) {
+        this.updateTitleIndex(data.list)
+      }
+      return data
     } catch (error) {
       console.error('Failed to fetch list, using fallback:', error)
       const allData = this.getFallbackData()
@@ -51,9 +99,13 @@ class TVBoxService {
     try {
       const response = await axios.get(`${PROXY_BASE_URL}/search`, {
         params: { keyword },
-        timeout: 10000,
+        timeout: 5000,
       })
-      return response.data.data || []
+      const data = response.data.data || []
+      if (Array.isArray(data) && data.length > 0) {
+        this.updateTitleIndex(data)
+      }
+      return data
     } catch (error) {
       console.error('Failed to search:', error)
       return []
@@ -67,15 +119,32 @@ class TVBoxService {
     try {
       console.log('正在获取真实电影详情, ID:', id)
       const response = await axios.get(`${PROXY_BASE_URL}/detail/${encodeURIComponent(id)}`, {
-        timeout: 15000,
+        timeout: 5000,
       })
-      return response.data.data || null
+      const data = response.data.data || null
+      if (data) {
+        this.updateTitleIndex([data])
+      }
+      return data
     } catch (error) {
       console.error('Failed to fetch detail:', error)
       // 如果是数字ID，尝试从降级数据找
-      if (!isNaN(Number(id))) {
+      if (this.isNumericId(id)) {
         const fallback = this.getFallbackData().find(f => f.id === Number(id))
-        if (fallback) return fallback
+        if (fallback) {
+          const cachedId = this.findCachedIdByTitle(fallback.title)
+          if (cachedId && cachedId !== String(id)) {
+            const mapped = await this.getDetail(cachedId)
+            if (mapped) return mapped
+          }
+          const searchResults = await this.search(fallback.title)
+          const first = searchResults?.[0]
+          if (first?.id && !this.isNumericId(first.id)) {
+            const mapped = await this.getDetail(first.id)
+            if (mapped) return mapped
+          }
+          return fallback
+        }
       }
       return null
     }
@@ -84,18 +153,45 @@ class TVBoxService {
   /**
    * 获取播放链接
    */
+  /**
+   * 获取播放链接
+   */
   async getPlayUrl(id: number | string): Promise<{ playUrl: string, episodes: any[] }> {
     try {
       console.log('正在获取真实播放链接, ID:', id)
 
+      // 处理数字ID (降级数据): 尝试通过标题搜索真实资源
+      if (this.isNumericId(id)) {
+        // Resolve numeric fallback IDs to real TVBox IDs when possible
+        const fallback = this.getFallbackData().find(f => f.id === Number(id))
+        if (fallback) {
+          console.log(`Detected numeric ID ${id} (${fallback.title}); resolving to real source...`)
+          const cachedId = this.findCachedIdByTitle(fallback.title)
+          if (cachedId && cachedId !== String(id)) {
+            console.log(`Mapped numeric ID ${id} to cached ID: ${cachedId}`)
+            return this.getPlayUrl(cachedId)
+          }
+          const searchResults = await this.search(fallback.title)
+          if (searchResults && searchResults.length > 0) {
+            const realId = searchResults[0].id
+            if (realId && !this.isNumericId(realId)) {
+              console.log(`Search hit, mapped to real ID: ${realId}`)
+              return this.getPlayUrl(realId)
+            }
+          }
+        }
+        console.warn(`Numeric ID ${id} could not be mapped to a playable source`)
+        return { playUrl: '', episodes: [] }
+      }
+
       const response = await axios.get(`${PROXY_BASE_URL}/play/${encodeURIComponent(id)}`, {
-        timeout: 20000,
+        timeout: 10000, // 增加超时时间，因为解析可能慢
       })
       return response.data.data || { playUrl: '', episodes: [] }
     } catch (error) {
       console.error('Failed to fetch play url:', error)
       return {
-        playUrl: '', // 失败时不返回示例视频
+        playUrl: '',
         episodes: []
       }
     }

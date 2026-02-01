@@ -183,10 +183,14 @@ router.beforeEach((to, _from, next) => {
   // 权限检查
   if (to.meta.requireAuth) {
     const userStore = useUserStore()
+    console.log('[Router Guard] 需要认证 - 页面:', to.path, '已登录:', userStore.isLogin, 'token:', userStore.token ? '有' : '无')
+
     if (!userStore.isLogin) {
+      console.log('[Router Guard] 未登录，重定向到登录页')
       next({ name: 'Login', query: { redirect: to.fullPath } })
       return
     }
+    console.log('[Router Guard] 认证通过，继续导航')
   }
 
   next()

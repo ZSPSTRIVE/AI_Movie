@@ -10,7 +10,10 @@
     <div v-else-if="error && !currentPlayUrl" class="error-container">
       <el-icon :size="48" color="#f56c6c"><WarningFilled /></el-icon>
       <p class="error-text">{{ error }}</p>
-      <el-button class="mt-4" type="primary" @click="retry">重试</el-button>
+      <div class="flex gap-4 mt-4">
+        <el-button type="primary" @click="retry">重试加载</el-button>
+        <el-button type="warning" @click="switchSource" v-if="episodes.length > 0">切换线路</el-button>
+      </div>
     </div>
 
     <!-- 播放器区域 -->
@@ -88,6 +91,9 @@ const currentPlayUrl = ref('')
 const episodes = ref<Array<{ name: string; url: string }>>([])
 const currentEpisode = ref(0)
 let hlsInstance: Hls | null = null
+const failedUrls = ref<Set<string>>(new Set())
+const isAutoSwitching = ref(false)
+let hasReloadedPlayDataOnce = false
 
 onMounted(async () => {
   await loadPlayData()
@@ -107,18 +113,28 @@ function destroyHls() {
 async function loadPlayData() {
   loading.value = true
   error.value = ''
+  failedUrls.value = new Set()
+  isAutoSwitching.value = false
   
   try {
     const data = await tvboxService.getPlayUrl(props.filmId)
     console.log('Play data received:', data)
     
     if (!data.playUrl && (!data.episodes || data.episodes.length === 0)) {
+      // 有些源第一次会返回空，自动再拉取一次
+      if (!hasReloadedPlayDataOnce) {
+        hasReloadedPlayDataOnce = true
+        loading.value = false
+        await loadPlayData()
+        return
+      }
       error.value = '暂无可用播放源'
       loading.value = false
       return
     }
     
     episodes.value = data.episodes || []
+    currentEpisode.value = 0
     currentPlayUrl.value = data.playUrl || (data.episodes?.[0]?.url || '')
     
     loading.value = false
@@ -158,65 +174,49 @@ function initPlayer(url: string) {
   const isHlsStream = url.includes('.m3u8') || url.includes('/play/') || url.includes('index.m3u8')
   
   if (isHlsStream && Hls.isSupported()) {
-    console.log('Using HLS.js')
+    console.log('Using HLS.js - Direct Playback')
     
-    // 先尝试直接播放，失败后降级到代理
-    const tryPlay = (playUrl: string, useProxy: boolean) => {
-      destroyHls()
-      
-      hlsInstance = new Hls({
-        enableWorker: true,
-        lowLatencyMode: false,
-        backBufferLength: 90,
-        maxBufferLength: 30,
-        maxMaxBufferLength: 60,
-        xhrSetup: (xhr: XMLHttpRequest) => {
-          // 设置请求头尝试绕过CORS
-          if (!useProxy) {
-            xhr.withCredentials = false
-          }
-        },
-      })
-      
-      console.log('Trying URL:', playUrl, 'useProxy:', useProxy)
-      hlsInstance.loadSource(playUrl)
-      hlsInstance.attachMedia(video)
-      
-      hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-        console.log('HLS manifest parsed successfully!')
+    destroyHls()
+    
+    hlsInstance = new Hls({
+      enableWorker: true,
+      lowLatencyMode: false,
+      backBufferLength: 90,
+      maxBufferLength: 30,
+      maxMaxBufferLength: 60,
+      // 直接播放，不使用代理
+      xhrSetup: (xhr: XMLHttpRequest) => {
+        xhr.withCredentials = false
+      },
+    })
+    
+    console.log('Loading M3U8 directly:', url)
+    hlsInstance.loadSource(url)
+    hlsInstance.attachMedia(video)
+    
+    hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
+      console.log('HLS manifest parsed successfully!')
+      videoLoading.value = false
+      video.play().catch(e => console.log('Auto-play blocked:', e.message))
+    })
+    
+    hlsInstance.on(Hls.Events.ERROR, (_, data) => {
+      if (data.fatal) {
+        console.error('HLS fatal error:', data.type, data.details)
         videoLoading.value = false
-        video.play().catch(e => console.log('Auto-play blocked:', e.message))
-      })
-      
-      hlsInstance.on(Hls.Events.ERROR, (_, data) => {
-        if (data.fatal) {
-          console.error('HLS fatal error:', data.type, data.details)
-          
-          // 如果直接播放失败且还没用代理，尝试代理模式
-          if (!useProxy && data.type === Hls.ErrorTypes.NETWORK_ERROR) {
-            console.log('Direct play failed, trying proxy...')
-            const proxyUrl = `http://localhost:3001/api/tvbox/m3u8?url=${encodeURIComponent(url)}`
-            tryPlay(proxyUrl, true)
-            return
-          }
-          
-          videoLoading.value = false
-          
-          if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
-            hlsInstance?.recoverMediaError()
-          } else {
-            error.value = '播放失败，请尝试其他线路'
-          }
+        
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR) {
+          hlsInstance?.recoverMediaError()
+        } else {
+          error.value = '播放失败，正在切换线路...'
+          handlePlaybackFailed(url)
         }
-      })
-      
-      hlsInstance.on(Hls.Events.FRAG_LOADED, () => {
-        videoLoading.value = false
-      })
-    }
+      }
+    })
     
-    // 先尝试直接播放
-    tryPlay(url, false)
+    hlsInstance.on(Hls.Events.FRAG_LOADED, () => {
+      videoLoading.value = false
+    })
     
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari原生HLS支持
@@ -240,9 +240,42 @@ function initPlayer(url: string) {
   video.addEventListener('error', () => {
     videoLoading.value = false
     if (!error.value) {
-      error.value = '视频加载失败'
+      error.value = '播放失败，正在切换线路...'
     }
+    handlePlaybackFailed(url)
   }, { once: true })
+}
+
+function getNextPlayableIndex(fromIndex: number): number {
+  if (!episodes.value.length) return -1
+  for (let i = fromIndex + 1; i < episodes.value.length; i++) {
+    const nextUrl = episodes.value[i]?.url
+    if (nextUrl && !failedUrls.value.has(nextUrl)) {
+      return i
+    }
+  }
+  return -1
+}
+
+function handlePlaybackFailed(failedUrl: string) {
+  failedUrls.value.add(failedUrl)
+  if (isAutoSwitching.value) return
+
+  const nextIndex = getNextPlayableIndex(currentEpisode.value)
+  if (nextIndex === -1) {
+    error.value = '暂无可用播放源'
+    currentPlayUrl.value = ''
+    return
+  }
+
+  isAutoSwitching.value = true
+  currentEpisode.value = nextIndex
+  const nextUrl = episodes.value[nextIndex]?.url
+  if (nextUrl) {
+    currentPlayUrl.value = nextUrl
+    initPlayer(nextUrl)
+  }
+  isAutoSwitching.value = false
 }
 
 function switchEpisode(index: number) {
@@ -251,6 +284,7 @@ function switchEpisode(index: number) {
   currentEpisode.value = index
   const url = episodes.value[index]?.url
   if (url) {
+    failedUrls.value.delete(url)
     currentPlayUrl.value = url
     initPlayer(url)
   }
@@ -263,7 +297,54 @@ function handleVideoError() {
 
 function retry() {
   error.value = ''
+  hasReloadedPlayDataOnce = false
   loadPlayData()
+}
+
+// 提取当前源名称
+function getSourceName(name: string): string {
+  const match = name.match(/^(.*?) - /)
+  return match ? match[1] : 'Default'
+}
+
+// 提取剧集后缀 (e.g. "第1集")
+function getEpisodeSuffix(name: string): string {
+  const match = name.match(/ - (.*)$/)
+  return match ? match[1] : name
+}
+
+// 切换源 (切换到下一个可用的 API 源)
+function switchSource() {
+  if (episodes.value.length === 0) return
+
+  const currentEp = episodes.value[currentEpisode.value]
+  if (!currentEp) return
+
+  const currentSourceName = getSourceName(currentEp.name)
+  const currentSuffix = getEpisodeSuffix(currentEp.name)
+
+  // 寻找下一个不同源的相同剧集
+  // 1. 先找相同剧集 (Suffix) 但不同 Source
+  let nextIndex = episodes.value.findIndex((ep, index) => {
+    if (index === currentEpisode.value) return false
+    const source = getSourceName(ep.name)
+    const suffix = getEpisodeSuffix(ep.name)
+    // 必须是不同源，且剧集名相同 (e.g. 都是 "第1集")
+    return source !== currentSourceName && suffix === currentSuffix
+  })
+
+  // 2. 如果没找到同剧集的，就找任意不同源的第一个
+  if (nextIndex === -1) {
+    nextIndex = episodes.value.findIndex(ep => getSourceName(ep.name) !== currentSourceName)
+  }
+
+  if (nextIndex !== -1) {
+    console.log(`Switching source from ${currentSourceName} to ${getSourceName(episodes.value[nextIndex].name)}`)
+    switchEpisode(nextIndex)
+  } else {
+    // 只有一个源，尝试重新加载
+    retry()
+  }
 }
 </script>
 

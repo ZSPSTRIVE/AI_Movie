@@ -34,7 +34,7 @@ async function doSearch() {
   }
 }
 
-function goToDetail(id: number) {
+function goToDetail(id: string | number) {
   router.push(`/film/${id}`)
 }
 </script>
