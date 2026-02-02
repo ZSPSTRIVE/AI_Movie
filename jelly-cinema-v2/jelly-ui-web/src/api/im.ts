@@ -415,55 +415,127 @@ export function markAsRead(sessionId: string): Promise<R<void>> {
  */
 export class IMWebSocket {
   private ws: WebSocket | null = null
-  private url: string
+  private token: string
+  private userId?: string | number
   private reconnectAttempts = 0
   private maxReconnectAttempts = 5
+  private reconnectTimer: number | null = null
+  private manualClose = false
+  private connecting = false
   private listeners: Map<string, Function[]> = new Map()
 
-  constructor(token: string) {
+  constructor(token: string, userId?: string | number) {
+    this.token = token
+    this.userId = userId
+  }
+
+  updateToken(token: string) {
+    this.token = token
+  }
+
+  updateUserId(userId?: string | number) {
+    this.userId = userId
+  }
+
+  private buildUrl() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    // 开发环境前端运行在 3000 端口，后端网关在 8080，需要显式指定网关端口
-    const host = import.meta.env.DEV ? 'localhost:8080' : window.location.host
-    this.url = `${protocol}//${host}/ws/chat?token=${token}`
+    // Dev: connect to current host (Vite), then proxy /ws -> Gateway -> IM.
+    // Prod: connect to current host (typically Gateway).
+    const host = window.location.host
+    const tokenParam = `token=${encodeURIComponent(this.token)}`
+    const hasUserId = this.userId !== undefined && this.userId !== null && String(this.userId) !== ''
+    const userIdParam = hasUserId ? `&userId=${encodeURIComponent(String(this.userId))}` : ''
+    return `${protocol}//${host}/ws/chat?${tokenParam}${userIdParam}`
   }
 
   connect() {
-    this.ws = new WebSocket(this.url)
+    if (!this.token || !this.token.trim()) {
+      console.warn('WebSocket skipped: missing token')
+      return
+    }
+
+    if (this.ws && (this.ws.readyState === WebSocket.OPEN || this.ws.readyState === WebSocket.CONNECTING)) {
+      return
+    }
+
+    this.manualClose = false
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
+    this.connecting = true
+    const url = this.buildUrl()
+    console.log('WebSocket connecting:', url)
+    this.ws = new WebSocket(url)
 
     this.ws.onopen = () => {
-      console.log('WebSocket 连接成功')
+      this.connecting = false
+      console.log('WebSocket connected')
       this.reconnectAttempts = 0
+      if (this.reconnectTimer) {
+        clearTimeout(this.reconnectTimer)
+        this.reconnectTimer = null
+      }
       this.emit('connected')
     }
 
     this.ws.onmessage = (event) => {
       try {
-        console.log('WebSocket 收到原始消息:', event.data)
+        console.log('WebSocket raw message:', event.data)
         const data = JSON.parse(event.data)
-        console.log('WebSocket 解析后消息:', data)
+        console.log('WebSocket parsed message:', data)
         this.emit(data.type, data)
       } catch (e) {
-        console.error('消息解析失败', e)
+        console.error('Failed to parse message', e)
       }
     }
 
-    this.ws.onclose = () => {
-      console.log('WebSocket 连接断开')
+    this.ws.onclose = (event) => {
+      this.connecting = false
+      console.log(
+        `WebSocket disconnected: code=${event.code}, reason=${event.reason || '(empty)'}, wasClean=${event.wasClean}`
+      )
       this.emit('disconnected')
+      this.ws = null
+      if (this.manualClose) {
+        return
+      }
       this.tryReconnect()
     }
 
     this.ws.onerror = (error) => {
-      console.error('WebSocket 错误', error)
+      console.error('WebSocket error', error)
       this.emit('error', error)
     }
   }
 
   private tryReconnect() {
+    if (this.manualClose) return
+    if (!this.token || !this.token.trim()) {
+      console.log('Missing token, stop reconnect')
+      return
+    }
+
+    // If page is hidden, pause reconnect until user returns.
+    if (document.hidden) {
+      console.log('Page hidden, pause reconnect')
+      return
+    }
+
+    if (this.reconnectTimer || this.connecting) return
+
     if (this.reconnectAttempts < this.maxReconnectAttempts) {
       this.reconnectAttempts++
-      console.log(`尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`)
-      setTimeout(() => this.connect(), 3000 * this.reconnectAttempts)
+      // Exponential backoff: 3s, 6s, 12s, 24s, 48s
+      const delay = Math.min(3000 * Math.pow(2, this.reconnectAttempts - 1), 60000)
+      console.log(`Reconnect attempt (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay / 1000}s`)
+      this.reconnectTimer = window.setTimeout(() => {
+        this.reconnectTimer = null
+        this.connect()
+      }, delay)
+    } else {
+      console.log('Max reconnect attempts reached; stop reconnecting')
+      this.emit('maxReconnectReached')
     }
   }
 
@@ -471,15 +543,15 @@ export class IMWebSocket {
     if (this.ws?.readyState === WebSocket.OPEN) {
       const payload = {
         cmdType: data.cmdType || 1,
-        toId: String(data.toId),  // 转为字符串避免大数字精度丢失
+        toId: String(data.toId),  // Stringify to avoid JS bigint precision loss
         msgType: data.msgType || 1,
         content: data.content,
         extra: data.extra
       }
-      console.log('WebSocket 发送消息:', payload)
+      console.log('WebSocket send:', payload)
       this.ws.send(JSON.stringify(payload))
     } else {
-      console.error('WebSocket 未连接')
+      console.error('WebSocket not connected')
     }
   }
 
@@ -510,6 +582,11 @@ export class IMWebSocket {
   }
 
   disconnect() {
+    this.manualClose = true
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = null
+    }
     if (this.ws) {
       this.ws.close()
       this.ws = null

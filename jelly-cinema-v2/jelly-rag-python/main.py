@@ -1,13 +1,13 @@
-"""
+﻿"""
 果冻影院 RAG 服务
 企业级智能检索服务
 
 集成特性:
-- 混合检索 (BM25 + Vector)
+- 混合检索(BM25 + Vector)
 - 多级缓存 (Redis)
 - 查询增强 (HyDE + 扩展)
-- 重排序 (Cross-Encoder)
-- 可观测性 (Prometheus)
+- 重排序(Cross-Encoder)
+- 可观测性(Prometheus)
 - 限流与熔断
 
 Author: Jelly Cinema Team
@@ -56,6 +56,7 @@ logger = logging.getLogger(__name__)
 settings = get_settings()
 
 _milvus_ready: bool = False
+_bm25_last_build_at: float = 0.0
 
 # 限流器
 limiter = Limiter(key_func=get_remote_address)
@@ -126,7 +127,7 @@ async def lifespan(app: FastAPI):
             logger.error(f"❌ Milvus init failed: {e}")
     else:
         monitor_milvus_status(False)
-        logger.info("⏭️ Milvus disabled by config")
+        logger.info("⚠️ Milvus disabled by config")
 
     # 2. 连接 Redis
     if cache_service.connect():
@@ -138,25 +139,29 @@ async def lifespan(app: FastAPI):
     if settings.enable_reranker:
         init_reranker()
 
-    # 4. 构建 BM25 索引 (异步或启动时构建)
-    # 生产环境建议异步定期构建，这里简化为启动时尝试从 MySQL 构建
+    # 4. 构建 BM25 索引 (启动时构建)
     try:
-        films = fetch_all_films()
-        if films:
-            # 需要 content，这里假设 MySQL 数据还未构建 content
-            # 简易处理：现场构建一部分用于索引
-            enriched_films = []
-            for f in films:
-                content = build_film_content(f)
-                enriched_films.append({**f, "content": content})
-            
-            hybrid_searcher.build_bm25_index(enriched_films)
+        build_bm25_index_from_db()
     except Exception as e:
-        logger.warning(f"⚠️ Initial BM25 index build skipped: {e}")
+        logger.warning(f"Initial BM25 index build skipped: {e}")
 
     logger.info("✅ Service initialized successfully")
     yield
     logger.info("👋 Shutting down service")
+
+def build_bm25_index_from_db() -> int:
+    """从数据库构建/刷新 BM25 索引"""
+    global _bm25_last_build_at
+    films = fetch_all_films()
+    if not films:
+        return 0
+    enriched_films = []
+    for f in films:
+        content = build_film_content(f)
+        enriched_films.append({**f, "content": content})
+    hybrid_searcher.build_bm25_index(enriched_films)
+    _bm25_last_build_at = time.time()
+    return len(enriched_films)
 
 # ==================== FastAPI App ====================
 
@@ -185,7 +190,7 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 @app.get("/health")
 async def health_check():
-    """健康检查 (含组件状态)"""
+    """健康检查(含组件状态)"""
     return {
         "status": "healthy",
         "components": {
@@ -193,7 +198,8 @@ async def health_check():
             "redis": "connected" if cache_service.is_connected else "disconnected",
             "reranker": "ready" if reranker.is_ready else "disabled/loading",
             "bm25": "ready" if hybrid_searcher._indexed else "empty"
-        }
+        },
+        "bm25_last_build_at": _bm25_last_build_at
     }
 
 @app.get("/metrics")
@@ -221,7 +227,16 @@ async def rag_search(request: Request, body: SearchRequest):
             enhanced_query = enhance_query(body.query)
             logger.info(f"✨ Enhanced query: {body.query} -> {enhanced_query}")
 
-        # 2. 向量检索 (召回 Top-K * 2 用于重排序)
+        # 2. 定期刷新 BM25 索引，避免数据过旧
+        if settings.bm25_refresh_minutes > 0:
+            now = time.time()
+            if (not hybrid_searcher._indexed) or (now - _bm25_last_build_at > settings.bm25_refresh_minutes * 60):
+                try:
+                    build_bm25_index_from_db()
+                except Exception as e:
+                    logger.warning(f"BM25 refresh skipped: {e}")
+
+        # 3. 向量检索 (召回 Top-K * 2 用于重排序)
         recall_k = body.top_k * 2 if (body.enable_rerank and settings.enable_reranker) else body.top_k
         
         # Embedding
@@ -236,12 +251,12 @@ async def rag_search(request: Request, body: SearchRequest):
                 logger.warning(f"⚠️ Milvus search failed, falling back to BM25-only: {e}")
                 vector_results = []
 
-        # 3. 混合检索 (如果启用)
+        # 3. 混合检索(如果启用)
         final_candidates = vector_results
         if body.enable_hybrid and settings.enable_hybrid_search:
             final_candidates = hybrid_search(enhanced_query, vector_results, top_k=recall_k)
 
-        # 4. 重排序 (如果启用)
+        # 4. 重排序(如果启用)
         if body.enable_rerank and settings.enable_reranker:
             final_results = reranker.rerank(
                 query=body.query,  # Rerank 使用原始查询通常更准
@@ -280,34 +295,39 @@ async def rag_search(request: Request, body: SearchRequest):
 async def sync_films():
     """同步数据并重建索引"""
     try:
-        if not _milvus_ready:
-            return SyncResponse(success=False, count=0, message="Milvus not available")
-        # 1. MySQL -> Milvus
+        global _bm25_last_build_at
+        # 1. MySQL -> Milvus（可选）
         films = fetch_all_films()
         if not films:
             return SyncResponse(success=True, count=0, message="No films")
         
         contents = [build_film_content(f) for f in films]
-        embeddings = embed_texts(contents)
-        
         film_data = [
             {"film_id": f["film_id"], "title": f["title"] or "", "content": c}
             for f, c in zip(films, contents)
         ]
         
-        count = insert_films(film_data, embeddings)
+        count = 0
+        if _milvus_ready:
+            embeddings = embed_texts(contents)
+            count = insert_films(film_data, embeddings)
         
         # 2. 重建 BM25 索引
         hybrid_searcher.build_bm25_index(film_data)
+        _bm25_last_build_at = time.time()
         
         # 3. 清空缓存
         cache_service.clear_all_cache()
         
-        return SyncResponse(success=True, count=count, message=f"Synced {count} films & Rebuilt Index")
+        message = "Rebuilt BM25 index"
+        if _milvus_ready:
+            message = f"Synced {count} films & Rebuilt Index"
+        return SyncResponse(success=True, count=count, message=message)
         
     except Exception as e:
         logger.error(f"❌ Sync failed: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+        
 
 @app.get("/films/{film_id}", response_model=FilmDetail)
 async def get_film_detail(film_id: int):

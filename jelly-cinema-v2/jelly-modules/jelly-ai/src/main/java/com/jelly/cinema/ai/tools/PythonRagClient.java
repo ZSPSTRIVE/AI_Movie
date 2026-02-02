@@ -1,5 +1,6 @@
 package com.jelly.cinema.ai.tools;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -76,10 +77,16 @@ public class PythonRagClient {
             for (int i = 0; i < results.size(); i++) {
                 JsonNode item = results.get(i);
                 String title = item.has("title") ? item.get("title").asText() : "未知";
+                String filmId = item.has("film_id") ? item.get("film_id").asText() : null;
                 String content = item.has("content") ? item.get("content").asText() : "";
                 double score = item.has("score") ? item.get("score").asDouble() : 0;
                 
-                sb.append(i + 1).append(". 《").append(title).append("》");
+                sb.append(i + 1).append(". ");
+                if (filmId != null && !filmId.isBlank()) {
+                    sb.append("[").append(title).append("](/film/").append(filmId).append(")");
+                } else {
+                    sb.append("《").append(title).append("》");
+                }
                 sb.append(" (相关度: ").append(String.format("%.2f", score)).append(")\n");
                 
                 // 截取内容摘要
@@ -92,6 +99,29 @@ public class PythonRagClient {
         } catch (Exception e) {
             log.error("调用 Python RAG 服务失败", e);
             return "知识库服务暂时不可用。";
+        }
+    }
+
+    /**
+     * 获取原始 JSON 结果（用于前端代理）
+     */
+    public Map<String, Object> searchRaw(String query, int topK) {
+        try {
+            String url = pythonServiceUrl + "/rag/search";
+            Map<String, Object> requestBody = Map.of(
+                    "query", query,
+                    "top_k", topK
+            );
+            String responseJson = webClient.post()
+                    .uri(url)
+                    .bodyValue(requestBody)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return parseJson(responseJson);
+        } catch (Exception e) {
+            log.error("Python RAG searchRaw failed", e);
+            return null;
         }
     }
 
@@ -132,6 +162,42 @@ public class PythonRagClient {
     }
 
     /**
+     * 同步原始 JSON 结果（用于前端代理）
+     */
+    public Map<String, Object> syncRaw() {
+        try {
+            String url = pythonServiceUrl + "/rag/sync";
+            String responseJson = webClient.post()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return parseJson(responseJson);
+        } catch (Exception e) {
+            log.error("Python RAG syncRaw failed", e);
+            return null;
+        }
+    }
+
+    /**
+     * 健康检查原始 JSON（用于前端代理）
+     */
+    public Map<String, Object> healthRaw() {
+        try {
+            String url = pythonServiceUrl + "/health";
+            String responseJson = webClient.get()
+                    .uri(url)
+                    .retrieve()
+                    .bodyToMono(String.class)
+                    .block();
+            return parseJson(responseJson);
+        } catch (Exception e) {
+            log.warn("Python RAG healthRaw failed: {}", e.getMessage());
+            return null;
+        }
+    }
+
+    /**
      * 健康检查
      *
      * @return 服务是否可用
@@ -150,6 +216,18 @@ public class PythonRagClient {
         } catch (Exception e) {
             log.warn("Python RAG 服务健康检查失败: {}", e.getMessage());
             return false;
+        }
+    }
+
+    private Map<String, Object> parseJson(String json) {
+        if (json == null || json.isBlank()) {
+            return null;
+        }
+        try {
+            return objectMapper.readValue(json, new TypeReference<Map<String, Object>>() {});
+        } catch (Exception e) {
+            log.warn("Failed to parse JSON from Python RAG: {}", e.getMessage());
+            return null;
         }
     }
 }

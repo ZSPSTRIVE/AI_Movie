@@ -95,19 +95,32 @@ public class UserServiceImpl implements UserService {
 
         LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
         
-        // 尝试按 ID 精确匹配
+        // 数字关键词：既匹配 ID，也支持昵称/用户名模糊匹配（避免数字用户名无法搜索）
+        Long userId = null;
         try {
-            Long userId = Long.parseLong(keyword);
-            wrapper.eq(User::getId, userId);
+            userId = Long.parseLong(keyword);
         } catch (NumberFormatException e) {
+            // ignore
+        }
+
+        if (userId != null) {
+            final Long userIdFinal = userId;
+            wrapper.and(w -> w.eq(User::getId, userIdFinal)
+                    .or()
+                    .like(User::getNickname, keyword)
+                    .or()
+                    .like(User::getUsername, keyword));
+        } else {
             // 按昵称或用户名模糊匹配
             wrapper.and(w -> w.like(User::getNickname, keyword)
                     .or()
                     .like(User::getUsername, keyword));
         }
 
-        // 只搜索正常状态的用户，限制结果数量
-        wrapper.eq(User::getStatus, 0)
+        // 只搜索正常状态的用户，限制结果数量（兼容历史数据 status 为空的情况）
+        wrapper.and(w -> w.eq(User::getStatus, 0)
+                .or()
+                .isNull(User::getStatus))
                .last("LIMIT 20");
 
         List<User> users = userMapper.selectList(wrapper);

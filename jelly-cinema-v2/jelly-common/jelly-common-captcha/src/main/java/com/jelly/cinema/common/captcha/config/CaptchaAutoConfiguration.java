@@ -10,6 +10,7 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
+import org.springframework.scheduling.annotation.EnableAsync;
 
 import java.util.Properties;
 
@@ -19,6 +20,7 @@ import java.util.Properties;
  * @author Jelly Cinema
  */
 @Configuration
+@EnableAsync
 @EnableConfigurationProperties(MailProperties.class)
 @ComponentScan("com.jelly.cinema.common.captcha")
 public class CaptchaAutoConfiguration {
@@ -110,7 +112,7 @@ public class CaptchaAutoConfiguration {
         
         props.put("mail.smtp.timeout", "10000");
         props.put("mail.smtp.connectiontimeout", "10000");
-        props.put("mail.debug", "false");
+        props.put("mail.debug", "true");  // 开启调试模式查看详细日志
 
         return mailSender;
     }

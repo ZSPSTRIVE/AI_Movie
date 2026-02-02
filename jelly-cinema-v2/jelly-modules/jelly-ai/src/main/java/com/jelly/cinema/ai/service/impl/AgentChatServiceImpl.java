@@ -97,17 +97,29 @@ public class AgentChatServiceImpl implements AgentChatService {
 
     @Override
     public Flux<String> chatStream(ChatRequestDTO dto) {
-        // Agent 模式的流式响应（简化版：先获取完整响应再流式输出）
+        // Agent 模式的流式响应（优化版：批量输出减少延迟）
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
         
         // 异步执行 Agent 对话
         new Thread(() -> {
             try {
                 String response = agentChat(dto);
-                // 模拟流式输出
-                for (char c : response.toCharArray()) {
-                    sink.tryEmitNext(String.valueOf(c));
-                    Thread.sleep(10); // 模拟打字效果
+                // 批量流式输出 - 每次发送5个字符，速度更快
+                char[] chars = response.toCharArray();
+                int batchSize = 5;
+                StringBuilder batch = new StringBuilder();
+                
+                for (int i = 0; i < chars.length; i++) {
+                    batch.append(chars[i]);
+                    
+                    // 每达到批量大小或到达末尾就发送
+                    if (batch.length() >= batchSize || i == chars.length - 1) {
+                        sink.tryEmitNext(batch.toString());
+                        batch.setLength(0); // 清空buffer
+                        if (i < chars.length - 1) {
+                            Thread.sleep(4); // 减少到4ms，总体速度提升2.5x
+                        }
+                    }
                 }
                 sink.tryEmitComplete();
             } catch (Exception e) {

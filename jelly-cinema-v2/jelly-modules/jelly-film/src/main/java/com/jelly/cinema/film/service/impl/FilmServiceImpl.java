@@ -219,4 +219,62 @@ public class FilmServiceImpl implements FilmService {
 
         return vo;
     }
+
+    @Override
+    public boolean saveFromTvbox(Map<String, Object> data) {
+        String title = (String) data.get("title");
+        if (StrUtil.isBlank(title)) return false;
+
+        // 查重：同名且同一年份
+        Object yearObj = data.get("year");
+        Integer year = yearObj instanceof Number ? ((Number) yearObj).intValue() : null;
+        
+        LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Film::getTitle, title);
+        if (year != null && year > 1900) { // 简单年份校验
+            wrapper.eq(Film::getYear, year);
+        }
+        if (filmMapper.exists(wrapper)) {
+            return false;
+        }
+
+        Film film = new Film();
+        film.setTitle(title);
+        film.setCoverUrl((String) data.get("coverUrl"));
+        film.setDescription((String) data.get("description"));
+        
+        Object ratingObj = data.get("rating");
+        if (ratingObj instanceof Number) {
+            film.setRating(((Number) ratingObj).doubleValue());
+        } else {
+             film.setRating(7.0); // 默认评分
+        }
+        
+        film.setYear(year);
+        film.setRegion((String) data.get("region"));
+        film.setDirector((String) data.get("director"));
+        film.setActors((String) data.get("actors"));
+        film.setVideoUrl((String) data.get("videoUrl"));
+        
+        // 简单的分类匹配逻辑
+        // 默认电影
+        long categoryId = 1L; 
+        
+        // 尝试根据标题或来源信息判断
+        // 这里只是简单示例，完善需根据 Tags 或 Category Name
+        // 有些 Tvbox 源会返回 type_name
+        if (title.matches(".*(第.*季|全.*集).*")) {
+            categoryId = 2L; // 电视剧
+        }
+        
+        film.setCategoryId(categoryId);
+        film.setStatus(0); // 0-上架
+        film.setDeleted(0);
+        
+        filmMapper.insert(film);
+        
+        // 初始写入 Redis 缓存（可选）
+        
+        return true;
+    }
 }

@@ -66,7 +66,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, watch, nextTick } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick } from 'vue'
 import type { PropType } from 'vue'
 import tvboxService from '@/services/tvboxService'
 import Hls from 'hls.js'

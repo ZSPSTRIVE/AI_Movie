@@ -15,7 +15,7 @@ const props = defineProps({
   // 图标大小，支持 '20px' 或 20
   size: {
     type: [Number, String],
-    default: '1em'
+    default: '2em'
   }
 })
 

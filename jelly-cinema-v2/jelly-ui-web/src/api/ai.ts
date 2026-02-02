@@ -168,7 +168,7 @@ export function createChatStream(
   }
 ): { abort: () => void } {
   // Mock 模式开关 - 当后端不可用时启用
-  const useMock = true // 后端服务不可用时启用 Mock
+  const useMock = import.meta.env.VITE_AI_USE_MOCK === 'true'
 
   if (useMock) {
     return simulateChatStream(req, callbacks)
@@ -213,46 +213,52 @@ export function createChatStream(
 
         buffer += decoder.decode(value, { stream: true })
 
-        // 处理 SSE 格式: data: xxx\n\n
-        const lines = buffer.split('\n')
-        buffer = lines.pop() || '' // 保留未完成的行
+        // 处理 SSE 事件块：以空行分隔（\n\n 或 \r\n\r\n）
+        while (true) {
+          const lfIndex = buffer.indexOf('\n\n')
+          const crlfIndex = buffer.indexOf('\r\n\r\n')
 
-        for (const line of lines) {
-          if (line.startsWith('data:')) {
-            const data = line.slice(5).trim()
-            if (data === '[DONE]') {
-              callbacks.onComplete({
-                sessionId: '',
-                messageId: '',
-                intent: 'other',
-                content: accumulated,
-              })
-              return
-            }
-            try {
-              const parsed = JSON.parse(data)
-              if (parsed.type === 'chunk' && parsed.content) {
-                accumulated += parsed.content
-                callbacks.onMessage(parsed.content, accumulated)
-              } else if (parsed.type === 'complete') {
-                callbacks.onComplete({
-                  sessionId: parsed.sessionId || '',
-                  messageId: parsed.messageId || '',
-                  intent: parsed.intent || 'other',
-                  content: accumulated,
-                  movie: parsed.movie,
-                  evidence: parsed.evidence,
-                })
-                return
-              }
-            } catch {
-              // 纯文本 chunk
-              if (data) {
-                accumulated += data
-                callbacks.onMessage(data, accumulated)
-              }
-            }
+          let splitIndex = -1
+          let splitLen = 0
+          if (crlfIndex !== -1 && (lfIndex === -1 || crlfIndex < lfIndex)) {
+            splitIndex = crlfIndex
+            splitLen = 4
+          } else if (lfIndex !== -1) {
+            splitIndex = lfIndex
+            splitLen = 2
           }
+
+          if (splitIndex === -1) break
+
+          const eventBlock = buffer.slice(0, splitIndex)
+          buffer = buffer.slice(splitIndex + splitLen)
+
+          const dataLines: string[] = []
+          const lines = eventBlock.split(/\r?\n/)
+          for (const line of lines) {
+            if (!line.startsWith('data:')) continue
+
+            // SSE 规范：data: 后允许 1 个可选空格，不应 trim 掉所有空白
+            let data = line.slice(5)
+            if (data.startsWith(' ')) data = data.slice(1)
+            dataLines.push(data)
+          }
+
+          if (dataLines.length === 0) continue
+
+          const data = dataLines.join('\n')
+          if (data === '[DONE]') {
+            callbacks.onComplete({
+              sessionId: '',
+              messageId: '',
+              intent: 'other',
+              content: accumulated,
+            })
+            return
+          }
+
+          accumulated += data
+          callbacks.onMessage(data, accumulated)
         }
       }
 

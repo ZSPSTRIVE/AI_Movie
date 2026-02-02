@@ -3,31 +3,63 @@ import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import type { Film } from '@/types/film'
 import tvboxService from '@/services/tvboxService'
+import { getFilmDetail } from '@/api/film'
 import { normalizeImageUrl } from '@/utils/image'
+import VideoPlayer from '@/components/VideoPlayer.vue'
 
 const route = useRoute()
 
 const filmId = computed(() => route.params.id as string)
+const isNumericId = computed(() => /^\d+$/.test(filmId.value))
 
 const loading = ref(true)
 const error = ref('')
 const film = ref<Film | null>(null)
+const tvboxFallbackId = ref<string | null>(null)
+
+const useLocalPlayer = computed(() => isNumericId.value && !!film.value?.videoUrl)
+const useTvboxPlayer = computed(() => !useLocalPlayer.value && (!isNumericId.value || !!tvboxFallbackId.value))
+const tvboxPlayerId = computed(() => {
+  if (!isNumericId.value) return filmId.value
+  return tvboxFallbackId.value || ''
+})
 
 async function loadDetail() {
   loading.value = true
   error.value = ''
+  tvboxFallbackId.value = null
 
   try {
-    const data = await tvboxService.getDetail(filmId.value)
-    if (!data) {
-      error.value = '电影不存在或已下架'
-      film.value = null
-      return
-    }
+    if (isNumericId.value) {
+      const res = await getFilmDetail(filmId.value)
+      const data = res.data
+      if (!data) {
+        error.value = '电影不存在或已下架'
+        film.value = null
+        return
+      }
+      film.value = {
+        ...data,
+        coverUrl: normalizeImageUrl(data.coverUrl, data.title)
+      }
 
-    film.value = {
-      ...data,
-      coverUrl: normalizeImageUrl(data.coverUrl, data.title)
+      if (!film.value.videoUrl) {
+        const searchResults = await tvboxService.search(film.value.title)
+        if (searchResults && searchResults.length > 0) {
+          tvboxFallbackId.value = String(searchResults[0].id)
+        }
+      }
+    } else {
+      const data = await tvboxService.getDetail(filmId.value)
+      if (!data) {
+        error.value = '电影不存在或已下架'
+        film.value = null
+        return
+      }
+      film.value = {
+        ...data,
+        coverUrl: normalizeImageUrl(data.coverUrl, data.title)
+      }
     }
   } catch (e: any) {
     error.value = e?.message || '加载电影详情失败'
@@ -78,7 +110,9 @@ watch(() => route.params.id, loadDetail)
       </div>
 
       <div class="detail-player">
-        <TVBoxPlayer :film-id="filmId" :poster="film.coverUrl" />
+        <VideoPlayer v-if="useLocalPlayer" :src="film.videoUrl" :poster="film.coverUrl" />
+        <TVBoxPlayer v-else-if="useTvboxPlayer" :film-id="tvboxPlayerId" :title="film.title" :poster="film.coverUrl" />
+        <div v-else class="detail-player-empty">暂无可用播放源</div>
       </div>
     </div>
   </div>
@@ -166,6 +200,16 @@ watch(() => route.params.id, loadDetail)
 .detail-player {
   border-radius: 18px;
   overflow: hidden;
+  min-height: 320px;
+  background: rgba(15, 23, 42, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.detail-player-empty {
+  color: rgba(255, 255, 255, 0.85);
+  font-weight: 600;
 }
 
 @media (max-width: 768px) {

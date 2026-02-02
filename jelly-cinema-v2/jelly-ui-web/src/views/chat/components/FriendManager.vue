@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, watch, onUnmounted } from 'vue'
 import {
   getFriendList,
   deleteFriend,
@@ -7,6 +7,7 @@ import {
   blockFriend,
   unblockFriend,
   getBlacklist,
+  checkOnlineBatch,
   type Friend
 } from '@/api/im'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -25,6 +26,8 @@ const activeTab = ref<'friends' | 'blacklist'>('friends')
 const loading = ref(false)
 const friendList = ref<Friend[]>([])
 const blacklist = ref<Friend[]>([])
+const ONLINE_STATUS_REFRESH_INTERVAL = 15000
+let onlineStatusTimer: number | null = null
 
 // 备注编辑
 const editingRemark = ref<string | null>(null)
@@ -35,15 +38,34 @@ const searchKeyword = ref('')
 const filteredFriends = computed(() => {
   if (!searchKeyword.value.trim()) return friendList.value
   const keyword = searchKeyword.value.toLowerCase()
-  return friendList.value.filter(f =>
-    f.nickname.toLowerCase().includes(keyword) ||
-    (f.remark && f.remark.toLowerCase().includes(keyword)) ||
-    (f.username && f.username.toLowerCase().includes(keyword))
-  )
+  return friendList.value.filter(f => {
+    const nickname = (f.nickname || '').toLowerCase()
+    const remark = (f.remark || '').toLowerCase()
+    const username = (f.username || '').toLowerCase()
+    return nickname.includes(keyword) || remark.includes(keyword) || username.includes(keyword)
+  })
 })
 
 onMounted(() => {
   loadFriends()
+})
+
+watch(() => props.visible, async (val) => {
+  if (val) {
+    if (activeTab.value === 'friends') {
+      await loadFriends()
+      await refreshFriendOnlineStatus()
+      startOnlineStatusRefresh()
+    } else {
+      await loadBlacklist()
+    }
+  } else {
+    stopOnlineStatusRefresh()
+  }
+})
+
+onUnmounted(() => {
+  stopOnlineStatusRefresh()
 })
 
 async function loadFriends() {
@@ -55,6 +77,21 @@ async function loadFriends() {
     console.error('加载好友列表失败:', e)
   } finally {
     loading.value = false
+  }
+}
+
+async function refreshFriendOnlineStatus() {
+  if (!friendList.value.length) return
+  try {
+    const ids = friendList.value.map(friend => friend.id)
+    const res = await checkOnlineBatch(ids)
+    if (res.data) {
+      friendList.value.forEach(friend => {
+        friend.online = Boolean(res.data?.[String(friend.id)])
+      })
+    }
+  } catch (e) {
+    console.warn('刷新好友在线状态失败:', e)
   }
 }
 
@@ -72,10 +109,29 @@ async function loadBlacklist() {
 
 function handleTabChange(tab: 'friends' | 'blacklist') {
   if (tab === 'blacklist') {
+    stopOnlineStatusRefresh()
     loadBlacklist()
   } else {
     loadFriends()
+    refreshFriendOnlineStatus()
+    if (props.visible) {
+      startOnlineStatusRefresh()
+    }
   }
+}
+
+function startOnlineStatusRefresh() {
+  if (onlineStatusTimer !== null) return
+  onlineStatusTimer = window.setInterval(() => {
+    if (!props.visible || activeTab.value !== 'friends') return
+    refreshFriendOnlineStatus()
+  }, ONLINE_STATUS_REFRESH_INTERVAL)
+}
+
+function stopOnlineStatusRefresh() {
+  if (onlineStatusTimer === null) return
+  window.clearInterval(onlineStatusTimer)
+  onlineStatusTimer = null
 }
 
 async function handleDelete(friend: Friend) {

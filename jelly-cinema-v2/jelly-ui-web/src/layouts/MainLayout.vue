@@ -41,8 +41,9 @@ const navItems = [
 ]
 
 function handleSearch() {
-  if (searchKeyword.value.trim()) {
-    router.push({ name: 'Search', query: { keyword: searchKeyword.value } })
+  const kw = searchKeyword.value.trim()
+  if (kw) {
+    router.push({ name: 'Search', query: { keyword: kw } })
   }
 }
 

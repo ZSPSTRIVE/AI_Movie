@@ -34,7 +34,8 @@ public class NovelController {
     @Operation(summary = "生成章节内容 (流式)")
     @PostMapping(value = "/generate-chapter", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> generateChapter(@Valid @RequestBody NovelChapterDTO dto) {
-        return novelService.generateChapter(dto)
-                .map(token -> "data: " + token + "\n\n");
+        // Spring WebFlux 在 TEXT_EVENT_STREAM 下会自动按 SSE 格式包装 data: ...\n\n
+        // 这里直接返回 token 流，避免出现 data:data: 的重复前缀
+        return novelService.generateChapter(dto);
     }
 }

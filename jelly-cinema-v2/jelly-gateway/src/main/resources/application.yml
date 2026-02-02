@@ -56,7 +56,7 @@ spring:
           filters:
             - StripPrefix=0
         - id: jelly-im-ws
-          uri: lb:ws://jelly-im
+          uri: ws://localhost:9400
           predicates:
             - Path=/ws/**
           filters:

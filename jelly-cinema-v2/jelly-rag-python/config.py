@@ -34,6 +34,7 @@ class Settings(BaseSettings):
     bm25_weight: float = 0.3
     vector_weight: float = 0.7
     rrf_k: int = 60  # RRF 参数
+    bm25_refresh_minutes: int = 60  # BM25 索引刷新间隔（分钟）
     
     # ==================== Query Enhancement ====================
     enable_query_enhancement: bool = True
@@ -59,7 +60,7 @@ class Settings(BaseSettings):
     mysql_port: int = 3306
     mysql_database: str = "jelly_cinema"
     mysql_user: str = "root"
-    mysql_password: str = ""
+    mysql_password: str = "123456"
     
     # ==================== Rate Limiting ====================
     enable_rate_limit: bool = True

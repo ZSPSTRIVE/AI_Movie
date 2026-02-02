@@ -36,8 +36,9 @@ public class AgentChatController {
     @Operation(summary = "Agent 流式对话（带工具调用）")
     @PostMapping(value = "/chat/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
     public Flux<String> chatStream(@RequestBody ChatRequestDTO dto) {
-        return agentChatService.chatStream(dto)
-                .map(token -> "data: " + token + "\n\n");
+        // Spring WebFlux 在 TEXT_EVENT_STREAM 下会自动按 SSE 格式包装 data: ...\n\n
+        // 这里直接返回 token 流，避免出现 data:data: 的重复前缀
+        return agentChatService.chatStream(dto);
     }
 
     @Operation(summary = "Agent 流式对话 - GET方式")
@@ -48,8 +49,7 @@ public class AgentChatController {
         ChatRequestDTO dto = new ChatRequestDTO();
         dto.setPrompt(prompt);
         dto.setEnableRag(enableRag);
-        return agentChatService.chatStream(dto)
-                .map(token -> "data: " + token + "\n\n");
+        return agentChatService.chatStream(dto);
     }
 
     @Operation(summary = "同步电影数据到向量库")

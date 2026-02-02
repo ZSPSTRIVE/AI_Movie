@@ -61,10 +61,13 @@ public class EmailService {
         // 增加每日发送计数
         incrementDailyCount(email);
         
-        // 异步发送邮件
-        sendCodeEmailAsync(email, code, businessType);
+        // 同步发送邮件（便于调试，生产环境可改回异步）
+        log.info("准备发送邮件: to={}, from={}, host={}", email, mailProperties.getFrom(), mailProperties.getHost());
+        String subject = getEmailSubject(businessType);
+        String content = buildEmailContent(code, businessType);
+        sendHtmlEmail(email, subject, content);
         
-        log.info("发送邮箱验证码: email={}, businessType={}", email, businessType);
+        log.info("发送邮箱验证码: email={}, businessType={}, code={}", email, businessType, code);
     }
 
     /**

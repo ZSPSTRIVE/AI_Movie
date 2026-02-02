@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { searchFilm } from '@/api/film'
 import { normalizeImageUrl } from '@/utils/image'
 import type { Film } from '@/types/film'
+import { ElMessage } from 'element-plus'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,15 +21,22 @@ watch(() => route.query.keyword, (val) => {
 }, { immediate: true })
 
 async function doSearch() {
-  if (!keyword.value.trim()) return
+  const kw = keyword.value.trim()
+  if (!kw) {
+    filmList.value = []
+    return
+  }
   
   loading.value = true
   try {
-    const res = await searchFilm(keyword.value)
+    const res = await searchFilm(kw)
     filmList.value = (res.data || []).map((film) => ({
       ...film,
       coverUrl: normalizeImageUrl(film.coverUrl, film.title),
     }))
+  } catch (e: any) {
+    filmList.value = []
+    ElMessage.error(e?.message || '搜索失败，请稍后重试')
   } finally {
     loading.value = false
   }

@@ -45,6 +45,7 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
     private final HomepageConfigVersionMapper configVersionMapper;
     private final StringRedisTemplate redisTemplate;
     private final RestTemplate restTemplate;
+    private final com.jelly.cinema.film.service.FilmService filmService;
 
     private static final String CACHE_KEY_PREFIX = "homepage:content:";
     private static final long CACHE_TTL_MINUTES = 5;
@@ -164,6 +165,11 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
                     
                     clearCache();
                     log.info("首页内容刷新完成，成功保存 {} 部电影", films.size());
+
+                    // 异步同步到电影库 (t_film)
+                    final List<Map<String, Object>> filmsToSync = new ArrayList<>(films);
+                    new Thread(() -> syncToLibrary(filmsToSync)).start();
+
                 } else {
                     log.warn("TVBox返回数据为空");
                 }
@@ -446,5 +452,47 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
         updateById(content);
         clearCache();
         log.info("已{}AI精选标记: id={}", isBest ? "添加" : "移除", id);
+    }
+
+    private void syncToLibrary(List<Map<String, Object>> films) {
+        log.info("开始后台同步电影库，共 {} 部...", films.size());
+        int count = 0;
+        String proxyBaseUrl = "http://localhost:3001/api/tvbox/play/";
+        
+        for (Map<String, Object> film : films) {
+            try {
+                // 1. 复制基础数据
+                Map<String, Object> data = new HashMap<>(film);
+                
+                // 2. 获取播放链接 (调用 Proxy Play 接口)
+                String tvboxId = (String) film.get("id");
+                if (tvboxId == null) continue;
+                
+                try {
+                     ResponseEntity<Map> playRes = restTemplate.getForEntity(proxyBaseUrl + tvboxId, Map.class);
+                     if (playRes.getBody() != null && playRes.getBody().get("data") != null) {
+                         Map playInfo = (Map) playRes.getBody().get("data");
+                         String playUrl = (String) playInfo.get("playUrl");
+                         if (playUrl != null && !playUrl.isEmpty()) {
+                             data.put("videoUrl", playUrl);
+                         }
+                     }
+                } catch (Exception e) {
+                    log.warn("获取播放链接失败: id={}, err={}", tvboxId, e.getMessage());
+                }
+                
+                // 3. 保存到库
+                if (filmService.saveFromTvbox(data)) {
+                    count++;
+                }
+                
+                // 避免请求过快
+                try { Thread.sleep(500); } catch (InterruptedException ignored) {}
+                
+            } catch (Exception e) {
+                log.error("同步电影失败: {}", film.get("title"), e);
+            }
+        }
+        log.info("后台同步完成，新增入库 {} 部电影", count);
     }
 }

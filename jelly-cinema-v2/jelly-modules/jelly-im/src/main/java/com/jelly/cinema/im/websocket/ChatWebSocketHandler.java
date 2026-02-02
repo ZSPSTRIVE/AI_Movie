@@ -77,6 +77,11 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
         Long userId = getUserId(session);
+        log.info("WebSocket connection closed: sessionId={}, userId={}, code={}, reason={}",
+                session.getId(),
+                userId,
+                status != null ? status.getCode() : null,
+                status != null ? status.getReason() : null);
         if (userId != null) {
             // 只有当前session是存储的session时才移除，避免新连接被旧连接关闭事件覆盖
             WebSocketSession storedSession = ONLINE_SESSIONS.get(userId);

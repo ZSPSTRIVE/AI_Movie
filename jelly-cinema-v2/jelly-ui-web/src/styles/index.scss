@@ -86,9 +86,10 @@ body,
 }
 
 body {
-  font-family: 'Inter', 'Microsoft YaHei', sans-serif;
+  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
   background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
   color: var(--glass-text);
+  font-weight: 700;
 }
 
 // ==================== Neo-Brutalism 滚动条 (暗色版) ====================
@@ -114,7 +115,7 @@ body {
   backdrop-filter: blur(12px) !important;
   border: 1px solid rgba(255, 255, 255, 0.15) !important;
   border-radius: 10px !important;
-  font-weight: 500 !important;
+  font-weight: 700 !important;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
   transition: all 0.3s ease !important;
   color: #F8FAFC !important;
@@ -179,6 +180,7 @@ body {
 
   input {
     color: #F8FAFC !important;
+    font-weight: 700 !important;
 
     &::placeholder {
       color: #94A3B8 !important;

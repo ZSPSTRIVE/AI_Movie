@@ -15,6 +15,12 @@
     <description>AI 服务 - RAG问答、小说生成、LLM对话</description>
 
     <dependencies>
+        <!-- Common Core (R类等基础类) -->
+        <dependency>
+            <groupId>com.jelly.cinema</groupId>
+            <artifactId>jelly-common-core</artifactId>
+        </dependency>
+        
         <!-- Common Security -->
         <dependency>
             <groupId>com.jelly.cinema</groupId>

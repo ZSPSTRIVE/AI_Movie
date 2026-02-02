@@ -178,7 +178,7 @@ function formatDate(date: string | undefined): string {
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto">
+  <div class="max-w-4xl mx-auto profile-page">
     <!-- 未登录 - Neo-Brutalism -->
     <div v-if="!userStore.isLogin" class="bg-white border-3 border-black shadow-brutal rounded-2xl p-12 text-center">
       <el-icon size="64" class="mb-6"><User /></el-icon>
@@ -208,11 +208,11 @@ function formatDate(date: string | undefined): string {
           
           <div class="flex-1">
             <div class="flex items-center gap-3 mb-2">
-              <h1 class="text-2xl font-bold" style="color: var(--glass-text);">{{ user?.nickname || user?.username }}</h1>
+              <h1 class="text-3xl font-black" style="color: #000000;">{{ user?.nickname || user?.username }}</h1>
               <span v-if="user?.role === 'ROLE_ADMIN'" class="px-2.5 py-0.5 text-xs font-semibold rounded-lg" style="background: linear-gradient(135deg, #ef4444, #dc2626); color: white;">管理员</span>
             </div>
             
-            <p class="font-medium mb-4 px-4 py-2.5 rounded-xl" style="color: var(--glass-text-muted); background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3);">{{ user?.signature || '这个人很懒，什么都没写~' }}</p>
+            <p class="font-bold text-lg mb-4 px-4 py-2.5 rounded-xl" style="color: #000000; background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3);">{{ user?.signature || '这个人很懒，什么都没写~' }}</p>
             
             <div class="flex items-center gap-4 text-sm">
               <span class="px-3 py-1.5 rounded-lg font-medium flex items-center gap-2" style="background: rgba(255, 255, 255, 0.2); border: 1px solid rgba(255, 255, 255, 0.3); color: var(--glass-text);">
@@ -247,6 +247,10 @@ function formatDate(date: string | undefined): string {
                 <div class="info-item">
                   <label>用户名</label>
                   <p>{{ user?.username }}</p>
+                </div>
+                <div class="info-item">
+                  <label>用户ID</label>
+                  <p>{{ user?.userId || '-' }}</p>
                 </div>
                 <div class="info-item">
                   <label>昵称</label>
@@ -416,18 +420,31 @@ function formatDate(date: string | undefined): string {
 }
 
 .info-item label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--glass-text-muted);
+  font-size: 14px;
+  font-weight: 800;
+  color: #000000;
   display: block;
   margin-bottom: 6px;
 }
 
 .info-item p {
-  font-size: 16px;
-  font-weight: 600;
-  color: var(--glass-text);
+  font-size: 17px;
+  font-weight: 800;
+  color: #000000;
   margin: 0;
+}
+
+:deep(.profile-page .el-form-item__label) {
+  font-size: 14px;
+  font-weight: 800;
+  color: #000000;
+}
+
+:deep(.profile-page .el-input__inner),
+:deep(.profile-page .el-textarea__inner) {
+  font-size: 15px;
+  font-weight: 700;
+  color: #000000;
 }
 
 :deep(.glass-tabs-enhanced) .el-tabs__header {

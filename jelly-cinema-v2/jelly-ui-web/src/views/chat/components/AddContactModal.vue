@@ -41,6 +41,11 @@ async function handleSearch() {
     return
   }
 
+  if (!navigator.onLine) {
+    ElMessage.error('网络已断开，请检查网络后重试')
+    return
+  }
+
   loading.value = true
   try {
     if (activeTab.value === 'user') {
@@ -50,6 +55,9 @@ async function handleSearch() {
       const res = await searchGroup(keyword.value.trim())
       groupResults.value = res.data || []
     }
+  } catch (e: any) {
+    console.error('搜索失败:', e)
+    ElMessage.error(e?.message || '搜索失败，请检查网络或服务状态')
   } finally {
     loading.value = false
   }
@@ -63,6 +71,11 @@ function openApplyDialog(target: UserSearchResult | GroupSearchResult) {
 
 async function submitApply() {
   if (!applyTarget.value) return
+
+  if (!navigator.onLine) {
+    ElMessage.error('网络已断开，请检查网络后重试')
+    return
+  }
 
   submitting.value = true
   try {
@@ -93,6 +106,9 @@ async function submitApply() {
     }
     applyDialogVisible.value = false
     emit('success')
+  } catch (e: any) {
+    console.error('申请失败:', e)
+    ElMessage.error(e?.message || '操作失败，请检查网络或服务状态')
   } finally {
     submitting.value = false
   }

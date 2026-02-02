@@ -80,10 +80,18 @@ export default defineConfig({
         rewrite: (path) => path.replace(/^\/api/, '')
       },
       // 默认其他请求 -> gateway (8080)
+      // 所有请求（包括 IM）都通过 Gateway，Gateway 会添加 X-User-Id 头
       '/api': {
         target: 'http://localhost:8080',
         changeOrigin: true,
         rewrite: (path) => path.replace(/^\/api/, '')
+      },
+      // WebSocket 代理 -> gateway (8080)
+      // WebSocket 也需要经过 Gateway 进行 Token 验证
+      '/ws': {
+        target: 'http://localhost:8080',
+        ws: true,
+        changeOrigin: true
       }
     },
     cors: true

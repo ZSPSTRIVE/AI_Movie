@@ -1464,11 +1464,19 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
                 if (!path) return null;
                 // 已经是完整URL
                 if (path.startsWith('http://') || path.startsWith('https://')) {
+                    if (path.includes('/api/tvbox/enc.key')) {
+                        return baseUrl + 'enc.key';
+                    }
                     return path;
                 }
-                // 已经是代理URL，不要再代理
+                // 已经是代理URL，不要再代理（但 enc.key 例外）
                 if (path.includes('/api/tvbox/')) {
-                    return null;
+                    if (path.includes('/api/tvbox/enc.key')) {
+                        // 将占位 key 还原为真实 key 路径
+                        path = 'enc.key';
+                    } else {
+                        return null;
+                    }
                 }
                 // 绝对路径 (以/开头)
                 if (path.startsWith('/')) {
@@ -1485,12 +1493,20 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
 
                 // 处理注释行中的URI
                 if (line.startsWith('#')) {
-                    if (line.includes('URI="')) {
+                    if (line.includes('URI=')) {
                         line = line.replace(/URI="([^"]+)"/g, (match, uri) => {
-                            const fullUrl = resolveUrl(uri);
+                            const normalizedUri = uri.includes('/api/tvbox/enc.key') ? 'enc.key' : uri;
+                            const fullUrl = resolveUrl(normalizedUri);
                             if (!fullUrl) return match;
                             const refererQuery = effectiveReferer ? `&referer=${encodeURIComponent(effectiveReferer)}` : '';
                             return `URI="/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}${refererQuery}"`;
+                        });
+                        line = line.replace(/URI=([^",\s]+)/g, (match, uri) => {
+                            const normalizedUri = uri.includes('/api/tvbox/enc.key') ? 'enc.key' : uri;
+                            const fullUrl = resolveUrl(normalizedUri);
+                            if (!fullUrl) return match;
+                            const refererQuery = effectiveReferer ? `&referer=${encodeURIComponent(effectiveReferer)}` : '';
+                            return `URI=/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}${refererQuery}`;
                         });
                     }
                     return line;
@@ -1501,7 +1517,9 @@ app.get('/api/tvbox/m3u8', async (req, res) => {
                 if (!fullUrl) return line; // 如果解析失败，保持原样
 
                 const refererQuery = effectiveReferer ? `&referer=${encodeURIComponent(effectiveReferer)}` : '';
-                return `/api/tvbox/proxy?url=${encodeURIComponent(fullUrl)}${refererQuery}`;
+                const isSubM3u8 = fullUrl.includes('.m3u8') || fullUrl.includes('/play/') || fullUrl.includes('/share/');
+                const proxyBase = isSubM3u8 ? '/api/tvbox/m3u8' : '/api/tvbox/proxy';
+                return `${proxyBase}?url=${encodeURIComponent(fullUrl)}${refererQuery}`;
             }).join('\n');
         }
 

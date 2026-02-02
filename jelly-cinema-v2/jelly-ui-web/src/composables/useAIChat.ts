@@ -65,6 +65,19 @@ export function useAIChat(options: UseAIChatOptions = {}) {
         return lastAssistantMessage.value?.playEntry?.verified === true
     })
 
+    function inferPlayEntryFromContent(content: string): PlayEntry | undefined {
+        if (!content) return undefined
+        const markdownMatch = content.match(/\((\/film\/[^)\s]+)\)/)
+        const plainMatch = content.match(/\/film\/[^\s)]+/)
+        const value = markdownMatch?.[1] || plainMatch?.[0]
+        if (!value) return undefined
+        return {
+            type: 'route',
+            value,
+            verified: false
+        }
+    }
+
     // ==================== 方法 ====================
 
     /**
@@ -145,11 +158,12 @@ export function useAIChat(options: UseAIChatOptions = {}) {
                     })
                 },
                 onComplete: (response) => {
+                    const inferredPlayEntry = response.playEntry || inferPlayEntryFromContent(response.content)
                     updateMessage(messageId, {
                         content: response.content,
                         intent: response.intent,
                         movie: response.movie,
-                        playEntry: response.playEntry,
+                        playEntry: inferredPlayEntry,
                         evidence: response.evidence,
                         diagnostics: response.diagnostics,
                         isStreaming: false
@@ -174,11 +188,12 @@ export function useAIChat(options: UseAIChatOptions = {}) {
     ): Promise<void> {
         const res = await sendChatMessage(request)
         if (res.data) {
+            const inferredPlayEntry = res.data.playEntry || inferPlayEntryFromContent(res.data.content)
             updateMessage(messageId, {
                 content: res.data.content,
                 intent: res.data.intent,
                 movie: res.data.movie,
-                playEntry: res.data.playEntry,
+                playEntry: inferredPlayEntry,
                 evidence: res.data.evidence,
                 diagnostics: res.data.diagnostics,
                 isStreaming: false

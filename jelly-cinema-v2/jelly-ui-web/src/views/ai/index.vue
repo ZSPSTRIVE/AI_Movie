@@ -26,6 +26,20 @@ function goToFilmDetail(filmId: string | number) {
   router.push(`/film/${filmId}`)
 }
 
+// 处理Markdown中的链接点击，使用Vue Router导航而不是页面刷新
+function handleMarkdownClick(event: MouseEvent) {
+  const target = event.target as HTMLElement
+  // 检查是否点击的是链接
+  if (target.tagName === 'A') {
+    const href = target.getAttribute('href')
+    if (href && href.startsWith('/')) {
+      // 是站内链接，使用Vue Router导航
+      event.preventDefault()
+      router.push(href)
+    }
+  }
+}
+
 const chatMessages = ref<ChatMessage[]>([])
 const chatInput = ref('')
 const chatLoading = ref(false)
@@ -60,30 +74,24 @@ async function handleSendMessage() {
     let buffer = ''
     
     if (reader) {
+      let fullContent = ''
+      
       while (true) {
         const { done, value } = await reader.read()
         if (done) break
         
-        buffer += decoder.decode(value, { stream: true })
+        const chunk = decoder.decode(value, { stream: true })
+        fullContent += chunk
         
-        // 按 "data:" 分割并提取内容
-        const parts = buffer.split('data:')
-        // 保留最后一个可能不完整的部分
-        buffer = parts.pop() || ''
+        // 实时处理并显示：每次接收后立即清理data:前缀
+        const cleanContent = fullContent
+          .replace(/data:\s*/g, '')  // 移除所有 "data:" 
+          .replace(/\[DONE\]/g, '')  // 移除结束标记
+          .replace(/\r?\n/g, '')     // 移除换行符
         
-        for (const part of parts) {
-          // 去除首尾空白和换行
-          const token = part.trim().replace(/^\s+|\s+$/g, '')
-          if (token && token !== '') {
-            chatMessages.value[assistantIndex].content += token
-            scrollToBottom()
-          }
-        }
-      }
-      
-      // 处理剩余的 buffer
-      if (buffer.trim()) {
-        chatMessages.value[assistantIndex].content += buffer.trim()
+        // 实时更新显示
+        chatMessages.value[assistantIndex].content = cleanContent
+        scrollToBottom()
       }
     }
     chatLoading.value = false
@@ -156,15 +164,22 @@ const syncLoading = ref(false)
 const syncStatus = ref<'idle' | 'success' | 'error'>('idle')
 const syncMessage = ref('')
 
-// Python RAG 服务地址
-const RAG_SERVICE_URL = 'http://localhost:8500'
+// Python RAG 服务代理地址（由后端转发，避免浏览器 CORS）
+const RAG_SERVICE_URL = '/api/ai/rag/python'
 
 // 同步电影数据到向量库
 async function handleSyncFilms() {
   syncLoading.value = true
   syncStatus.value = 'idle'
   try {
-    const res = await fetch(`${RAG_SERVICE_URL}/rag/sync`, { method: 'POST' })
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${RAG_SERVICE_URL}/sync`, {
+      method: 'POST',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+    })
+    if (!res.ok) {
+      throw new Error('RAG 服务不可用')
+    }
     const data = await res.json()
     if (data.success) {
       syncStatus.value = 'success'
@@ -189,11 +204,18 @@ async function handleRagSearch() {
   ragLoading.value = true
   ragResults.value = []
   try {
-    const res = await fetch(`${RAG_SERVICE_URL}/rag/search`, {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${RAG_SERVICE_URL}/search`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ query: ragQuery.value, top_k: 5 })
     })
+    if (!res.ok) {
+      throw new Error('RAG 服务不可用')
+    }
     const data = await res.json()
     ragResults.value = data.results || []
     if (ragResults.value.length === 0) {
@@ -211,7 +233,15 @@ const ragServiceStatus = ref<'checking' | 'online' | 'offline'>('checking')
 
 async function checkRagService() {
   try {
-    const res = await fetch(`${RAG_SERVICE_URL}/health`, { method: 'GET' })
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${RAG_SERVICE_URL}/health`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+    })
+    if (!res.ok) {
+      ragServiceStatus.value = 'offline'
+      return
+    }
     const data = await res.json()
     ragServiceStatus.value = data.status === 'healthy' ? 'online' : 'offline'
   } catch {
@@ -277,7 +307,7 @@ onMounted(() => {
                     {{ msg.content }}<span class="animate-pulse text-pop-blue">▊</span>
                   </p>
                   <!-- 输出完成，渲染 Markdown -->
-                  <div v-else class="markdown-body text-sm break-words font-medium" v-html="md.render(msg.content)"></div>
+                  <div v-else class="markdown-body text-sm break-words font-medium" v-html="md.render(msg.content)" @click="handleMarkdownClick"></div>
                 </template>
                 <!-- 用户消息 -->
                 <p v-else class="text-sm font-bold whitespace-pre-wrap break-words">{{ msg.content }}</p>
@@ -458,7 +488,7 @@ onMounted(() => {
                 <div>
                   <div class="font-bold">Python RAG 服务</div>
                   <div class="text-sm text-gray-600">
-                    {{ ragServiceStatus === 'online' ? '运行中 (localhost:8500)' : 
+                    {{ ragServiceStatus === 'online' ? '运行中 (已通过后端代理)' : 
                        ragServiceStatus === 'offline' ? '未连接 - 请启动服务' : '检查中...' }}
                   </div>
                 </div>

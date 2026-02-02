@@ -82,6 +82,8 @@ const chatSettings = ref({
 
 // 在线状态
 const onlineStatus = ref<Record<string, boolean>>({})
+const ONLINE_STATUS_REFRESH_INTERVAL = 15000
+let onlineStatusTimer: number | null = null
 
 // 消息提示音 (使用 Web Audio API)
 let audioContext: AudioContext | null = null
@@ -107,9 +109,17 @@ onMounted(async () => {
   
   // 加载会话列表和未读申请数
   await Promise.all([loadSessions(), loadUnreadCount()])
+  startOnlineStatusRefresh()
   
   // 初始化 WebSocket
-  ws = new IMWebSocket(userStore.token!)
+  if (!userStore.userId) {
+    try {
+      await userStore.fetchUserInfo()
+    } catch (e) {
+      console.warn('Failed to fetch user info', e)
+    }
+  }
+  ws = new IMWebSocket(userStore.token!, userStore.userId)
   ws.on('connected', () => console.log('IM 已连接'))
   ws.on('message', handleNewMessage)
   ws.on('recall', handleRecall)
@@ -311,6 +321,7 @@ async function loadUnreadCount() {
 }
 
 onUnmounted(() => {
+  stopOnlineStatusRefresh()
   ws?.disconnect()
 })
 
@@ -336,6 +347,20 @@ async function loadSessions() {
   } catch (e) {
     console.error('加载会话失败', e)
   }
+}
+
+function startOnlineStatusRefresh() {
+  if (onlineStatusTimer !== null) return
+  onlineStatusTimer = window.setInterval(() => {
+    if (!chatSettings.value.showOnlineStatus) return
+    loadOnlineStatus()
+  }, ONLINE_STATUS_REFRESH_INTERVAL)
+}
+
+function stopOnlineStatusRefresh() {
+  if (onlineStatusTimer === null) return
+  window.clearInterval(onlineStatusTimer)
+  onlineStatusTimer = null
 }
 
 // 加载在线状态
@@ -1290,7 +1315,7 @@ function scrollToMessage(msg: Message) {
           <div class="flex items-center gap-2 mb-3">
             <el-popover :visible="showEmojiPicker" placement="top" :width="320" trigger="click">
               <template #reference>
-                <el-button circle size="small" class="!bg-pop-orange !text-black" @click="showEmojiPicker = !showEmojiPicker">
+                <el-button circle size="small" class="chat-tool-btn chat-tool-emoji" @click="showEmojiPicker = !showEmojiPicker">
                   <el-icon><Sunny /></el-icon>
                 </el-button>
               </template>
@@ -1305,10 +1330,10 @@ function scrollToMessage(msg: Message) {
                 </span>
               </div>
             </el-popover>
-            <el-button circle size="small" class="!bg-pop-purple !text-white" :loading="uploading" @click="chooseImage">
+            <el-button circle size="small" class="chat-tool-btn chat-tool-image" :loading="uploading" @click="chooseImage">
               <el-icon><Picture /></el-icon>
             </el-button>
-            <el-button circle size="small" class="!bg-pop-pink !text-white" :loading="uploading" @click="chooseFile">
+            <el-button circle size="small" class="chat-tool-btn chat-tool-file" :loading="uploading" @click="chooseFile">
               <el-icon><FolderOpened /></el-icon>
             </el-button>
           </div>
@@ -1508,3 +1533,33 @@ function scrollToMessage(msg: Message) {
     </Teleport>
   </div>
 </template>
+
+<style scoped>
+.chat-tool-btn {
+  background: #ffffff !important;
+  border: 3px solid #111827 !important;
+  box-shadow: 2px 2px 0 #111827;
+  width: 44px;
+  height: 44px;
+}
+
+.chat-tool-emoji {
+  color: #f59e0b !important;
+}
+
+.chat-tool-image {
+  color: #7c3aed !important;
+}
+
+.chat-tool-file {
+  color: #ec4899 !important;
+}
+
+:deep(.chat-tool-btn .el-icon svg) {
+  stroke-width: 2.4;
+}
+
+:deep(.chat-tool-btn .el-icon) {
+  font-size: 24px;
+}
+</style>

@@ -67,4 +67,12 @@ public interface FilmService {
      * @return 电影列表
      */
     List<FilmVO> getFilmsByIds(List<Long> ids);
+
+    /**
+     * 保存从 TVBox 获取的电影数据
+     *
+     * @param data 电影数据 Map
+     * @return 是否保存成功 (true-新增, false-已存在或忽略)
+     */
+    boolean saveFromTvbox(java.util.Map<String, Object> data);
 }
