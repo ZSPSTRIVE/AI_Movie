@@ -24,8 +24,8 @@
 <td width="50%">
 
 ### 🎬 影视中心
-- 🔥 热门推荐 & 个性化推荐
-- 🔍 智能搜索 & 分类筛选
+- 🔥 热门推荐 & AI 精选推荐
+- 🔍 智能搜索 & 多维度分类筛选
 - ⭐ 评分评论 & 收藏追剧
 - 📊 榜单排行 & 新片速递
 
@@ -33,7 +33,7 @@
 <td width="50%">
 
 ### 💬 即时通讯
-- 👥 私聊 & 群聊
+- 👥 私聊 & 群聊 (仿 QQ 风格)
 - 📷 图片 & 文件传输
 - 🔔 消息通知 & 在线状态
 - ↩️ 消息撤回 & 已读回执
@@ -52,11 +52,31 @@
 </td>
 <td width="50%">
 
-### 🤖 AI 助手
+### 🤖 AI 实验室
 - 💡 智能对话 (多 AI 提供商)
 - 📖 AI 小说生成
 - 🔍 RAG 知识库检索
 - ⚡ 流式响应 & 故障转移
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🎁 积分中心
+- 📅 每日签到 & 连续签到奖励
+- 🎫 积分兑换 & 优惠券
+- 📊 积分明细 & 兑换记录
+- 🏆 会员等级 & 专属特权
+
+</td>
+<td width="50%">
+
+### 🔐 用户中心
+- 👤 个人资料管理
+- 🔒 安全认证 (Sa-Token)
+- 📱 多端登录支持
+- 📧 消息通知 & 系统公告
 
 </td>
 </tr>
@@ -65,19 +85,22 @@
 ## 📸 界面预览
 
 ### 🏠 首页
-![首页](./doc/screenshots/home.png)
+![首页](./doc/screenshots/Home1.png)
 
 ### 🎬 电影中心
-![电影](./doc/screenshots/movie.png)
+![电影](./doc/screenshots/movie1.png)
 
 ### 📝 社区论坛
-![社区](./doc/screenshots/community.png)
+![社区](./doc/screenshots/community1.png)
 
 ### 💬 即时通讯
-![聊天](./doc/screenshots/IMchat.png)
+![聊天](./doc/screenshots/IMchat1.png)
 
-### 🤖 AI 助手
-![AI聊天](./doc/screenshots/AIchat.png)
+### 🤖 AI 实验室
+![AI聊天](./doc/screenshots/AIchat1.png)
+
+### 🎁 积分中心
+![积分中心](./doc/screenshots/coupons1.png)
 
 ## 📋 项目简介
 
