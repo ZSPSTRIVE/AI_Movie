@@ -1,8 +1,12 @@
 <div align="center">
 
-# 🍮 **果冻影院 2.0** (Jelly Cinema)
+<p align="center">
+  <img src="doc/logo.svg" width="180" alt="Jelly Cinema Logo" />
+</p>
 
-### 🎬 **影视** · 💬 **社交** · 🤖 **AI** · ⚡ **RAG** · 🎁 **积分**
+#  **果冻影院 2.0** (Jelly Cinema)
+
+### **影视** · **社交** · **AI** · **RAG** · **积分**
 
 **新一代全栈微服务平台 | Spring Cloud + Vue3 + AI 赋能**
 
@@ -263,13 +267,13 @@ AI_DEEPSEEK_KEY=your_deepseek_key
 
 ## 📝 开发规范
 
-- ✅ 遵循阿里巴巴 Java 开发手册
-- ✅ 使用 Lombok 简化代码
-- ✅ RESTful API 设计规范
-- ✅ 统一响应格式 `R<T>`
-- ✅ 全局异常处理
-- ✅ Sa-Token 权限控制
-- ✅ MyBatis Plus 通用 CRUD
+-  遵循阿里巴巴 Java 开发手册
+-  使用 Lombok 简化代码
+-  RESTful API 设计规范
+-  统一响应格式 `R<T>`
+-  全局异常处理
+-  Sa-Token 权限控制
+-  MyBatis Plus 通用 CRUD
 
 ## 🤝 贡献指南
 

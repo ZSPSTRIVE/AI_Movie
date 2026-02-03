@@ -1,0 +1,175 @@
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- Background -->
+    <linearGradient id="bgGrad" x1="0" y1="0" x2="1024" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F7F8F8"/>
+      <stop offset="55%" stop-color="#E9EFEE"/>
+      <stop offset="100%" stop-color="#F4F6F6"/>
+    </linearGradient>
+
+    <radialGradient id="bgHaloA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(340 310) rotate(35) scale(420 360)">
+      <stop offset="0%" stop-color="#BFE6D8" stop-opacity="0.85"/>
+      <stop offset="60%" stop-color="#BFE6D8" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#BFE6D8" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="bgHaloB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(720 380) rotate(-10) scale(460 420)">
+      <stop offset="0%" stop-color="#D9E7F6" stop-opacity="0.78"/>
+      <stop offset="65%" stop-color="#D9E7F6" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#D9E7F6" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="bgHaloC" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(520 770) rotate(12) scale(380 320)">
+      <stop offset="0%" stop-color="#F3F7F7" stop-opacity="0.85"/>
+      <stop offset="70%" stop-color="#F3F7F7" stop-opacity="0.14"/>
+      <stop offset="100%" stop-color="#F3F7F7" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Card (jade/glass) -->
+    <linearGradient id="cardGrad" x1="200" y1="200" x2="824" y2="824" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.78"/>
+      <stop offset="45%" stop-color="#F3F8F6" stop-opacity="0.74"/>
+      <stop offset="100%" stop-color="#E9F1EF" stop-opacity="0.72"/>
+    </linearGradient>
+
+    <radialGradient id="cardShine" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(410 340) rotate(25) scale(420 340)">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="40%" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <radialGradient id="cardEdgeCool" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(760 780) rotate(-35) scale(520 520)">
+      <stop offset="0%" stop-color="#CFE8DF" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#CFE8DF" stop-opacity="0.16"/>
+      <stop offset="100%" stop-color="#CFE8DF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Filters -->
+    <!-- 1) Large-range soft diffusion (jade-like) -->
+    <filter id="bgSoftDiffuse" x="-30%" y="-30%" width="160%" height="160%" filterUnits="userSpaceOnUse">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="90" result="blurA"/>
+      <feColorMatrix in="blurA" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.85 0" result="softA"/>
+      <feMerge result="mergeA">
+        <feMergeNode in="softA"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- 2) Local highlight bloom -->
+    <filter id="localBloom" x="-40%" y="-40%" width="180%" height="180%" filterUnits="userSpaceOnUse">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="26" result="bloomBlur"/>
+      <feColorMatrix in="bloomBlur" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.75 0" result="bloomSoft"/>
+      <feBlend in="SourceGraphic" in2="bloomSoft" mode="screen" result="bloomMix"/>
+    </filter>
+
+    <!-- 3) Subtle jade grain / micro texture -->
+    <filter id="jadeGrain" x="-20%" y="-20%" width="140%" height="140%" filterUnits="userSpaceOnUse">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="2" seed="7" result="noise"/>
+      <feGaussianBlur in="noise" stdDeviation="0.8" result="noiseSoft"/>
+      <feColorMatrix in="noiseSoft" type="matrix"
+        values="0 0 0 0 0.50
+                0 0 0 0 0.55
+                0 0 0 0 0.54
+                0 0 0 0.20 0" result="grainTint"/>
+      <feDisplacementMap in="SourceGraphic" in2="noiseSoft" scale="3" xChannelSelector="R" yChannelSelector="G" result="microWarp"/>
+      <feBlend in="microWarp" in2="grainTint" mode="soft-light" result="grainBlend"/>
+    </filter>
+
+    <!-- 4) Glass/jade card depth: soft shadow + inner shade + sheen -->
+    <filter id="glassJadeCard" x="-25%" y="-25%" width="150%" height="150%" filterUnits="userSpaceOnUse">
+      <!-- outer soft shadow -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="18" result="saBlur"/>
+      <feOffset in="saBlur" dx="0" dy="18" result="saOff"/>
+      <feFlood flood-color="#000000" flood-opacity="0.14" result="shadowCol"/>
+      <feComposite in="shadowCol" in2="saOff" operator="in" result="shadow"/>
+      <feBlend in="shadow" in2="SourceGraphic" mode="normal" result="baseShadowed"/>
+
+      <!-- inner shade (subtle) -->
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10" result="inBlur"/>
+      <feOffset in="inBlur" dx="0" dy="6" result="inOff"/>
+      <feFlood flood-color="#0A0A0A" flood-opacity="0.10" result="inCol"/>
+      <feComposite in="inCol" in2="inOff" operator="in" result="inShade"/>
+      <feComposite in="inShade" in2="SourceAlpha" operator="in" result="inShadeClip"/>
+      <feBlend in="baseShadowed" in2="inShadeClip" mode="multiply" result="depthMix"/>
+
+      <!-- soft sheen -->
+      <feGaussianBlur in="SourceGraphic" stdDeviation="1.2" result="sgSoft"/>
+      <feColorMatrix in="sgSoft" type="matrix"
+        values="1 0 0 0 0
+                0 1 0 0 0
+                0 0 1 0 0
+                0 0 0 0.28 0" result="sheen"/>
+      <feBlend in="depthMix" in2="sheen" mode="screen" result="finalMix"/>
+    </filter>
+  </defs>
+
+  <!-- Background with soft diffusion -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)" filter="url(#bgSoftDiffuse)"/>
+  
+  <!-- Background halos with local bloom -->
+  <g filter="url(#localBloom)">
+    <rect width="1024" height="1024" fill="url(#bgHaloA)"/>
+    <rect width="1024" height="1024" fill="url(#bgHaloB)"/>
+    <rect width="1024" height="1024" fill="url(#bgHaloC)"/>
+  </g>
+
+  <!-- Main card with glass/jade effect -->
+  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
+        fill="url(#cardGrad)" filter="url(#glassJadeCard)"/>
+  
+  <!-- Card shine overlay -->
+  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
+        fill="url(#cardShine)" opacity="0.6"/>
+  
+  <!-- Card edge cool tone -->
+  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
+        fill="url(#cardEdgeCool)" opacity="0.4"/>
+
+  <!-- Film strip pattern -->
+  <g stroke="#111111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- Horizontal film strips -->
+    <path d="M280 380 L280 420 L320 420 L320 380 L360 380 L360 420 L400 420 L400 380 L440 380 L440 420 L480 420 L480 380 L520 380 L520 420 L560 420 L560 380 L600 380 L600 420 L640 420 L640 380 L680 380 L680 420 L720 420 L720 380 L760 380 L760 420"/>
+    <path d="M280 480 L280 520 L320 520 L320 480 L360 480 L360 520 L400 520 L400 480 L440 480 L440 520 L480 520 L480 480 L520 480 L520 520 L560 520 L560 480 L600 480 L600 520 L640 520 L640 480 L680 480 L680 520 L720 520 L720 480 L760 480 L760 520"/>
+    <path d="M280 580 L280 620 L320 620 L320 580 L360 580 L360 620 L400 620 L400 580 L440 580 L440 620 L480 620 L480 580 L520 580 L520 620 L560 620 L560 580 L600 580 L600 620 L640 620 L640 580 L680 580 L680 620 L720 620 L720 580 L760 580 L760 620"/>
+    
+    <!-- Film perforations -->
+    <circle cx="250" cy="400" r="12"/>
+    <circle cx="250" cy="500" r="12"/>
+    <circle cx="250" cy="600" r="12"/>
+    <circle cx="790" cy="400" r="12"/>
+    <circle cx="790" cy="500" r="12"/>
+    <circle cx="790" cy="600" r="12"/>
+    
+    <!-- Clapper board top -->
+    <path d="M380 320 L620 320" stroke-width="12"/>
+    <path d="M420 290 L420 350" stroke-width="8"/>
+    <path d="M580 290 L580 350" stroke-width="8"/>
+    <path d="M440 290 L500 290" stroke-width="6"/>
+    <path d="M500 290 L560 290" stroke-width="6"/>
+    
+    <!-- Diagonal clapper lines -->
+    <path d="M400 290 L440 350" stroke-width="6"/>
+    <path d="M460 290 L500 350" stroke-width="6"/>
+    <path d="M520 290 L560 350" stroke-width="6"/>
+    <path d="M580 290 L620 350" stroke-width="6"/>
+  </g>
+
+  <!-- Subtle jade grain texture overlay -->
+  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
+        fill="none" filter="url(#jadeGrain)" opacity="0.3"/>
+
+  <!-- Highlight spots -->
+  <g filter="url(#localBloom)" opacity="0.7">
+    <ellipse cx="380" cy="360" rx="80" ry="25" fill="#FFFFFF" opacity="0.6"/>
+    <ellipse cx="640" cy="400" rx="60" ry="20" fill="#FFFFFF" opacity="0.5"/>
+    <ellipse cx="480" cy="680" rx="100" ry="30" fill="#FFFFFF" opacity="0.4"/>
+  </g>
+</svg>
