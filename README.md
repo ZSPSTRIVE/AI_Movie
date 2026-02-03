@@ -1,105 +1,105 @@
 <div align="center">
 
-# 🍮 果冻影院 2.0
+# 🍮 **果冻影院 2.0** (Jelly Cinema)
 
-### Jelly Cinema - 影视 + 社交 + AI 一体化微服务平台
+### 🎬 **影视** · 💬 **社交** · 🤖 **AI** · ⚡ **RAG** · 🎁 **积分**
 
-[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2+-green?style=flat-square&logo=springboot)](https://spring.io/projects/spring-boot)
-[![Vue](https://img.shields.io/badge/Vue-3.x-brightgreen?style=flat-square&logo=vue.js)](https://vuejs.org/)
-[![License](https://img.shields.io/badge/License-MIT-blue?style=flat-square)](LICENSE)
-![GitHub](https://img.shields.io/badge/GitHub-jelly--cinema--v2-black?style=flat-square&logo=github)
+**新一代全栈微服务平台 | Spring Cloud + Vue3 + AI 赋能**
 
-**🎬 看剧 · 💬 聊剧 · 🤖 AI 助手 · 📝 社区讨论**
+[![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=for-the-badge&logo=springboot)](https://spring.io/projects/spring-boot)
+[![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?style=for-the-badge&logo=vue.js)](https://vuejs.org/)
+[![Elasticsearch](https://img.shields.io/badge/Elasticsearch-7.6-005571?style=for-the-badge&logo=elasticsearch)](https://www.elastic.co/)
+[![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-[快速开始](#-快速开始) · [功能亮点](#-功能亮点) · [技术栈](#️-技术栈) · [API 文档](#-api-接口)
+[**� 快速开始**](#-快速开始) · [**✨ 功能亮点**](#-功能亮点) · [**🏗️ 技术架构**](#️-技术栈) · [**📄 API 文档**](#-api-接口)
 
 </div>
 
 ---
 
-## ✨ 功能亮点
+## ✨ **功能亮点**
 
 <table>
 <tr>
 <td width="50%">
 
-### 🎬 影视中心
-- 🔥 热门推荐 & AI 精选推荐
-- 🔍 智能搜索 & 多维度分类筛选
-- ⭐ 评分评论 & 收藏追剧
-- 📊 榜单排行 & 新片速递
+### 🎬 **沉浸式影视中心**
+- 🔥 **AI 精选推荐**: 基于用户行为的个性化推荐
+- 🔍 **混合检索**: SQL + ES 倒排 + 向量语义搜索
+- 🏆 **动态榜单**: 实时热度排行与新片速递
+- 📺 **多端适配**: Web端 + TVBox 电视端支持
 
 </td>
 <td width="50%">
 
-### 💬 即时通讯
-- 👥 私聊 & 群聊 (仿 QQ 风格)
-- 📷 图片 & 文件传输
-- 🔔 消息通知 & 在线状态
-- ↩️ 消息撤回 & 已读回执
-
-</td>
-</tr>
-<tr>
-<td width="50%">
-
-### 📝 社区论坛
-- 📄 帖子发布 & Markdown 支持
-- 👍 投票系统 (仿知乎)
-- 💬 多级评论 & 点赞
-- 🏷️ 标签分类 & 热门话题
-
-</td>
-<td width="50%">
-
-### 🤖 AI 实验室
-- 💡 智能对话 (多 AI 提供商)
-- 📖 AI 小说生成
-- 🔍 RAG 知识库检索
-- ⚡ 流式响应 & 故障转移
+### 💬 **实时通讯 (IM)**
+- ⚡ **WebSocket**: 低延迟私聊/群聊 (Netty)
+- � **云端存储**: 消息漫游与多端同步
+- � **富媒体**: 图片/文件/代码块发送
+- ↩️ **交互增强**: 消息撤回/已读回执/正在输入
 
 </td>
 </tr>
 <tr>
 <td width="50%">
 
-### 🎁 积分中心
-- 📅 每日签到 & 连续签到奖励
-- 🎫 积分兑换 & 优惠券
-- 📊 积分明细 & 兑换记录
-- 🏆 会员等级 & 专属特权
+### 📝 **极客社区**
+- ✍️ **Markdown**: 极致的富文本编辑体验
+- 👍 **互动投票**: 仿知乎风格的高质量问答
+- 🏷️ **圈子话题**: 聚合兴趣内容与热门讨论
+- 👮 **内容风控**: 敏感词过滤与自动审核
 
 </td>
 <td width="50%">
 
-### 🔐 用户中心
-- 👤 个人资料管理
-- 🔒 安全认证 (Sa-Token)
-- 📱 多端登录支持
-- 📧 消息通知 & 系统公告
+### 🤖 **AI 实验室 (RAG)**
+- 🧠 **多模态对话**: 集成 DeepSeek/GLM 等大模型
+- � **知识库 RAG**: 基于文档的精准问答 (Python)
+- 🎭 **角色扮演**: 沉浸式 AI 角色聊天
+- ✍️ **辅助创作**: AI 续写小说与大纲生成
+
+</td>
+</tr>
+<tr>
+<td width="50%">
+
+### 🎁 **积分权益体系**
+- 📅 **签到打卡**: 连续签到奖励与补签
+- 💳 **商城兑换**: 积分兑换 VIP 与优惠券
+- 🏅 **等级特权**: 动态成长的会员体系
+- 📊 **账单流水**: 透明的积分消费记录
+
+</td>
+<td width="50%">
+
+### �️ **企业级后台管理**
+- � **RBAC 权限**: 细粒度的菜单与按钮控制
+- � **数据大屏**: 实时监控系统核心指标
+- � **用户画像**: 全方位的用户行为分析
+- � **内容审计**: 评论/帖子的审核工作流
 
 </td>
 </tr>
 </table>
 
-## 📸 界面预览
+## 📸 **界面预览**
 
-### 🏠 首页
+### 🏠 **首页 (Home)**
 ![首页](./doc/screenshots/Home1.png)
 
-### 🎬 电影中心
+### 🎬 **电影中心 (Movies)**
 ![电影](./doc/screenshots/movie1.png)
 
-### 📝 社区论坛
+### 📝 **社区论坛 (Community)**
 ![社区](./doc/screenshots/community1.png)
 
-### 💬 即时通讯
+### 💬 **即时通讯 (IM)**
 ![聊天](./doc/screenshots/IMchat1.png)
 
-### 🤖 AI 实验室
+### 🤖 **AI 实验室 (AI Lab)**
 ![AI聊天](./doc/screenshots/AIchat1.png)
 
-### 🎁 积分中心
+### 🎁 **积分中心 (Points)**
 ![积分中心](./doc/screenshots/coupons1.png)
 
 ## 📋 项目简介
@@ -111,77 +111,92 @@
 - 💼 求职面试的亮眼作品集
 - 🚀 二次开发的基础框架
 
-## 🏗️ 技术栈
+## 🏗️ **技术栈**
 
-### 后端
-- **框架**: Spring Boot 3.2+, Spring Cloud Alibaba
-- **注册/配置中心**: Nacos
-- **消息队列**: RocketMQ 4.9.x
-- **数据库**: MySQL 8.0
-- **缓存**: Redis 6.2, Caffeine
-- **搜索引擎**: Elasticsearch 7.6
-- **认证**: Sa-Token
-- **AI**: LangChain4j, Spring AI
+### **后端 (Backend)**
+> 基于 Spring Boot 3.2 + Spring Cloud Alibaba 2023 构建的高性能微服务架构
 
-### 前端
-- **框架**: Vue 3 (Composition API)
-- **构建工具**: Vite
-- **状态管理**: Pinia
-- **UI 组件**: Element Plus
-- **样式**: TailwindCSS
+- **核心框架**: `Spring Boot 3.2.5`, `Spring Cloud 2023.0.1`, `Spring Cloud Alibaba 2023.0.1.0`
+- **开发语言**: `Java 21` (最新 LTS 版本)
+- **服务治理**: `Nacos 2.3` (注册中心 & 配置中心)
+- **数据库**: `MySQL 8.0.33` + `MyBatis Plus 3.5.5`
+- **缓存架构**: `Redis 7.0` (Redisson 3.27) + `Caffeine` (多级缓存)
+- **搜索引擎**: `Elasticsearch 7.6.2` (IK 分词器)
+- **消息队列**: `RocketMQ 4.9.4` (削峰填谷 & 异步解耦)
+- **安全认证**: `Sa-Token 1.37` + `JWT` (RBAC 权限模型)
+- **AI 能力**: `Spring AI`, `LangChain4j`, `Python FastApi` (RAG 服务)
 
-## 📁 项目结构
+### **前端 (Frontend)**
+> 采用 Vue 3 + TypeScript + Vite 5 的现代化前端技术栈
 
-```
+- **核心框架**: `Vue 3.4` (Composition API)
+- **构建工具**: `Vite 5.2.8` (极速构建)
+- **开发语言**: `TypeScript 5.4` (类型安全)
+- **状态管理**: `Pinia 2.1` (新一代状态管理)
+- **UI 组件库**: `Element Plus 2.6` (暗黑模式支持)
+- **样式方案**: `TailwindCSS 3.4` + `Sass`
+- **媒体组件**: `DPlayer` (HLS 流媒体播放), `ECharts 5.6` (数据可视化)
+
+---
+
+## � **项目结构**
+
+```bash
 jelly-cinema-v2/
-├── jelly-gateway          # API 网关 (8080)
-├── jelly-auth             # 认证服务 (9100)
-├── jelly-modules/
-│   ├── jelly-film         # 电影服务 (9200) - 电影列表/详情/搜索/推荐
-│   ├── jelly-community    # 社区服务 (9300) - 帖子/评论/投票（仿知乎）
-│   ├── jelly-im           # IM 服务 (9400) - WebSocket实时通讯/RocketMQ
-│   └── jelly-ai           # AI 服务 (9500) - RAG问答/小说生成/LLM对话
-├── jelly-common/          # 公共模块
-│   ├── jelly-common-core      # 核心工具类
-│   ├── jelly-common-redis     # Redis 模块
-│   ├── jelly-common-mybatis   # MyBatis Plus 模块
-│   └── jelly-common-security  # 安全认证模块
-├── jelly-ui-web/          # 前端项目 (Vue3)
-├── doc/
-│   └── sql/               # 数据库脚本
-└── docker-compose.yml     # Docker 编排
+├── 📂 jelly-gateway          # [9000] API 网关 (统一入口/限流/鉴权)
+├── 📂 jelly-auth             # [9100] 认证中心 (登录/注册/SSO单点登录)
+├── 📂 jelly-admin            # [9600] 运营后台 (数据大屏/用户管理/内容审核) [NEW]
+├── 📂 jelly-modules/         # 业务微服务聚合
+│   ├── jelly-film            # [9200] 影视服务 (影片管理/推荐算法/榜单)
+│   ├── jelly-community       # [9300] 社区服务 (圈子/帖子/互动/投票)
+│   ├── jelly-im              # [9400] 即时通讯 (WebSocket/群聊/私聊)
+│   └── jelly-ai              # [9500] AI 实验室 (LLM对话/小说生成/角色扮演)
+├── 📂 jelly-rag-python/      # [8000] RAG 检索引擎 (Python/LangChain/向量库) [NEW]
+├── 📂 tvbox-proxy/           # [5000] TVBox 接口代理 (TV端源解析) [NEW]
+├── 📂 jelly-common/          # 公共依赖模块 (Core/Redis/MyBatis/Security)
+├── 📂 jelly-ui-web/          # 前端 Web 端源码 (Vue3 + TS)
+└── 📄 docker-compose.yml     # 容器化一键部署脚本
 ```
 
-## 🚀 快速开始
+---
 
-### 1. 启动中间件
+## 🚀 **快速开始**
+
+### **1. 环境准备**
+- JDK 21+
+- Node.js 18+
+- Docker & Docker Compose
+- Maven 3.9+
+
+### **2. 启动中间件**
 
 ```bash
 # 启动 MySQL, Redis, Nacos, Elasticsearch, RocketMQ, MinIO
 docker-compose up -d
 ```
 
-### 2. 初始化数据库
+### **3. 初始化配置**
+1. 导入数据库脚本: `doc/sql/jelly_cinema.sql`
+2. 修改 Nacos 配置: 访问 `localhost:8848` (nacos/nacos)
+
+### **4. 启动服务**
 
 ```bash
-# 执行 doc/sql/jelly_cinema.sql 初始化数据库
+# 建议启动顺序
+1. jelly-gateway      (网关)
+2. jelly-auth         (认证)
+3. jelly-film         (核心业务)
+4. jelly-rag-python   (AI 搜索增强 - 可选)
+   cd jelly-rag-python && pip install -r requirements.txt && python main.py
 ```
 
-### 3. 启动后端服务
-
-```bash
-# 按顺序启动服务
-1. jelly-gateway (网关)
-2. jelly-auth (认证)
-3. jelly-film (电影)
-```
-
-### 4. 启动前端
+### **5. 启动前端**
 
 ```bash
 cd jelly-ui-web
 npm install
 npm run dev
+# 访问 http://localhost:5173
 ```
 
 ## 📡 API 接口
