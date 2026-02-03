@@ -109,67 +109,76 @@
                 0 0 0 0.28 0" result="sheen"/>
       <feBlend in="depthMix" in2="sheen" mode="screen" result="finalMix"/>
     </filter>
+
+    <!-- Accent (tiny gold hint) -->
+    <radialGradient id="accentGold" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(690 700) rotate(10) scale(52 52)">
+      <stop offset="0%" stop-color="#D7C28A" stop-opacity="0.55"/>
+      <stop offset="55%" stop-color="#D7C28A" stop-opacity="0.18"/>
+      <stop offset="100%" stop-color="#D7C28A" stop-opacity="0"/>
+    </radialGradient>
   </defs>
 
-  <!-- Background with soft diffusion -->
-  <rect width="1024" height="1024" fill="url(#bgGrad)" filter="url(#bgSoftDiffuse)"/>
-  
-  <!-- Background halos with local bloom -->
-  <g filter="url(#localBloom)">
-    <rect width="1024" height="1024" fill="url(#bgHaloA)"/>
-    <rect width="1024" height="1024" fill="url(#bgHaloB)"/>
-    <rect width="1024" height="1024" fill="url(#bgHaloC)"/>
+  <!-- Background -->
+  <rect width="1024" height="1024" fill="url(#bgGrad)"/>
+
+  <!-- Big soft halos (diffuse) -->
+  <g filter="url(#bgSoftDiffuse)" opacity="0.34">
+    <ellipse cx="340" cy="310" rx="360" ry="310" fill="url(#bgHaloA)"/>
+    <ellipse cx="720" cy="380" rx="390" ry="350" fill="url(#bgHaloB)"/>
+    <ellipse cx="520" cy="770" rx="320" ry="270" fill="url(#bgHaloC)"/>
   </g>
 
-  <!-- Main card with glass/jade effect -->
-  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
-        fill="url(#cardGrad)" filter="url(#glassJadeCard)"/>
-  
-  <!-- Card shine overlay -->
-  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
-        fill="url(#cardShine)" opacity="0.6"/>
-  
-  <!-- Card edge cool tone -->
-  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
-        fill="url(#cardEdgeCool)" opacity="0.4"/>
+  <!-- Local bloom highlights (a bit tighter) -->
+  <g filter="url(#localBloom)" opacity="0.22">
+    <ellipse cx="420" cy="260" rx="160" ry="120" fill="#FFFFFF"/>
+    <ellipse cx="780" cy="520" rx="140" ry="110" fill="#E9F6F1"/>
+    <ellipse cx="460" cy="840" rx="160" ry="110" fill="#F7FBFB"/>
+  </g>
 
-  <!-- Film strip pattern -->
+  <!-- Card -->
+  <g>
+    <rect x="200" y="200" width="624" height="624" rx="120" fill="url(#cardGrad)" filter="url(#glassJadeCard)"/>
+    <!-- gentle cool edge tint -->
+    <rect x="200" y="200" width="624" height="624" rx="120" fill="url(#cardEdgeCool)" opacity="0.35"/>
+    <!-- sheen -->
+    <rect x="200" y="200" width="624" height="624" rx="120" fill="url(#cardShine)" opacity="0.70" filter="url(#localBloom)"/>
+    <!-- micro texture (very light) -->
+    <rect x="200" y="200" width="624" height="624" rx="120" fill="#FFFFFF" opacity="0.10" filter="url(#jadeGrain)"/>
+    <!-- crisp outline -->
+    <rect x="200" y="200" width="624" height="624" rx="120" fill="none" stroke="#0B0B0B" stroke-opacity="0.10" stroke-width="2"/>
+  </g>
+
+  <!-- Minimal cinema line icon -->
   <g stroke="#111111" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" fill="none">
-    <!-- Horizontal film strips -->
-    <path d="M280 380 L280 420 L320 420 L320 380 L360 380 L360 420 L400 420 L400 380 L440 380 L440 420 L480 420 L480 380 L520 380 L520 420 L560 420 L560 380 L600 380 L600 420 L640 420 L640 380 L680 380 L680 420 L720 420 L720 380 L760 380 L760 420"/>
-    <path d="M280 480 L280 520 L320 520 L320 480 L360 480 L360 520 L400 520 L400 480 L440 480 L440 520 L480 520 L480 480 L520 480 L520 520 L560 520 L560 480 L600 480 L600 520 L640 520 L640 480 L680 480 L680 520 L720 520 L720 480 L760 480 L760 520"/>
-    <path d="M280 580 L280 620 L320 620 L320 580 L360 580 L360 620 L400 620 L400 580 L440 580 L440 620 L480 620 L480 580 L520 580 L520 620 L560 620 L560 580 L600 580 L600 620 L640 620 L640 580 L680 580 L680 620 L720 620 L720 580 L760 580 L760 620"/>
-    
-    <!-- Film perforations -->
-    <circle cx="250" cy="400" r="12"/>
-    <circle cx="250" cy="500" r="12"/>
-    <circle cx="250" cy="600" r="12"/>
-    <circle cx="790" cy="400" r="12"/>
-    <circle cx="790" cy="500" r="12"/>
-    <circle cx="790" cy="600" r="12"/>
-    
-    <!-- Clapper board top -->
-    <path d="M380 320 L620 320" stroke-width="12"/>
-    <path d="M420 290 L420 350" stroke-width="8"/>
-    <path d="M580 290 L580 350" stroke-width="8"/>
-    <path d="M440 290 L500 290" stroke-width="6"/>
-    <path d="M500 290 L560 290" stroke-width="6"/>
-    
-    <!-- Diagonal clapper lines -->
-    <path d="M400 290 L440 350" stroke-width="6"/>
-    <path d="M460 290 L500 350" stroke-width="6"/>
-    <path d="M520 290 L560 350" stroke-width="6"/>
-    <path d="M580 290 L620 350" stroke-width="6"/>
+    <!-- Film frame outer -->
+    <rect x="330" y="430" width="364" height="248" rx="44"/>
+
+    <!-- Inner screen -->
+    <rect x="394" y="494" width="236" height="120" rx="26"/>
+
+    <!-- Play triangle (outline) -->
+    <path d="M492 520 L562 554 L492 588 Z"/>
+
+    <!-- Sprocket holes (left) -->
+    <circle cx="352" cy="505" r="8"/>
+    <circle cx="352" cy="555" r="8"/>
+    <circle cx="352" cy="605" r="8"/>
+
+    <!-- Sprocket holes (right) -->
+    <circle cx="672" cy="505" r="8"/>
+    <circle cx="672" cy="555" r="8"/>
+    <circle cx="672" cy="605" r="8"/>
+
+    <!-- A restrained clapper hint above (modern, minimal) -->
+    <path d="M372 400 H652"/>
+    <path d="M390 372 H634"/>
+    <path d="M412 372 L452 400"/>
+    <path d="M482 372 L522 400"/>
+    <path d="M552 372 L592 400"/>
   </g>
 
-  <!-- Subtle jade grain texture overlay -->
-  <rect x="200" y="200" width="624" height="624" rx="120" ry="120" 
-        fill="none" filter="url(#jadeGrain)" opacity="0.3"/>
-
-  <!-- Highlight spots -->
-  <g filter="url(#localBloom)" opacity="0.7">
-    <ellipse cx="380" cy="360" rx="80" ry="25" fill="#FFFFFF" opacity="0.6"/>
-    <ellipse cx="640" cy="400" rx="60" ry="20" fill="#FFFFFF" opacity="0.5"/>
-    <ellipse cx="480" cy="680" rx="100" ry="30" fill="#FFFFFF" opacity="0.4"/>
+  <!-- Tiny accent glow (very small area, low saturation) -->
+  <g opacity="0.55">
+    <circle cx="690" cy="700" r="56" fill="url(#accentGold)" filter="url(#localBloom)"/>
   </g>
 </svg>
