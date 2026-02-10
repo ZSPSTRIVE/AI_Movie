@@ -88,22 +88,22 @@
 
 ## **界面预览**
 
-###  **首页 **
+###  **首页**
 ![首页](./doc/screenshots/Home1.png)
 
-###  **电影中心 **
+###  **电影中心**
 ![电影](./doc/screenshots/movie1.png)
 
-###  **社区论坛 **
+###  **社区论坛**
 ![社区](./doc/screenshots/community1.png)
 
-###  **即时通讯 **
+###  **即时通讯**
 ![聊天](./doc/screenshots/IMchat1.png)
 
-###  **AI 实验室 **
+###  **AI 实验室**
 ![AI聊天](./doc/screenshots/AIchat1.png)
 
-###  **积分中心 **
+###  **积分中心**
 ![积分中心](./doc/screenshots/coupons1.png)
 
 ## 📋 项目简介
