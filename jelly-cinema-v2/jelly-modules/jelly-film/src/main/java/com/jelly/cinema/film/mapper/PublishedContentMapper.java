@@ -2,6 +2,7 @@ package com.jelly.cinema.film.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.jelly.cinema.film.domain.entity.PublishedContent;
+import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -26,6 +27,6 @@ public interface PublishedContentMapper extends BaseMapper<PublishedContent> {
     /**
      * 删除旧版本的快照数据
      */
-    @Select("DELETE FROM t_published_content WHERE category = #{category} AND config_version != #{currentVersion}")
-    void deleteOldVersions(@Param("category") String category, @Param("currentVersion") String currentVersion);
+    @Delete("DELETE FROM t_published_content WHERE category = #{category} AND config_version != #{currentVersion}")
+    int deleteOldVersions(@Param("category") String category, @Param("currentVersion") String currentVersion);
 }

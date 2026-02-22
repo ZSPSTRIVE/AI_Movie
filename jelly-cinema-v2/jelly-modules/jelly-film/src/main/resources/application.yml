@@ -49,7 +49,7 @@ mybatis-plus:
   type-aliases-package: com.jelly.cinema.film.domain.entity
   configuration:
     map-underscore-to-camel-case: true
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    log-impl: org.apache.ibatis.logging.slf4j.Slf4jImpl
   global-config:
     db-config:
       id-type: assign_id
@@ -83,7 +83,7 @@ springdoc:
 
 logging:
   level:
-    com.jelly.cinema: debug
+    com.jelly.cinema: info
 
 # 禁用 Elasticsearch 健康检查
 management:

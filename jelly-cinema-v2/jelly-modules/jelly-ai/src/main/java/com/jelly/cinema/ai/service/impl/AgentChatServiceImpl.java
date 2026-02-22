@@ -1,5 +1,7 @@
 package com.jelly.cinema.ai.service.impl;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.jelly.cinema.ai.domain.dto.ChatRequestDTO;
 import com.jelly.cinema.ai.service.AgentChatService;
 import com.jelly.cinema.ai.tools.AiMovieTools;
@@ -11,6 +13,7 @@ import dev.langchain4j.data.message.ChatMessage;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.ToolExecutionResultMessage;
 import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.model.StreamingResponseHandler;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.chat.StreamingChatLanguageModel;
 import dev.langchain4j.model.output.Response;
@@ -20,24 +23,15 @@ import org.springframework.stereotype.Service;
 import reactor.core.publisher.Flux;
 import reactor.core.publisher.Sinks;
 
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 /**
- * Agent 模式对话服务实现
- * 基于 LangChain4j 实现自动工具调用
- * 
- * 工作流程:
- * 1. 接收用户消息
- * 2. AI 判断是否需要调用工具
- * 3. 如需要，执行工具并将结果返回给 AI
- * 4. AI 基于工具结果生成最终回复
- *
- * @author Jelly Cinema
- * @since 2026
+ * Agent chat service based on LangChain4j tool-calling.
  */
 @Slf4j
 @Service("agentChatService")
@@ -47,101 +41,147 @@ public class AgentChatServiceImpl implements AgentChatService {
     private final ChatLanguageModel chatLanguageModel;
     private final StreamingChatLanguageModel streamingChatLanguageModel;
     private final AiMovieTools aiMovieTools;
+    private final ObjectMapper objectMapper;
 
-    /** 工具规格列表 - 从 AiMovieTools 的 @Tool 注解生成 */
-    private List<ToolSpecification> toolSpecifications;
+    private volatile List<ToolSpecification> allToolSpecifications;
 
-    /** 最大工具调用轮次，防止无限循环 */
     private static final int MAX_TOOL_ITERATIONS = 5;
+    private static final int MAX_TOOL_COUNT = 20;
+    private static final int STREAM_TIMEOUT_SECONDS = 120;
 
     private static final String AGENT_SYSTEM_PROMPT = """
-            你是果冻影院的 AI 智能助手，一个幽默、专业且热情的电影专家。
-            你的目标是帮助用户发现好电影，或者解决他们关于电影的问题。
-            
-            🛠️ 你的工具箱 (请灵活使用):
-            1. **searchMovies**: 找电影首选。根据名称、演员、导演搜索。
-            2. **getRecommendedMovies**: 用户不知道看什么时，推荐高分好片。
-            3. **getHotMovies**: 用户想看这一周最火的片子时使用。
-            4. **getMovieDetail**: 获取特定电影的详细信息（剧情、演员表等）。
-            5. **ragSearch**: 🧠 知识库检索。当用户问剧情细节、彩蛋、幕后故事、影评解析时，**必须**优先调用此工具查阅知识库。
-            
-            📝 回复规则 (务必遵守):
-            1. **格式化链接**: 提到任何电影时，必须使用 Markdown 链接格式 `[电影名](/film/ID)`，这样用户点击就能直接播放！例如：推荐你看 [星际穿越](/film/123)。
-            2. **多态回复**: 不要每次都说一样的开场白。根据用户的语气调整（幽默、正式、简洁）。
-            3. **RAG 优先**: 遇到"讲讲剧情"、"解析一下"、"结局是什么"这类问题，不要瞎编，先用 `ragSearch` 查。
-            4. **行动导向**: 推荐完电影后，可以顺便引导用户："是否需要我为您播放？" 或者 "想了解更多关于导演的信息吗？"
-            
-            当前时间：{{current_date}}
-            """;
+            你是果冻影院的 AI 电影助手，请准确、简洁、友好地回答用户问题。
+            可用工具：
+            1) searchMovies：按关键词搜索电影
+            2) getMovieDetail：获取电影详情
+            3) getRecommendedMovies：获取推荐
+            4) getHotMovies：获取热门
+            5) ragSearch：知识库检索（当用户问剧情细节、彩蛋、解析时优先使用）
 
-    /**
-     * 懒加载工具规格
-     */
-    private List<ToolSpecification> getToolSpecifications() {
-        if (toolSpecifications == null) {
-            toolSpecifications = ToolSpecifications.toolSpecificationsFrom(aiMovieTools);
-            log.info("📋 Loaded {} tool specifications", toolSpecifications.size());
-        }
-        return toolSpecifications;
-    }
+            规则：
+            - 提到电影时使用 Markdown 链接格式 [电影名](/film/ID)
+            - 不确定的信息请明确说明，不要编造
+            - 回答结束时可给出下一步建议（如“要不要我帮你再推荐同类型影片？”）
+            """;
 
     @Override
     public String chat(ChatRequestDTO dto) {
         try {
             return agentChat(dto);
         } catch (Exception e) {
-            log.error("Agent 对话失败，降级为普通对话", e);
+            log.error("Agent chat failed, fallback to plain chat", e);
             return fallbackChat(dto);
         }
     }
 
     @Override
     public Flux<String> chatStream(ChatRequestDTO dto) {
-        // Agent 模式的流式响应（优化版：批量输出减少延迟）
         Sinks.Many<String> sink = Sinks.many().unicast().onBackpressureBuffer();
-        
-        // 异步执行 Agent 对话
-        new Thread(() -> {
-            try {
-                String response = agentChat(dto);
-                // 批量流式输出 - 每次发送5个字符，速度更快
-                char[] chars = response.toCharArray();
-                int batchSize = 5;
-                StringBuilder batch = new StringBuilder();
-                
-                for (int i = 0; i < chars.length; i++) {
-                    batch.append(chars[i]);
-                    
-                    // 每达到批量大小或到达末尾就发送
-                    if (batch.length() >= batchSize || i == chars.length - 1) {
-                        sink.tryEmitNext(batch.toString());
-                        batch.setLength(0); // 清空buffer
-                        if (i < chars.length - 1) {
-                            Thread.sleep(4); // 减少到4ms，总体速度提升2.5x
-                        }
-                    }
-                }
-                sink.tryEmitComplete();
-            } catch (Exception e) {
-                log.error("Agent 流式对话失败", e);
-                sink.tryEmitError(e);
-            }
-        }).start();
-        
+        Thread worker = new Thread(() -> streamAgentChat(dto, sink), "agent-chat-stream");
+        worker.setDaemon(true);
+        worker.start();
         return sink.asFlux();
     }
 
-    /**
-     * Agent 对话核心逻辑
-     * 实现 ReAct (Reasoning + Acting) 模式
-     */
+    private void streamAgentChat(ChatRequestDTO dto, Sinks.Many<String> sink) {
+        try {
+            boolean ragEnabled = Boolean.TRUE.equals(dto.getEnableRag());
+            List<ToolSpecification> toolSpecifications = getToolSpecifications(ragEnabled);
+            List<ChatMessage> messages = buildMessages(dto);
+
+            for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+                Response<AiMessage> response = chatLanguageModel.generate(messages, toolSpecifications);
+                AiMessage aiMessage = response.content();
+
+                if (!aiMessage.hasToolExecutionRequests()) {
+                    // True token streaming: stream a fresh completion from current context.
+                    streamFinalAnswer(messages, sink);
+                    return;
+                }
+
+                messages.add(aiMessage);
+                for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+                    sink.tryEmitNext(String.format("[tool:%s] running\n", request.name()));
+                    String toolResult = executeToolByName(request.name(), request.arguments(), ragEnabled);
+                    messages.add(ToolExecutionResultMessage.from(request, toolResult));
+                    sink.tryEmitNext(String.format("[tool:%s] done\n", request.name()));
+                }
+            }
+
+            sink.tryEmitNext("抱歉，处理过程较复杂，请尝试简化您的问题。");
+            sink.tryEmitComplete();
+        } catch (Exception e) {
+            log.error("Agent streaming failed", e);
+            sink.tryEmitError(e);
+        }
+    }
+
+    private void streamFinalAnswer(List<ChatMessage> messages, Sinks.Many<String> sink) {
+        CountDownLatch latch = new CountDownLatch(1);
+        AtomicReference<Throwable> errorRef = new AtomicReference<>();
+
+        streamingChatLanguageModel.generate(messages, new StreamingResponseHandler<AiMessage>() {
+            @Override
+            public void onNext(String token) {
+                sink.tryEmitNext(token);
+            }
+
+            @Override
+            public void onComplete(Response<AiMessage> response) {
+                sink.tryEmitComplete();
+                latch.countDown();
+            }
+
+            @Override
+            public void onError(Throwable error) {
+                errorRef.set(error);
+                sink.tryEmitError(error);
+                latch.countDown();
+            }
+        });
+
+        try {
+            boolean completed = latch.await(STREAM_TIMEOUT_SECONDS, TimeUnit.SECONDS);
+            if (!completed) {
+                throw new IllegalStateException("Streaming response timeout");
+            }
+            if (errorRef.get() != null) {
+                throw new RuntimeException("Streaming response failed", errorRef.get());
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Streaming interrupted", e);
+        }
+    }
+
     private String agentChat(ChatRequestDTO dto) {
+        boolean ragEnabled = Boolean.TRUE.equals(dto.getEnableRag());
+        List<ToolSpecification> toolSpecifications = getToolSpecifications(ragEnabled);
+        List<ChatMessage> messages = buildMessages(dto);
+
+        for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
+            Response<AiMessage> response = chatLanguageModel.generate(messages, toolSpecifications);
+            AiMessage aiMessage = response.content();
+            messages.add(aiMessage);
+
+            if (!aiMessage.hasToolExecutionRequests()) {
+                return aiMessage.text();
+            }
+
+            for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
+                String toolResult = executeToolByName(request.name(), request.arguments(), ragEnabled);
+                messages.add(ToolExecutionResultMessage.from(request, toolResult));
+            }
+        }
+
+        log.warn("Agent reached max tool iterations");
+        return "抱歉，处理过程较复杂，请尝试简化您的问题。";
+    }
+
+    private List<ChatMessage> buildMessages(ChatRequestDTO dto) {
         List<ChatMessage> messages = new ArrayList<>();
-        
-        // 添加系统提示
         messages.add(SystemMessage.from(AGENT_SYSTEM_PROMPT));
-        
-        // 添加历史对话
+
         if (dto.getHistory() != null) {
             for (ChatRequestDTO.Message msg : dto.getHistory()) {
                 if ("user".equals(msg.getRole())) {
@@ -151,102 +191,117 @@ public class AgentChatServiceImpl implements AgentChatService {
                 }
             }
         }
-        
-        // 添加当前问题
-        messages.add(UserMessage.from(dto.getPrompt()));
-        
-        // 迭代执行工具调用
-        for (int i = 0; i < MAX_TOOL_ITERATIONS; i++) {
-            log.debug("🔄 Agent iteration {} - Messages: {}", i + 1, messages.size());
-            
-            // 调用 LLM（带工具）
-            Response<AiMessage> response = chatLanguageModel.generate(
-                    messages,
-                    getToolSpecifications()
-            );
-            
-            AiMessage aiMessage = response.content();
-            messages.add(aiMessage);
-            
-            // 检查是否有工具调用请求
-            if (!aiMessage.hasToolExecutionRequests()) {
-                // 没有工具调用，返回最终回复
-                log.info("✅ Agent completed after {} iterations", i + 1);
-                return aiMessage.text();
-            }
-            
-            // 执行工具调用
-            List<ToolExecutionRequest> toolRequests = aiMessage.toolExecutionRequests();
-            log.info("🔧 Executing {} tool(s)", toolRequests.size());
-            
-            for (ToolExecutionRequest request : toolRequests) {
-                String toolName = request.name();
-                String toolArgs = request.arguments();
-                
-                log.info("🔧 Tool: {} | Args: {}", toolName, toolArgs);
-                
-                // 执行工具
-                String toolResult = executeToolByName(toolName, toolArgs);
-                
-                // 将工具结果添加到对话中
-                messages.add(ToolExecutionResultMessage.from(request, toolResult));
-            }
-        }
-        
-        log.warn("⚠️ Agent reached max iterations");
-        return "抱歉，处理过程较复杂，请尝试简化您的问题。";
+
+        messages.add(UserMessage.from(dto.getPrompt() == null ? "" : dto.getPrompt()));
+        return messages;
     }
 
-    /**
-     * 根据工具名称执行对应方法
-     */
-    private String executeToolByName(String toolName, String argsJson) {
+    private List<ToolSpecification> getToolSpecifications(boolean ragEnabled) {
+        if (allToolSpecifications == null) {
+            synchronized (this) {
+                if (allToolSpecifications == null) {
+                    allToolSpecifications = ToolSpecifications.toolSpecificationsFrom(aiMovieTools);
+                    log.info("Loaded {} tool specifications", allToolSpecifications.size());
+                }
+            }
+        }
+
+        if (ragEnabled) {
+            return allToolSpecifications;
+        }
+        return allToolSpecifications.stream()
+                .filter(spec -> !"ragSearch".equals(spec.name()))
+                .collect(Collectors.toList());
+    }
+
+    private String executeToolByName(String toolName, String argsJson, boolean ragEnabled) {
         try {
-            // 解析参数
-            com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
-            Map<String, Object> args = mapper.readValue(argsJson, Map.class);
-            
             return switch (toolName) {
                 case "searchMovies" -> {
-                    String keyword = (String) args.get("keyword");
-                    yield aiMovieTools.searchMovies(keyword);
+                    SearchMoviesArgs args = parseArgs(argsJson, SearchMoviesArgs.class);
+                    yield aiMovieTools.searchMovies(requireText(args.keyword, "keyword"));
                 }
                 case "getMovieDetail" -> {
-                    Object filmIdObj = args.get("filmId");
-                    Long filmId = filmIdObj instanceof Number ? ((Number) filmIdObj).longValue() : Long.parseLong(filmIdObj.toString());
-                    yield aiMovieTools.getMovieDetail(filmId);
+                    MovieDetailArgs args = parseArgs(argsJson, MovieDetailArgs.class);
+                    yield aiMovieTools.getMovieDetail(requirePositiveId(args.filmId, "filmId"));
                 }
                 case "getRecommendedMovies" -> {
-                    Object countObj = args.getOrDefault("count", 5);
-                    int count = countObj instanceof Number ? ((Number) countObj).intValue() : Integer.parseInt(countObj.toString());
-                    yield aiMovieTools.getRecommendedMovies(count);
+                    CountArgs args = parseArgs(argsJson, CountArgs.class);
+                    yield aiMovieTools.getRecommendedMovies(normalizeCount(args.count, 5));
                 }
                 case "getHotMovies" -> {
-                    Object countObj = args.getOrDefault("count", 10);
-                    int count = countObj instanceof Number ? ((Number) countObj).intValue() : Integer.parseInt(countObj.toString());
-                    yield aiMovieTools.getHotMovies(count);
+                    CountArgs args = parseArgs(argsJson, CountArgs.class);
+                    yield aiMovieTools.getHotMovies(normalizeCount(args.count, 10));
                 }
                 case "ragSearch" -> {
-                    String query = (String) args.get("query");
-                    yield aiMovieTools.ragSearch(query);
+                    if (!ragEnabled) {
+                        yield "当前请求未开启 RAG（enableRag=false），已跳过知识库检索。";
+                    }
+                    RagSearchArgs args = parseArgs(argsJson, RagSearchArgs.class);
+                    yield aiMovieTools.ragSearch(requireText(args.query, "query"));
                 }
                 default -> "未知工具: " + toolName;
             };
         } catch (Exception e) {
-            log.error("执行工具失败: {} | {}", toolName, e.getMessage());
+            log.error("Tool execution failed: {} | {}", toolName, e.getMessage(), e);
             return "工具执行出错: " + e.getMessage();
         }
     }
 
-    /**
-     * 降级：普通对话（无工具）
-     */
+    private <T> T parseArgs(String argsJson, Class<T> clazz) throws Exception {
+        if (argsJson == null || argsJson.isBlank()) {
+            return objectMapper.readValue("{}", clazz);
+        }
+        return objectMapper.readValue(argsJson, clazz);
+    }
+
+    private String requireText(String value, String fieldName) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(fieldName + " is required");
+        }
+        return value;
+    }
+
+    private Long requirePositiveId(Long value, String fieldName) {
+        if (value == null || value <= 0) {
+            throw new IllegalArgumentException(fieldName + " must be a positive integer");
+        }
+        return value;
+    }
+
+    private int normalizeCount(Integer count, int defaultValue) {
+        int normalized = count == null ? defaultValue : count;
+        if (normalized <= 0) {
+            normalized = defaultValue;
+        }
+        return Math.min(normalized, MAX_TOOL_COUNT);
+    }
+
     private String fallbackChat(ChatRequestDTO dto) {
         List<ChatMessage> messages = new ArrayList<>();
         messages.add(SystemMessage.from(AGENT_SYSTEM_PROMPT));
-        messages.add(UserMessage.from(dto.getPrompt()));
-        
+        messages.add(UserMessage.from(dto.getPrompt() == null ? "" : dto.getPrompt()));
         Response<AiMessage> response = chatLanguageModel.generate(messages);
         return response.content().text();
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class SearchMoviesArgs {
+        public String keyword;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class MovieDetailArgs {
+        public Long filmId;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class CountArgs {
+        public Integer count;
+    }
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    private static class RagSearchArgs {
+        public String query;
     }
 }

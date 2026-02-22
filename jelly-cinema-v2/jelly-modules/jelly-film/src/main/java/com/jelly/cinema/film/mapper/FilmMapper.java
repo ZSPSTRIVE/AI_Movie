@@ -18,6 +18,6 @@ public interface FilmMapper extends BaseMapper<Film> {
     /**
      * 查询所有电影 ID（用于 BloomFilter 预热）
      */
-    @Select("SELECT id FROM t_film WHERE status = 1")
+    @Select("SELECT id FROM t_film WHERE status = 0 AND deleted = 0")
     List<Long> selectAllIds();
 }

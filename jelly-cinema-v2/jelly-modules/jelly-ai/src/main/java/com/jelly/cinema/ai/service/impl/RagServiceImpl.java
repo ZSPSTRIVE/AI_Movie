@@ -1,7 +1,6 @@
 package com.jelly.cinema.ai.service.impl;
 
 import cn.hutool.core.io.FileUtil;
-import cn.hutool.core.util.IdUtil;
 import com.jelly.cinema.ai.domain.entity.KnowledgeDoc;
 import com.jelly.cinema.ai.mapper.KnowledgeDocMapper;
 import com.jelly.cinema.ai.service.RagService;
@@ -27,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.InputStream;
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * RAG 检索服务实现
@@ -189,8 +187,20 @@ public class RagServiceImpl implements RagService {
                 }
             }
 
-            chunks.add(text.substring(start, end).trim());
-            start = end - CHUNK_OVERLAP;
+            String chunk = text.substring(start, end).trim();
+            if (!chunk.isEmpty()) {
+                chunks.add(chunk);
+            }
+
+            if (end >= length) {
+                break;
+            }
+
+            int nextStart = Math.max(end - CHUNK_OVERLAP, start + 1);
+            if (nextStart <= start) {
+                nextStart = start + 1;
+            }
+            start = nextStart;
         }
 
         return chunks;

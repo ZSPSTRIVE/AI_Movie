@@ -5,19 +5,19 @@ import com.jelly.cinema.common.core.domain.R;
 import com.jelly.cinema.film.domain.entity.HomepageContent;
 import com.jelly.cinema.film.domain.vo.HomepageContentVO;
 import com.jelly.cinema.film.service.HomepageContentService;
+import com.jelly.cinema.film.service.HomepageReadCacheService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
- * 首页内容管理控制器（管理端）
- *
- * @author Jelly Cinema
- * @since 2026
+ * Homepage content controller.
  */
 @Tag(name = "首页内容管理")
 @RestController
@@ -26,6 +26,7 @@ import java.util.List;
 public class HomepageContentController {
 
     private final HomepageContentService homepageContentService;
+    private final HomepageReadCacheService homepageReadCacheService;
 
     @Operation(summary = "分页查询首页内容列表")
     @GetMapping("/list")
@@ -37,8 +38,7 @@ public class HomepageContentController {
         try {
             return R.ok(homepageContentService.pageList(contentType, sectionType, pageNum, pageSize));
         } catch (Exception e) {
-            // 表不存在或其他错误时返回空结果
-            return R.ok(new PageResult<>(new java.util.ArrayList<>(), 0L));
+            return R.ok(new PageResult<>(new ArrayList<>(), 0L));
         }
     }
 
@@ -52,6 +52,7 @@ public class HomepageContentController {
     @PostMapping
     public R<Void> add(@RequestBody HomepageContent content) {
         homepageContentService.save(content);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 
@@ -60,6 +61,7 @@ public class HomepageContentController {
     public R<Void> update(@PathVariable Long id, @RequestBody HomepageContent content) {
         content.setId(id);
         homepageContentService.updateById(content);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 
@@ -67,6 +69,7 @@ public class HomepageContentController {
     @DeleteMapping("/{id}")
     public R<Void> delete(@PathVariable Long id) {
         homepageContentService.removeById(id);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 
@@ -76,6 +79,7 @@ public class HomepageContentController {
             @PathVariable Long id,
             @Parameter(description = "排序值") @RequestParam Integer sortOrder) {
         homepageContentService.updateSortOrder(id, sortOrder);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 
@@ -83,6 +87,7 @@ public class HomepageContentController {
     @PutMapping("/{id}/toggle-status")
     public R<Void> toggleStatus(@PathVariable Long id) {
         homepageContentService.toggleStatus(id);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 
@@ -90,6 +95,7 @@ public class HomepageContentController {
     @PostMapping("/refresh")
     public R<String> refresh() {
         homepageContentService.refreshContent();
+        homepageReadCacheService.evictAll();
         return R.ok("刷新任务已启动");
     }
 
@@ -97,64 +103,63 @@ public class HomepageContentController {
     @PostMapping("/ai-sort")
     public R<String> aiSort() {
         homepageContentService.aiSort();
+        homepageReadCacheService.evictAll();
         return R.ok("AI排序任务已启动");
     }
 
-    // ========== 前端首页接口 ==========
-
-    @Operation(summary = "获取首页推荐列表（前端使用）")
+    @Operation(summary = "获取首页推荐列表（前端）")
     @GetMapping("/recommend")
     public R<List<HomepageContentVO>> getRecommend(
             @Parameter(description = "数量") @RequestParam(defaultValue = "18") Integer limit) {
-        return R.ok(homepageContentService.getRecommendList(limit));
+        return R.ok(homepageReadCacheService.getRecommend(limit));
     }
 
-    @Operation(summary = "获取热门列表（前端使用）")
+    @Operation(summary = "获取热门列表（前端）")
     @GetMapping("/hot")
     public R<List<HomepageContentVO>> getHot(
             @Parameter(description = "数量") @RequestParam(defaultValue = "10") Integer limit) {
-        return R.ok(homepageContentService.getHotList(limit));
+        return R.ok(homepageReadCacheService.getHot(limit));
     }
 
-    @Operation(summary = "获取电影列表（前端使用）")
+    @Operation(summary = "获取电影列表（前端）")
     @GetMapping("/movies")
     public R<List<HomepageContentVO>> getMovies(
             @Parameter(description = "数量") @RequestParam(defaultValue = "18") Integer limit) {
-        return R.ok(homepageContentService.getMovieList(limit));
+        return R.ok(homepageReadCacheService.getMovies(limit));
     }
 
-    @Operation(summary = "获取电视剧列表（前端使用）")
+    @Operation(summary = "获取电视剧列表（前端）")
     @GetMapping("/tv-series")
     public R<List<HomepageContentVO>> getTvSeries(
             @Parameter(description = "数量") @RequestParam(defaultValue = "12") Integer limit) {
-        return R.ok(homepageContentService.getTvSeriesList(limit));
+        return R.ok(homepageReadCacheService.getTvSeries(limit));
     }
 
-    @Operation(summary = "获取AI精选列表（前端使用）")
+    @Operation(summary = "获取AI精选列表（前端）")
     @GetMapping("/ai-best")
     public R<List<HomepageContentVO>> getAiBest(
             @Parameter(description = "数量") @RequestParam(defaultValue = "6") Integer limit) {
-        return R.ok(homepageContentService.getAiBestList(limit));
+        return R.ok(homepageReadCacheService.getAiBest(limit));
     }
 
-    @Operation(summary = "获取新片列表（前端使用）")
+    @Operation(summary = "获取新片列表（前端）")
     @GetMapping("/new")
     public R<List<HomepageContentVO>> getNew(
             @Parameter(description = "数量") @RequestParam(defaultValue = "12") Integer limit) {
-        return R.ok(homepageContentService.getNewList(limit));
+        return R.ok(homepageReadCacheService.getNew(limit));
     }
 
-    @Operation(summary = "获取趋势/热门话题列表（前端使用）")
+    @Operation(summary = "获取趋势列表（前端）")
     @GetMapping("/trending")
     public R<List<HomepageContentVO>> getTrending(
             @Parameter(description = "数量") @RequestParam(defaultValue = "8") Integer limit) {
-        return R.ok(homepageContentService.getTrendingList(limit));
+        return R.ok(homepageReadCacheService.getTrending(limit));
     }
 
-    @Operation(summary = "获取分板块首页内容（前端使用）")
+    @Operation(summary = "获取分板块首页内容（前端）")
     @GetMapping("/sections")
-    public R<java.util.Map<String, List<HomepageContentVO>>> getSections() {
-        return R.ok(homepageContentService.getSectionedContent());
+    public R<Map<String, List<HomepageContentVO>>> getSections() {
+        return R.ok(homepageReadCacheService.getSections());
     }
 
     @Operation(summary = "标记/取消AI精选")
@@ -163,6 +168,7 @@ public class HomepageContentController {
             @PathVariable Long id,
             @Parameter(description = "是否AI精选") @RequestParam(defaultValue = "true") Boolean isBest) {
         homepageContentService.markAsBest(id, isBest);
+        homepageReadCacheService.evictAll();
         return R.ok();
     }
 }

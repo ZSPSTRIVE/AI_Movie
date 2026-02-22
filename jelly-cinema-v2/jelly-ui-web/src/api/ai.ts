@@ -185,7 +185,7 @@ export function createChatStream(
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'text/event-stream',
-      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(token ? { 'Authorization': token } : {}),
     },
     body: JSON.stringify({
       prompt: req.message,

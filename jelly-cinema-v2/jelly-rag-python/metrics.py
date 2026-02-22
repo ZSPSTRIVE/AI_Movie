@@ -163,7 +163,11 @@ def track_search(search_type: str = "vector"):
                 SEARCH_COUNT.labels(search_type=search_type).inc()
                 
                 # 记录结果数量
-                if hasattr(result, '__len__'):
+                if hasattr(result, "results"):
+                    SEARCH_RESULTS.observe(len(result.results))
+                elif isinstance(result, dict) and isinstance(result.get("results"), list):
+                    SEARCH_RESULTS.observe(len(result["results"]))
+                elif hasattr(result, "__len__"):
                     SEARCH_RESULTS.observe(len(result))
                 
                 return result

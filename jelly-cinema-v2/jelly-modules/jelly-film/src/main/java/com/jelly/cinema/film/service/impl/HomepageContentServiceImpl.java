@@ -4,24 +4,20 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.jelly.cinema.common.core.domain.PageResult;
+import com.jelly.cinema.film.domain.entity.HomepageConfigVersion;
 import com.jelly.cinema.film.domain.entity.HomepageContent;
+import com.jelly.cinema.film.domain.entity.PublishedContent;
 import com.jelly.cinema.film.domain.vo.HomepageContentVO;
+import com.jelly.cinema.film.mapper.HomepageConfigVersionMapper;
 import com.jelly.cinema.film.mapper.HomepageContentMapper;
+import com.jelly.cinema.film.mapper.PublishedContentMapper;
 import com.jelly.cinema.film.service.HomepageContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
-import com.jelly.cinema.film.domain.entity.HomepageConfigVersion;
-import com.jelly.cinema.film.domain.entity.PublishedContent;
-import com.jelly.cinema.film.mapper.HomepageConfigVersionMapper;
-import com.jelly.cinema.film.mapper.PublishedContentMapper;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
-import com.jelly.cinema.film.domain.entity.HomepageConfigVersion;
-import com.jelly.cinema.film.domain.entity.PublishedContent;
-import com.jelly.cinema.film.mapper.HomepageConfigVersionMapper;
-import com.jelly.cinema.film.mapper.PublishedContentMapper;
 import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
@@ -347,13 +343,13 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
     @Override
     public List<HomepageContentVO> getAiBestList(Integer limit) {
         try {
+            int safeLimit = sanitizeLimit(limit, 6, 50);
             // 先尝试使用ai_best字段查询
             LambdaQueryWrapper<HomepageContent> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(HomepageContent::getStatus, 1)
                    .eq(HomepageContent::getDeleted, 0)
-                   .orderByDesc(HomepageContent::getAiScore)
-                   .last("LIMIT " + limit);
-            List<HomepageContent> list = list(wrapper);
+                   .orderByDesc(HomepageContent::getAiScore);
+            List<HomepageContent> list = queryWithLimit(wrapper, safeLimit);
             // 过滤AI分数高的作为精选
             list = list.stream()
                     .filter(c -> c.getAiScore() != null && c.getAiScore().doubleValue() >= 70)
@@ -363,9 +359,8 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
                 wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(HomepageContent::getStatus, 1)
                        .eq(HomepageContent::getDeleted, 0)
-                       .orderByDesc(HomepageContent::getRating)
-                       .last("LIMIT " + limit);
-                list = list(wrapper);
+                       .orderByDesc(HomepageContent::getRating);
+                list = queryWithLimit(wrapper, safeLimit);
             }
             return list.stream().map(this::convertToVO).collect(Collectors.toList());
         } catch (Exception e) {
@@ -378,15 +373,15 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
     @Override
     public List<HomepageContentVO> getNewList(Integer limit) {
         try {
+            int safeLimit = sanitizeLimit(limit, 12, 50);
             int currentYear = java.time.LocalDate.now().getYear();
             LambdaQueryWrapper<HomepageContent> wrapper = new LambdaQueryWrapper<>();
             wrapper.ge(HomepageContent::getYear, currentYear - 1)
                    .eq(HomepageContent::getStatus, 1)
                    .eq(HomepageContent::getDeleted, 0)
                    .orderByDesc(HomepageContent::getYear)
-                   .orderByDesc(HomepageContent::getCreateTime)
-                   .last("LIMIT " + limit);
-            List<HomepageContent> list = list(wrapper);
+                   .orderByDesc(HomepageContent::getCreateTime);
+            List<HomepageContent> list = queryWithLimit(wrapper, safeLimit);
             return list.stream().map(this::convertToVO).collect(Collectors.toList());
         } catch (Exception e) {
             log.warn("获取新片列表失败: {}", e.getMessage());
@@ -397,23 +392,22 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
     @Override
     public List<HomepageContentVO> getTrendingList(Integer limit) {
         try {
+            int safeLimit = sanitizeLimit(limit, 8, 50);
             // 查询trending板块数据，不使用trending_score字段避免列不存在问题
             LambdaQueryWrapper<HomepageContent> wrapper = new LambdaQueryWrapper<>();
             wrapper.eq(HomepageContent::getSectionType, "trending")
                    .eq(HomepageContent::getStatus, 1)
                    .eq(HomepageContent::getDeleted, 0)
-                   .orderByAsc(HomepageContent::getSortOrder)
-                   .last("LIMIT " + limit);
-            List<HomepageContent> list = list(wrapper);
+                   .orderByAsc(HomepageContent::getSortOrder);
+            List<HomepageContent> list = queryWithLimit(wrapper, safeLimit);
             
             // 如果没有trending板块的数据，用热门评分高的代替
             if (list.isEmpty()) {
                 wrapper = new LambdaQueryWrapper<>();
                 wrapper.eq(HomepageContent::getStatus, 1)
                        .eq(HomepageContent::getDeleted, 0)
-                       .orderByDesc(HomepageContent::getRating)
-                       .last("LIMIT " + limit);
-                list = list(wrapper);
+                       .orderByDesc(HomepageContent::getRating);
+                list = queryWithLimit(wrapper, safeLimit);
             }
             return list.stream().map(this::convertToVO).collect(Collectors.toList());
         } catch (Exception e) {
@@ -494,5 +488,17 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
             }
         }
         log.info("后台同步完成，新增入库 {} 部电影", count);
+    }
+
+    private List<HomepageContent> queryWithLimit(LambdaQueryWrapper<HomepageContent> wrapper, int limit) {
+        Page<HomepageContent> page = new Page<>(1, limit, false);
+        return homepageContentMapper.selectPage(page, wrapper).getRecords();
+    }
+
+    private int sanitizeLimit(Integer limit, int defaultValue, int maxValue) {
+        if (limit == null || limit <= 0) {
+            return defaultValue;
+        }
+        return Math.min(limit, maxValue);
     }
 }

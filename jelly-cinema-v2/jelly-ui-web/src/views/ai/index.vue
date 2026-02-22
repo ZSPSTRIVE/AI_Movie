@@ -63,7 +63,10 @@ async function handleSendMessage() {
   
   try {
     const baseUrl = '/api'
-    const response = await fetch(`${baseUrl}/ai/chat/completions?prompt=${encodeURIComponent(userMessage)}&enableRag=${enableRag.value}`)
+    const token = localStorage.getItem('token')
+    const response = await fetch(`${baseUrl}/ai/chat/completions?prompt=${encodeURIComponent(userMessage)}&enableRag=${enableRag.value}`, {
+      headers: token ? { 'Authorization': token } : undefined
+    })
     
     if (!response.ok) {
       throw new Error('请求失败')
@@ -175,7 +178,7 @@ async function handleSyncFilms() {
     const token = localStorage.getItem('token')
     const res = await fetch(`${RAG_SERVICE_URL}/sync`, {
       method: 'POST',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+      headers: token ? { 'Authorization': token } : undefined
     })
     if (!res.ok) {
       throw new Error('RAG 服务不可用')
@@ -209,7 +212,7 @@ async function handleRagSearch() {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { 'Authorization': token } : {})
       },
       body: JSON.stringify({ query: ragQuery.value, top_k: 5 })
     })
@@ -236,7 +239,7 @@ async function checkRagService() {
     const token = localStorage.getItem('token')
     const res = await fetch(`${RAG_SERVICE_URL}/health`, {
       method: 'GET',
-      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+      headers: token ? { 'Authorization': token } : undefined
     })
     if (!res.ok) {
       ragServiceStatus.value = 'offline'

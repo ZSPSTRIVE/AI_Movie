@@ -18,7 +18,7 @@ import org.springframework.context.annotation.Configuration;
  * @deprecated 使用 {@link MultiProviderAiConfig} 替代
  */
 @Configuration
-@ConditionalOnProperty(prefix = "ai.openai", name = "api-key")
+@ConditionalOnProperty(prefix = "ai", name = "legacy-config-enabled", havingValue = "true")
 @Deprecated
 public class AiConfig {
 

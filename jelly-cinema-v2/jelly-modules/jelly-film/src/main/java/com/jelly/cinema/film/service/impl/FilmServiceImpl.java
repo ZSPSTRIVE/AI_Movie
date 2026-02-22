@@ -109,23 +109,22 @@ public class FilmServiceImpl implements FilmService {
                 .like(Film::getDirector, keyword);
         wrapper.eq(Film::getStatus, 0);
         wrapper.orderByDesc(Film::getPlayCount);
-        wrapper.last("LIMIT 20");
 
-        return filmMapper.selectList(wrapper).stream()
+        return queryWithLimit(wrapper, 20).stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
     }
 
     @Override
     public List<FilmVO> getRecommend(Integer size) {
+        int safeSize = sanitizeLimit(size, 10, 50);
         // 简单推荐：高评分 + 随机
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Film::getStatus, 0);
         wrapper.ge(Film::getRating, 7.0);
         wrapper.orderByDesc(Film::getRating);
-        wrapper.last("LIMIT " + (size != null ? size : 10));
 
-        return filmMapper.selectList(wrapper).stream()
+        return queryWithLimit(wrapper, safeSize).stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
     }
@@ -158,9 +157,8 @@ public class FilmServiceImpl implements FilmService {
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Film::getStatus, 0);
         wrapper.orderByDesc(Film::getPlayCount);
-        wrapper.last("LIMIT " + limit);
 
-        return filmMapper.selectList(wrapper).stream()
+        return queryWithLimit(wrapper, sanitizeLimit(limit, 10, 50)).stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
     }
@@ -276,5 +274,17 @@ public class FilmServiceImpl implements FilmService {
         // 初始写入 Redis 缓存（可选）
         
         return true;
+    }
+
+    private List<Film> queryWithLimit(LambdaQueryWrapper<Film> wrapper, int limit) {
+        Page<Film> page = filmMapper.selectPage(new Page<>(1, limit, false), wrapper);
+        return page.getRecords();
+    }
+
+    private int sanitizeLimit(Integer limit, int defaultValue, int maxValue) {
+        if (limit == null || limit <= 0) {
+            return defaultValue;
+        }
+        return Math.min(limit, maxValue);
     }
 }
