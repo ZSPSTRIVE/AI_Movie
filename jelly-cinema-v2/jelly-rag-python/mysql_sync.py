@@ -62,10 +62,19 @@ def fetch_films_by_ids(film_ids: List[int]) -> List[Dict[str, Any]]:
     """
     if not film_ids:
         return []
+
+    # Input validation: ensure IDs are integers and limit batch size
+    MAX_BATCH_SIZE = 500
+    validated_ids = []
+    for fid in film_ids[:MAX_BATCH_SIZE]:
+        if isinstance(fid, int) and fid > 0:
+            validated_ids.append(fid)
+    if not validated_ids:
+        return []
     
     engine = get_mysql_engine()
     
-    placeholders = ",".join([":id" + str(i) for i in range(len(film_ids))])
+    placeholders = ",".join([":id" + str(i) for i in range(len(validated_ids))])
     query = text(f"""
         SELECT 
             f.id as film_id,
@@ -86,7 +95,7 @@ def fetch_films_by_ids(film_ids: List[int]) -> List[Dict[str, Any]]:
           AND f.deleted = 0
     """)
     
-    params = {f"id{i}": film_ids[i] for i in range(len(film_ids))}
+    params = {f"id{i}": validated_ids[i] for i in range(len(validated_ids))}
     
     with engine.connect() as conn:
         result = conn.execute(query, params)

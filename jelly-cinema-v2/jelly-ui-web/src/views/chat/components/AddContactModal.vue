@@ -80,17 +80,11 @@ async function submitApply() {
   submitting.value = true
   try {
     if (activeTab.value === 'user') {
-      console.log('发送好友申请:', {
-        targetId: applyTarget.value.id,
-        reason: applyForm.value.reason,
-        remark: applyForm.value.remark
-      })
       await applyFriend({
         targetId: applyTarget.value.id,
         reason: applyForm.value.reason,
         remark: applyForm.value.remark
       })
-      console.log('好友申请发送成功')
       ElMessage.success('好友申请已发送')
     } else {
       await applyGroup({

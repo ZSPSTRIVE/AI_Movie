@@ -118,8 +118,7 @@ async function loadPlayData() {
   
   try {
     const data = await tvboxService.getPlayUrl(props.filmId)
-    console.log('Play data received:', data)
-    
+
     if (!data.playUrl && (!data.episodes || data.episodes.length === 0)) {
       // 有些源第一次会返回空，自动再拉取一次
       if (!hasReloadedPlayDataOnce) {
@@ -168,14 +167,10 @@ function initPlayer(url: string) {
   error.value = ''
   destroyHls()
   
-  console.log('Initializing player with URL:', url)
-  
   // 判断是否是HLS流
   const isHlsStream = url.includes('.m3u8') || url.includes('/play/') || url.includes('index.m3u8')
   
   if (isHlsStream && Hls.isSupported()) {
-    console.log('Using HLS.js - Direct Playback')
-    
     destroyHls()
     
     hlsInstance = new Hls({
@@ -190,14 +185,12 @@ function initPlayer(url: string) {
       },
     })
     
-    console.log('Loading M3U8 directly:', url)
     hlsInstance.loadSource(url)
     hlsInstance.attachMedia(video)
     
     hlsInstance.on(Hls.Events.MANIFEST_PARSED, () => {
-      console.log('HLS manifest parsed successfully!')
       videoLoading.value = false
-      video.play().catch(e => console.log('Auto-play blocked:', e.message))
+      video.play().catch(() => {})
     })
     
     hlsInstance.on(Hls.Events.ERROR, (_, data) => {
@@ -220,7 +213,6 @@ function initPlayer(url: string) {
     
   } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
     // Safari原生HLS支持
-    console.log('Using native HLS (Safari)')
     video.src = url
     video.addEventListener('loadeddata', () => {
       videoLoading.value = false
@@ -229,7 +221,6 @@ function initPlayer(url: string) {
     
   } else {
     // 普通视频格式
-    console.log('Using standard video')
     video.src = url
     video.addEventListener('loadeddata', () => {
       videoLoading.value = false
@@ -339,7 +330,6 @@ function switchSource() {
   }
 
   if (nextIndex !== -1) {
-    console.log(`Switching source from ${currentSourceName} to ${getSourceName(episodes.value[nextIndex].name)}`)
     switchEpisode(nextIndex)
   } else {
     // 只有一个源，尝试重新加载

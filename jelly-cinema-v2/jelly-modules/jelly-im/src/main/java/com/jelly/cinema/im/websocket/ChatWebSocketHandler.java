@@ -45,8 +45,18 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) {
         Long userId = getUserId(session);
         if (userId != null) {
+            // Close stale session if exists (e.g. network reconnect)
+            WebSocketSession oldSession = ONLINE_SESSIONS.get(userId);
+            if (oldSession != null && oldSession.isOpen() && !oldSession.getId().equals(session.getId())) {
+                try {
+                    oldSession.close(CloseStatus.NORMAL);
+                    log.info("关闭旧连接: userId={}, oldSessionId={}", userId, oldSession.getId());
+                } catch (IOException e) {
+                    log.warn("关闭旧连接失败: userId={}", userId);
+                }
+            }
             ONLINE_SESSIONS.put(userId, session);
-            log.info("用户上线: {}, 当前在线人数: {}, 在线用户: {}", userId, ONLINE_SESSIONS.size(), ONLINE_SESSIONS.keySet());
+            log.info("用户上线: {}, 当前在线人数: {}", userId, ONLINE_SESSIONS.size());
             // 通知好友该用户上线
             notifyFriendsOnlineStatus(userId, true);
         }
@@ -87,7 +97,7 @@ public class ChatWebSocketHandler extends TextWebSocketHandler {
             WebSocketSession storedSession = ONLINE_SESSIONS.get(userId);
             if (storedSession != null && storedSession.getId().equals(session.getId())) {
                 ONLINE_SESSIONS.remove(userId);
-                log.info("用户下线: {}, 当前在线人数: {}, 在线用户: {}", userId, ONLINE_SESSIONS.size(), ONLINE_SESSIONS.keySet());
+                log.info("用户下线: {}, 当前在线人数: {}", userId, ONLINE_SESSIONS.size());
                 // 通知好友该用户下线
                 notifyFriendsOnlineStatus(userId, false);
             } else {

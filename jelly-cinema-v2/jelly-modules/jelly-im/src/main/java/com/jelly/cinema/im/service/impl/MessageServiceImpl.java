@@ -3,6 +3,7 @@ package com.jelly.cinema.im.service.impl;
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.IdWorker;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jelly.cinema.common.api.domain.RemoteUser;
 import com.jelly.cinema.common.api.feign.RemoteUserService;
@@ -13,15 +14,19 @@ import com.jelly.cinema.common.core.exception.ServiceException;
 import com.jelly.cinema.common.redis.service.RedisService;
 import com.jelly.cinema.im.domain.dto.MessageDTO;
 import com.jelly.cinema.im.domain.entity.ChatMessage;
+import com.jelly.cinema.im.domain.entity.Friend;
 import com.jelly.cinema.im.domain.entity.Group;
+import com.jelly.cinema.im.domain.entity.GroupMember;
 import com.jelly.cinema.im.domain.vo.MessageVO;
 import com.jelly.cinema.im.domain.vo.SessionVO;
 import com.jelly.cinema.im.mapper.ChatMessageMapper;
+import com.jelly.cinema.im.mapper.FriendMapper;
 import com.jelly.cinema.im.mapper.GroupMapper;
 import com.jelly.cinema.im.mapper.GroupMemberMapper;
 import com.jelly.cinema.im.mq.MessageProducer;
 import com.jelly.cinema.im.service.MessageService;
 import com.jelly.cinema.im.websocket.ChatWebSocketHandler;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -47,6 +52,8 @@ public class MessageServiceImpl implements MessageService {
     private final RemoteUserService remoteUserService;
     private final GroupMapper groupMapper;
     private final GroupMemberMapper groupMemberMapper;
+    private final FriendMapper friendMapper;
+    private final ObjectMapper objectMapper;
     
     @Autowired(required = false)
     private MessageProducer messageProducer;
@@ -56,24 +63,84 @@ public class MessageServiceImpl implements MessageService {
                               ChatWebSocketHandler webSocketHandler,
                               RemoteUserService remoteUserService,
                               GroupMapper groupMapper,
-                              GroupMemberMapper groupMemberMapper) {
+                              GroupMemberMapper groupMemberMapper,
+                              FriendMapper friendMapper,
+                              ObjectMapper objectMapper) {
         this.chatMessageMapper = chatMessageMapper;
         this.redisService = redisService;
         this.webSocketHandler = webSocketHandler;
         this.remoteUserService = remoteUserService;
         this.groupMapper = groupMapper;
         this.groupMemberMapper = groupMemberMapper;
+        this.friendMapper = friendMapper;
+        this.objectMapper = objectMapper;
+    }
+
+    /**
+     * 使用 Jackson 序列化（尊重 @JsonSerialize 注解，Long ID 转为字符串避免 JS 精度丢失）
+     */
+    private String toJsonSafe(Object obj) {
+        try {
+            return objectMapper.writeValueAsString(obj);
+        } catch (Exception e) {
+            log.warn("序列化失败，回退到Hutool: {}", e.getMessage());
+            return JSONUtil.toJsonStr(obj);
+        }
     }
 
     private static final String SESSION_KEY = "jelly:im:session:";
     private static final String MSG_SEQ_KEY = "jelly:im:seq:";
     private static final String UNREAD_KEY = "jelly:im:unread:";
+    private static final String RATE_LIMIT_KEY = "jelly:im:rate:";
+    private static final int MAX_CONTENT_LENGTH = 5000;
+    private static final int RATE_LIMIT_PER_MINUTE = 30;
 
     @Override
     public void sendMessage(Long fromId, MessageDTO dto) {
+        // 消息内容长度验证
+        if (dto.getContent() != null && dto.getContent().length() > MAX_CONTENT_LENGTH) {
+            throw new ServiceException("消息内容不能超过" + MAX_CONTENT_LENGTH + "字");
+        }
+
+        // 发送速率限制
+        String rateLimitKey = RATE_LIMIT_KEY + fromId;
+        Long sendCount = redisService.increment(rateLimitKey);
+        if (sendCount == 1) {
+            redisService.expire(rateLimitKey, 60, java.util.concurrent.TimeUnit.SECONDS);
+        }
+        if (sendCount > RATE_LIMIT_PER_MINUTE) {
+            throw new ServiceException("发送消息过于频繁，请稍后再试");
+        }
+
         // 将字符串 toId 转换为 Long（避免 JavaScript 大数字精度丢失）
         Long toId = Long.parseLong(dto.getToId());
         log.info("接收到消息: fromId={}, toId={}, cmdType={}", fromId, toId, dto.getCmdType());
+
+        // 私聊：校验好友关系和拉黑状态
+        if (dto.getCmdType() == 1) {
+            Friend friend = friendMapper.selectIncludeDeleted(fromId, toId);
+            if (friend == null || friend.getDeleted() != 0) {
+                throw new ServiceException("对方不是您的好友，无法发送消息");
+            }
+            if (friend.getStatus() == 1) {
+                throw new ServiceException("您已被对方拉黑，无法发送消息");
+            }
+            // Check if the recipient blocked the sender
+            Friend recipientFriend = friendMapper.selectIncludeDeleted(toId, fromId);
+            if (recipientFriend != null && recipientFriend.getStatus() == 1) {
+                throw new ServiceException("对方已将您屏蔽，无法发送消息");
+            }
+        } else if (dto.getCmdType() == 2) {
+            // 群聊：校验群成员身份
+            Long memberCount = groupMemberMapper.selectCount(
+                    new LambdaQueryWrapper<GroupMember>()
+                            .eq(GroupMember::getGroupId, toId)
+                            .eq(GroupMember::getUserId, fromId)
+            );
+            if (memberCount == 0) {
+                throw new ServiceException("您不是该群成员，无法发送消息");
+            }
+        }
         
         // 生成会话 ID
         String sessionId = generateSessionId(fromId, toId, dto.getCmdType());
@@ -83,6 +150,8 @@ public class MessageServiceImpl implements MessageService {
 
         // 构建消息
         ChatMessage message = new ChatMessage();
+        message.setId(IdWorker.getId()); // 预生成雪花ID，确保ACK中包含真实ID
+        message.setCreateTime(LocalDateTime.now()); // 预设创建时间，确保ACK中包含正确时间
         message.setSessionId(sessionId);
         message.setFromId(fromId);
         message.setToId(toId);
@@ -105,7 +174,7 @@ public class MessageServiceImpl implements MessageService {
         // 写入 Redis Timeline（用于快速拉取）
         String timelineKey = SESSION_KEY + sessionId + ":timeline";
         MessageVO vo = toVO(message);
-        redisService.zAdd(timelineKey, JSONUtil.toJsonStr(vo), System.currentTimeMillis());
+        redisService.zAdd(timelineKey, toJsonSafe(vo), System.currentTimeMillis());
 
         // 发送到 MQ 异步持久化（如果 MQ 可用）
         if (messageProducer != null) {
@@ -117,11 +186,18 @@ public class MessageServiceImpl implements MessageService {
             log.info("消息已同步写入数据库: sessionId={}, msgSeq={}, id={}", sessionId, msgSeq, message.getId());
         }
 
-        // 实时推送
-        String pushJson = JSONUtil.toJsonStr(Map.of(
+        // 实时推送（使用 Jackson 序列化，确保 Long ID 转字符串，避免 JS 精度丢失）
+        String pushJson = toJsonSafe(Map.of(
                 "type", "message",
                 "data", vo
         ));
+        
+        // 回推给发送者（包含真实消息ID，替换前端临时ID）
+        String ackJson = toJsonSafe(Map.of(
+                "type", "message_ack",
+                "data", vo
+        ));
+        webSocketHandler.sendToUser(fromId, ackJson);
         
         log.info("准备推送消息: cmdType={}, fromId={}, toId={}", dto.getCmdType(), fromId, toId);
         
@@ -154,7 +230,9 @@ public class MessageServiceImpl implements MessageService {
         LambdaQueryWrapper<ChatMessage> wrapper = new LambdaQueryWrapper<>();
         wrapper.and(w -> w.eq(ChatMessage::getFromId, userId).or().eq(ChatMessage::getToId, userId));
         wrapper.eq(ChatMessage::getCmdType, 1); // 私聊
+        wrapper.eq(ChatMessage::getStatus, 0);
         wrapper.orderByDesc(ChatMessage::getCreateTime);
+        wrapper.last("LIMIT 5000"); // Bound query to prevent OOM
 
         List<ChatMessage> messages = chatMessageMapper.selectList(wrapper);
 
@@ -326,12 +404,23 @@ public class MessageServiceImpl implements MessageService {
         message.setStatus(1);
         chatMessageMapper.updateById(message);
 
-        // 通知接收方撤回
-        if (webSocketHandler.isOnline(message.getToId())) {
-            String pushJson = JSONUtil.toJsonStr(Map.of(
-                    "type", "recall",
-                    "messageId", messageId
-            ));
+        // 构建撤回通知（Long ID 需要转字符串避免 JS 精度丢失）
+        String pushJson = toJsonSafe(Map.of(
+                "type", "recall",
+                "messageId", String.valueOf(messageId),
+                "fromId", String.valueOf(userId)
+        ));
+
+        if (message.getCmdType() == 2) {
+            // 群聊：通知所有群成员（除发送者）
+            List<Long> memberIds = groupMemberMapper.selectUserIdsByGroupId(message.getToId());
+            for (Long memberId : memberIds) {
+                if (!memberId.equals(userId)) {
+                    webSocketHandler.sendToUser(memberId, pushJson);
+                }
+            }
+        } else {
+            // 私聊：通知接收方
             webSocketHandler.sendToUser(message.getToId(), pushJson);
         }
     }

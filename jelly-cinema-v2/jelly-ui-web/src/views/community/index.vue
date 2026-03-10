@@ -63,12 +63,8 @@ async function fetchPosts() {
   loading.value = true
   try {
     const res = await getPostList(query.value)
-    console.log('帖子列表响应:', JSON.stringify(res, null, 2))
-    console.log('res.data:', res.data)
-    console.log('res.data.rows:', res.data?.rows)
     postList.value = res.data?.rows || []
     total.value = res.data?.total || 0
-    console.log('postList length:', postList.value.length)
   } catch (e) {
     console.error('获取帖子失败:', e)
   } finally {

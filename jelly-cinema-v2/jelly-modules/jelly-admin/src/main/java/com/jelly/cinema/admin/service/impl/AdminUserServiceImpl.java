@@ -78,6 +78,13 @@ public class AdminUserServiceImpl implements AdminUserService {
 
     @Override
     public void resetPassword(Long id, String newPassword) {
+        if (StrUtil.isBlank(newPassword) || newPassword.length() < 8 || newPassword.length() > 32) {
+            throw new ServiceException("密码长度必须在8-32位之间");
+        }
+        if (!newPassword.matches(".*[A-Za-z].*") || !newPassword.matches(".*\\d.*")) {
+            throw new ServiceException("密码必须包含字母和数字");
+        }
+
         User user = userMapper.selectById(id);
         if (user == null) {
             throw new ServiceException("用户不存在");

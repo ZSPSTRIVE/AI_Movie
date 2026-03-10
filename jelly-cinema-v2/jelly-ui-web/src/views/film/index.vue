@@ -61,13 +61,22 @@ async function fetchFilms() {
   loading.value = true
   try {
     // 使用与首页相同的数据源 - getRecommend
-    console.log('正在获取TVBox推荐数据...')
     const films = await tvboxService.getRecommend(100)
-    console.log('TVBox推荐数据:', films.length, '条')
     
     if (films && films.length > 0) {
       let filteredList = [...films]
       
+      // 按分类过滤
+      if (query.value.categoryId) {
+        const matchCat = categoryList.value.find(c => c.id === query.value.categoryId)
+        if (matchCat) {
+          filteredList = filteredList.filter(f => 
+            f.categoryId === query.value.categoryId ||
+            f.genre === matchCat.name ||
+            f.tags?.includes(matchCat.name)
+          )
+        }
+      }
       // 按年份过滤
       if (query.value.year) {
         filteredList = filteredList.filter(f => f.year === query.value.year)
@@ -97,7 +106,6 @@ async function fetchFilms() {
         coverUrl: normalizeImageUrl(film.coverUrl, film.title),
       }))
       total.value = filteredList.length
-      console.log('显示数据:', filmList.value.length, '条')
     } else {
       filmList.value = []
       total.value = 0
@@ -204,7 +212,7 @@ function formatPlayCount(count: number): string {
 <style scoped>
 /* 页面标题 */
 .glass-section-title {
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
   color: #1e293b;
@@ -240,7 +248,7 @@ function formatPlayCount(count: number): string {
 
 /* 筛选标签 */
 .filter-label {
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 14px;
   font-weight: 600;
   color: #64748b !important;
@@ -259,7 +267,7 @@ function formatPlayCount(count: number): string {
 
 /* 筛选选项按钮 */
 .filter-option {
-  font-family: 'Inter', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 13px;
   font-weight: 500;
   color: #475569 !important;

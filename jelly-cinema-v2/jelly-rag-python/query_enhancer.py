@@ -133,16 +133,23 @@ class QueryEnhancer:
         dedup = list(dict.fromkeys(expanded_terms))
         return " ".join(dedup)
 
+    def _sanitize_for_prompt(self, text: str) -> str:
+        """Remove control characters and limit length to prevent prompt injection."""
+        sanitized = re.sub(r"[\x00-\x1f\x7f]", "", text)
+        sanitized = re.sub(r"(指令|忽略|system|ignore|prompt|instruction)", "", sanitized, flags=re.IGNORECASE)
+        return sanitized[:200]
+
     def generate_hyde_query(self, query: str) -> Optional[str]:
         if not settings.enable_hyde:
             return None
         if not self._load_local_llm():
             return None
 
+        safe_query = self._sanitize_for_prompt(query)
         prompt = (
             "请为以下用户问题生成一个假设的电影推荐回答，"
             "只输出电影相关内容：\n\n"
-            f"用户问题: {query}\n\n"
+            f"用户问题: {safe_query}\n\n"
             "假设回答:"
         )
 

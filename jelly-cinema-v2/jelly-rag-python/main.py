@@ -6,9 +6,9 @@ import logging
 import time
 from typing import List, Optional
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 from slowapi.util import get_remote_address
@@ -37,8 +37,8 @@ limiter = Limiter(key_func=get_remote_address)
 
 
 class SearchRequest(BaseModel):
-    query: str
-    top_k: int = 5
+    query: str = Field(..., min_length=1, max_length=500)
+    top_k: int = Field(default=5, ge=1, le=50)
     enable_hybrid: bool = True
     enable_rerank: bool = True
 
@@ -174,15 +174,24 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[o.strip() for o in settings.cors_origins.split(",") if o.strip()],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST"],
+    allow_headers=["Content-Type", "Authorization", "X-Admin-Key"],
 )
 app.add_middleware(MetricsMiddleware)
 
 app.state.limiter = limiter
 app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
+
+
+def verify_admin_key(request: Request):
+    """Verify admin API key for protected endpoints."""
+    if not settings.admin_api_key:
+        return  # No key configured, skip check (dev mode)
+    key = request.headers.get("X-Admin-Key", "")
+    if not key or key != settings.admin_api_key:
+        raise HTTPException(status_code=403, detail="Forbidden")
 
 
 @app.get("/health")
@@ -298,10 +307,10 @@ async def rag_search(request: Request, body: SearchRequest):
         return response
     except Exception as exc:
         logger.error("Search failed: %s", exc, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail="Internal search error")
 
 
-@app.post("/rag/sync", response_model=SyncResponse)
+@app.post("/rag/sync", response_model=SyncResponse, dependencies=[Depends(verify_admin_key)])
 async def sync_films():
     try:
         films = run_with_resilience("mysql.fetch_all_films", fetch_all_films)
@@ -330,10 +339,10 @@ async def sync_films():
         return SyncResponse(success=True, count=count, message=msg)
     except Exception as exc:
         logger.error("Sync failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail="Internal sync error")
 
 
-@app.post("/rag/kb/reload", response_model=SyncResponse)
+@app.post("/rag/kb/reload", response_model=SyncResponse, dependencies=[Depends(verify_admin_key)])
 async def reload_knowledge_bases():
     try:
         indexed = build_bm25_index_from_db()
@@ -345,7 +354,7 @@ async def reload_knowledge_bases():
         )
     except Exception as exc:
         logger.error("Knowledge base reload failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail="Internal reload error")
 
 
 @app.get("/films/{film_id}", response_model=FilmDetail)
@@ -380,7 +389,7 @@ async def get_film_detail(film_id: int):
         raise
     except Exception as exc:
         logger.error("Get film failed: %s", exc)
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail="Internal error")
 
 
 if __name__ == "__main__":

@@ -213,7 +213,7 @@ function handlePlayEntry(entry: any) {
                   </div>
 
                   <!-- Text Content -->
-                  <div class="text-content" v-html="msg.content ? msg.content.replace(/\n/g, '<br>') : '...'"></div>
+                  <div class="text-content" style="white-space: pre-wrap;">{{ msg.content || '...' }}</div>
                   
                   <!-- Play Entry Button -->
                   <div v-if="msg.playEntry" class="play-entry-box">

@@ -19,6 +19,8 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+
 /**
  * 电影推荐服务
  * 
@@ -80,8 +82,12 @@ public class RecommendService {
         // 2. 获取用户已看过的电影
         Set<Long> watchedIds = getWatchedFilmIds(userId);
 
-        // 3. 获取候选电影（按评分排序）
-        List<Film> candidates = filmMapper.selectList(null);
+        // 3. 获取候选电影（按评分排序，限制2000部避免OOM）
+        LambdaQueryWrapper<Film> candidateWrapper = new LambdaQueryWrapper<>();
+        candidateWrapper.eq(Film::getStatus, 0)
+                .orderByDesc(Film::getRating)
+                .last("LIMIT 2000");
+        List<Film> candidates = filmMapper.selectList(candidateWrapper);
 
         // 4. 计算相似度并排序
         List<FilmScore> scores = new ArrayList<>();
@@ -247,8 +253,11 @@ public class RecommendService {
      * 找相似用户
      */
     private List<Long> findSimilarUsers(Long userId, Set<Long> userFilms, int topN) {
-        // 获取所有用户的观看历史
-        List<WatchHistory> allHistories = watchHistoryMapper.selectList(null);
+        // 获取最近的观看历史（限制10000条避免OOM）
+        LambdaQueryWrapper<WatchHistory> historyWrapper = new LambdaQueryWrapper<>();
+        historyWrapper.orderByDesc(WatchHistory::getCreateTime)
+                .last("LIMIT 10000");
+        List<WatchHistory> allHistories = watchHistoryMapper.selectList(historyWrapper);
 
         // 按用户分组
         Map<Long, Set<Long>> userFilmsMap = allHistories.stream()
@@ -295,8 +304,12 @@ public class RecommendService {
         log.info("热门推荐: size={}", size);
 
         // 综合评分公式：score = rating * 0.4 + log(playCount) * 0.3 + timeDecay * 0.3
-        // 这里简化为按评分和播放量排序
-        List<Film> films = filmMapper.selectList(null);
+        // 限制查询量避免OOM
+        LambdaQueryWrapper<Film> hotWrapper = new LambdaQueryWrapper<>();
+        hotWrapper.eq(Film::getStatus, 0)
+                .orderByDesc(Film::getRating)
+                .last("LIMIT 1000");
+        List<Film> films = filmMapper.selectList(hotWrapper);
 
         return films.stream()
                 .sorted((a, b) -> {

@@ -28,8 +28,8 @@ public class AdminAuthFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getPath().value();
         
-        // 临时禁用管理员权限校验，后续再完善
-        if (false && path.startsWith("/admin")) {
+        // 管理员权限校验
+        if (path.startsWith("/admin")) {
             try {
                 // 检查是否登录
                 if (!StpUtil.isLogin()) {

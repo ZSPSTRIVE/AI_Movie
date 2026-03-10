@@ -300,13 +300,13 @@ onMounted(() => {
               
               <!-- 气泡 - Neo-Brutalism -->
               <div
-                class="rounded-xl px-4 py-3 max-w-[85%] border-2 border-black shadow-brutal-sm"
-                :class="msg.role === 'user' ? 'bg-pop-yellow text-black' : 'bg-white text-nb-text'"
+                class="ai-chat-bubble rounded-xl px-4 py-3 max-w-[85%] border-2 border-black shadow-brutal-sm"
+                :class="msg.role === 'user' ? 'bg-pop-yellow text-black' : 'bg-white'"
               >
                 <!-- AI 回复：流式输出时显示纯文本，完成后渲染 Markdown -->
                 <template v-if="msg.role === 'assistant'">
                   <!-- 正在输出中 -->
-                  <p v-if="chatLoading && index === chatMessages.length - 1" class="text-sm font-medium whitespace-pre-wrap break-words">
+                  <p v-if="chatLoading && index === chatMessages.length - 1" class="text-sm font-medium whitespace-pre-wrap break-words ai-chat-text">
                     {{ msg.content }}<span class="animate-pulse text-pop-blue">▊</span>
                   </p>
                   <!-- 输出完成，渲染 Markdown -->
@@ -598,11 +598,21 @@ onMounted(() => {
 
 <style scoped>
 .markdown-body {
-  color: inherit;
-  font-family: inherit;
+  color: #1a1a1a;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
+  line-height: 1.7;
+  letter-spacing: 0.01em;
+}
+
+.ai-chat-bubble {
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+}
+
+.ai-chat-text {
+  color: #1a1a1a;
 }
 .markdown-body :deep(p) {
   margin-bottom: 0.5em;

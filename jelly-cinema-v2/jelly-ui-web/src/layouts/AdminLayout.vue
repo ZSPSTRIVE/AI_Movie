@@ -45,7 +45,6 @@ async function handleLogout() {
     router.push('/login')
   } catch (error) {
     // 用户取消或 logout 失败（如果是 API 调用错误，通常也在 store 内部处理了，这里 catch 住避免崩溃）
-    console.log('Logout cancelled or failed', error)
   }
 }
 </script>

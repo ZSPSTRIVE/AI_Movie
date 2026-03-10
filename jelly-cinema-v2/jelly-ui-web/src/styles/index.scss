@@ -86,10 +86,12 @@ body,
 }
 
 body {
-  font-family: 'SimHei', 'Microsoft YaHei', sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', 'Noto Sans SC', 'Microsoft YaHei', 'Helvetica Neue', Helvetica, Arial, sans-serif;
   background: linear-gradient(135deg, #0F172A 0%, #1E293B 50%, #334155 100%);
   color: var(--glass-text);
   font-weight: 700;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 // ==================== Neo-Brutalism 滚动条 (暗色版) ====================

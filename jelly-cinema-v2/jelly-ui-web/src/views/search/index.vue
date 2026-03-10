@@ -2,6 +2,7 @@
 import { ref, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { searchFilm } from '@/api/film'
+import tvboxService from '@/services/tvboxService'
 import { normalizeImageUrl } from '@/utils/image'
 import type { Film } from '@/types/film'
 import { ElMessage } from 'element-plus'
@@ -29,14 +30,31 @@ async function doSearch() {
   
   loading.value = true
   try {
+    // 先尝试后端 API 搜索
     const res = await searchFilm(kw)
-    filmList.value = (res.data || []).map((film) => ({
+    let results = res.data || []
+    
+    // 后端无结果时 fallback 到 TVBox 搜索
+    if (results.length === 0) {
+      results = await tvboxService.search(kw)
+    }
+    
+    filmList.value = results.map((film) => ({
       ...film,
       coverUrl: normalizeImageUrl(film.coverUrl, film.title),
     }))
   } catch (e: any) {
-    filmList.value = []
-    ElMessage.error(e?.message || '搜索失败，请稍后重试')
+    // 后端异常时直接用 TVBox 搜索兜底
+    try {
+      const tvResults = await tvboxService.search(kw)
+      filmList.value = tvResults.map((film) => ({
+        ...film,
+        coverUrl: normalizeImageUrl(film.coverUrl, film.title),
+      }))
+    } catch {
+      filmList.value = []
+      ElMessage.error(e?.message || '搜索失败，请稍后重试')
+    }
   } finally {
     loading.value = false
   }

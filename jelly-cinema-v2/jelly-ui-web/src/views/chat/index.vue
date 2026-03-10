@@ -3,7 +3,7 @@ import { ref, onMounted, onUnmounted, nextTick, computed } from 'vue'
 import { 
   getSessions, getHistory, getUnreadApplyCount, recallMessage, createGroup, 
   uploadChatImage, uploadChatFile, deleteSession, clearMessages, markAsRead,
-  deleteFriend, blockFriend, checkOnlineBatch,
+  deleteFriend, blockFriend, checkOnlineBatch, deleteMessage,
   type Session, type Message, type Friend, IMWebSocket 
 } from '@/api/im'
 import { useUserStore } from '@/stores/user'
@@ -120,8 +120,9 @@ onMounted(async () => {
     }
   }
   ws = new IMWebSocket(userStore.token!, userStore.userId)
-  ws.on('connected', () => console.log('IM 已连接'))
+  ws.on('connected', () => {})
   ws.on('message', handleNewMessage)
+  ws.on('message_ack', handleMessageAck)
   ws.on('recall', handleRecall)
   ws.on('apply', () => loadUnreadCount()) // 收到新申请
   ws.on('read', handleReadStatus) // 消息已读通知
@@ -329,14 +330,6 @@ async function loadSessions() {
   try {
     const res = await getSessions()
     sessions.value = res.data || []
-    // 调试：打印群聊会话的 groupId
-    console.log('会话列表:', sessions.value.map(s => ({ 
-      sessionId: s.sessionId, 
-      type: s.type, 
-      groupId: s.groupId, 
-      userId: s.userId,
-      nickname: s.nickname 
-    })))
     
     // 同步未读消息数到全局 store
     const totalUnread = sessions.value.reduce((sum, s) => sum + (s.unreadCount || 0), 0)
@@ -355,12 +348,22 @@ function startOnlineStatusRefresh() {
     if (!chatSettings.value.showOnlineStatus) return
     loadOnlineStatus()
   }, ONLINE_STATUS_REFRESH_INTERVAL)
+  
+  // 页面从后台切回时立即刷新在线状态
+  document.addEventListener('visibilitychange', handleVisibilityChange)
+}
+
+function handleVisibilityChange() {
+  if (!document.hidden && chatSettings.value.showOnlineStatus) {
+    loadOnlineStatus()
+  }
 }
 
 function stopOnlineStatusRefresh() {
   if (onlineStatusTimer === null) return
   window.clearInterval(onlineStatusTimer)
   onlineStatusTimer = null
+  document.removeEventListener('visibilitychange', handleVisibilityChange)
 }
 
 // 加载在线状态
@@ -385,14 +388,6 @@ async function loadOnlineStatus() {
 }
 
 async function selectSession(session: Session) {
-  console.log('选择会话:', {
-    sessionId: session.sessionId,
-    type: session.type,
-    userId: session.userId,
-    groupId: session.groupId,
-    nickname: session.nickname,
-  })
-  
   // 如果 sessionId 为空，尝试生成
   if (!session.sessionId) {
     if (session.type === 1 && session.userId) {
@@ -404,11 +399,9 @@ async function selectSession(session: Session) {
         return
       }
       session.sessionId = generatedId
-      console.log('生成私聊 sessionId:', session.sessionId)
     } else if (session.type === 2 && session.groupId) {
       // 群聊：生成 sessionId
       session.sessionId = `group_${session.groupId}`
-      console.log('生成群聊 sessionId:', session.sessionId)
     } else {
       console.error('无法生成 sessionId，缺少必要信息:', session)
       return
@@ -431,12 +424,6 @@ async function selectSession(session: Session) {
   
   try {
     const res = await getHistory(session.sessionId, { pageNum: 1, pageSize: 50 })
-    console.log('加载历史消息成功:', {
-      sessionId: session.sessionId,
-      total: res.data?.total,
-      pageNum: 1,
-      pageSize: 50,
-    })
     messages.value = (res.data?.rows || []).reverse()
     await nextTick()
     scrollToBottom()
@@ -505,16 +492,29 @@ function hashCode(str: string): number {
   return hash
 }
 
+// 处理发送消息回执 — 将本地临时ID替换为服务端真实ID
+function handleMessageAck(data: any) {
+  const ackMsg = data.data as Message
+  if (!ackMsg || !ackMsg.sessionId) return
+  // 找到同会话中由自己发送的、使用临时ID的最早一条消息（FIFO，确保多条消息按顺序匹配）
+  for (let i = 0; i < messages.value.length; i++) {
+    const m = messages.value[i]
+    if (m.sessionId === ackMsg.sessionId
+      && String(m.fromId) === String(ackMsg.fromId)
+      && typeof m.id === 'number' && m.id < 1e15  // Date.now() 级别的临时ID，远小于雪花ID
+    ) {
+      // 替换为服务端真实数据
+      messages.value[i] = { ...m, ...ackMsg }
+      return
+    }
+  }
+}
+
 function handleNewMessage(data: any) {
-  console.log('收到新消息:', data)
   const msg = data.data as Message
-  console.log('解析后的消息:', msg)
-  console.log('当前会话 sessionId:', activeSession.value?.sessionId)
-  console.log('消息 sessionId:', msg.sessionId)
   
   // 如果是当前会话的消息
   if (activeSession.value?.sessionId === msg.sessionId) {
-    console.log('消息属于当前会话，添加到列表')
     messages.value.push(msg)
     nextTick(() => scrollToBottom())
     
@@ -523,7 +523,6 @@ function handleNewMessage(data: any) {
       markAsRead(msg.sessionId).catch(e => console.warn('实时标记已读失败', e))
     }
   } else {
-    console.log('消息不属于当前会话')
     // 不是当前会话的消息，播放提示音和发送桌面通知
     playNotificationSound()
     sendDesktopNotification(
@@ -569,16 +568,28 @@ function handleNewMessage(data: any) {
 }
 
 function handleRecall(data: any) {
-  const index = messages.value.findIndex(m => m.id === data.messageId)
+  // 兼容不同字段名: messageId / data.messageId / id
+  const recalledId = data?.data?.messageId ?? data?.messageId ?? data?.data?.id ?? data?.id
+  if (!recalledId) return
+  
+  const index = messages.value.findIndex(m => String(m.id) === String(recalledId))
   if (index > -1) {
     messages.value[index].status = 1
     messages.value[index].content = '[消息已撤回]'
+  }
+  
+  // 同步更新会话列表最后一条消息
+  const sessionId = data?.data?.sessionId ?? data?.sessionId
+  if (sessionId) {
+    const session = sessions.value.find(s => s.sessionId === sessionId)
+    if (session) {
+      session.lastMessage = '[消息已撤回]'
+    }
   }
 }
 
 // 处理消息已读通知（发送方收到）
 function handleReadStatus(data: any) {
-  console.log('收到已读通知:', data)
   const { sessionId } = data
   
   // 如果是当前会话，更新所有消息的已读状态
@@ -594,7 +605,6 @@ function handleReadStatus(data: any) {
 
 // 处理用户在线状态变化
 function handleOnlineStatus(data: any) {
-  console.log('收到在线状态变化:', data)
   const { userId, online } = data
   if (userId) {
     onlineStatus.value[String(userId)] = online
@@ -603,6 +613,12 @@ function handleOnlineStatus(data: any) {
 
 // 撤回消息
 async function handleRecallMessage(msg: Message) {
+  // 临时ID还未被服务端ACK替换，不允许撤回
+  if (typeof msg.id === 'number' && msg.id < 1e15) {
+    ElMessage.warning('消息正在发送中，请稍后再试')
+    return
+  }
+
   // 只能撤回2分钟内的消息
   const diff = Date.now() - new Date(msg.createTime).getTime()
   if (diff > 2 * 60 * 1000) {
@@ -610,11 +626,26 @@ async function handleRecallMessage(msg: Message) {
     return
   }
   
-  await ElMessageBox.confirm('确定要撤回这条消息吗？', '提示')
-  await recallMessage(msg.id)
-  msg.status = 1
-  msg.content = '[消息已撤回]'
-  ElMessage.success('已撤回')
+  try {
+    await ElMessageBox.confirm('确定要撤回这条消息吗？', '提示')
+    await recallMessage(msg.id)
+    msg.status = 1
+    msg.content = '[消息已撤回]'
+    
+    // 同步更新会话列表的最后一条消息
+    if (activeSession.value) {
+      const session = sessions.value.find(s => s.sessionId === activeSession.value?.sessionId)
+      if (session) {
+        // 如果撤回的是最后一条消息，更新显示
+        const lastMsg = messages.value.filter(m => m.status !== 1).pop()
+        session.lastMessage = lastMsg ? lastMsg.content : '[消息已撤回]'
+      }
+    }
+    
+    ElMessage.success('已撤回')
+  } catch (e: any) {
+    // 用户取消确认框时不处理，接口错误已被拦截器处理
+  }
 }
 
 // 插入表情
@@ -661,8 +692,6 @@ const filteredSessions = computed(() => {
 function sendMessage() {
   if (!messageInput.value.trim() || !activeSession.value) return
   const { cmdType, toId } = getChatTarget()
-  
-  console.log('发送消息:', { cmdType, toId, content: messageInput.value.trim() })
 
   ws?.send({
     cmdType,
@@ -962,6 +991,12 @@ async function handleDeleteMessage() {
   if (!contextMenuMessage.value) return
   
   const msg = contextMenuMessage.value
+
+  if (typeof msg.id === 'number' && msg.id < 1e15) {
+    ElMessage.warning('消息正在发送中，请稍后再试')
+    closeMsgContextMenu()
+    return
+  }
   
   try {
     await deleteMessage(String(msg.id))
@@ -1300,7 +1335,7 @@ function scrollToMessage(msg: Message) {
                   class="absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   :class="isMyMessage(msg) ? 'right-full mr-2' : 'left-full ml-2'"
                 >
-                  <el-button size="small" text @click="handleRecallMessage(msg)">
+                  <el-button size="small" text style="color: #000;" @click="handleRecallMessage(msg)">
                     撤回
                   </el-button>
                 </div>

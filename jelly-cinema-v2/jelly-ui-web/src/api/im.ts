@@ -465,12 +465,10 @@ export class IMWebSocket {
     }
     this.connecting = true
     const url = this.buildUrl()
-    console.log('WebSocket connecting:', url)
     this.ws = new WebSocket(url)
 
     this.ws.onopen = () => {
       this.connecting = false
-      console.log('WebSocket connected')
       this.reconnectAttempts = 0
       if (this.reconnectTimer) {
         clearTimeout(this.reconnectTimer)
@@ -481,20 +479,15 @@ export class IMWebSocket {
 
     this.ws.onmessage = (event) => {
       try {
-        console.log('WebSocket raw message:', event.data)
         const data = JSON.parse(event.data)
-        console.log('WebSocket parsed message:', data)
         this.emit(data.type, data)
       } catch (e) {
-        console.error('Failed to parse message', e)
+        console.error('Failed to parse WS message')
       }
     }
 
     this.ws.onclose = (event) => {
       this.connecting = false
-      console.log(
-        `WebSocket disconnected: code=${event.code}, reason=${event.reason || '(empty)'}, wasClean=${event.wasClean}`
-      )
       this.emit('disconnected')
       this.ws = null
       if (this.manualClose) {
@@ -503,9 +496,8 @@ export class IMWebSocket {
       this.tryReconnect()
     }
 
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error', error)
-      this.emit('error', error)
+    this.ws.onerror = () => {
+      this.emit('error')
     }
   }
 
@@ -518,7 +510,6 @@ export class IMWebSocket {
 
     // If page is hidden, pause reconnect until user returns.
     if (document.hidden) {
-      console.log('Page hidden, pause reconnect')
       return
     }
 
@@ -528,13 +519,11 @@ export class IMWebSocket {
       this.reconnectAttempts++
       // Exponential backoff: 3s, 6s, 12s, 24s, 48s
       const delay = Math.min(3000 * Math.pow(2, this.reconnectAttempts - 1), 60000)
-      console.log(`Reconnect attempt (${this.reconnectAttempts}/${this.maxReconnectAttempts}) in ${delay / 1000}s`)
       this.reconnectTimer = window.setTimeout(() => {
         this.reconnectTimer = null
         this.connect()
       }, delay)
     } else {
-      console.log('Max reconnect attempts reached; stop reconnecting')
       this.emit('maxReconnectReached')
     }
   }
@@ -548,7 +537,6 @@ export class IMWebSocket {
         content: data.content,
         extra: data.extra
       }
-      console.log('WebSocket send:', payload)
       this.ws.send(JSON.stringify(payload))
     } else {
       console.error('WebSocket not connected')

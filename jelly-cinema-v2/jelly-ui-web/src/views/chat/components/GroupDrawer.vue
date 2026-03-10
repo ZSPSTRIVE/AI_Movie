@@ -60,7 +60,6 @@ watch(() => props.visible, async (val) => {
 
 async function loadGroupDetail() {
   loading.value = true
-  console.log('加载群详情，groupId:', props.groupId, '类型:', typeof props.groupId)
   try {
     const res = await getGroupDetail(props.groupId)
     group.value = res.data
@@ -274,13 +273,10 @@ async function openInviteDialog() {
   loadingInvite.value = true
   try {
     const res = await getFriends()
-    console.log('获取好友列表:', res.data)
     // 过滤掉已经在群里的好友（统一转字符串比较）
     const memberIds = new Set((group.value?.members || []).map(m => String(m.userId)))
-    console.log('当前群成员ID:', [...memberIds])
     const allFriends = res.data || []
     inviteFriends.value = allFriends.filter(f => !memberIds.has(String(f.id)))
-    console.log('可邀请好友数:', inviteFriends.value.length)
   } catch (e: any) {
     console.error('加载好友列表失败:', e)
     ElMessage.error(e.message || '加载好友列表失败')

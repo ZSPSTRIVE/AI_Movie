@@ -49,12 +49,10 @@ class TVBoxService {
    */
   async getRecommend(limit: number = 18): Promise<Film[]> {
     try {
-      console.log('正在请求真实 TVBox 推荐数据...')
       const response = await axios.get(`${PROXY_BASE_URL}/recommend`, {
         params: { limit },
         timeout: 5000,
       })
-      console.log('真实数据获取成功:', response.data.data?.length || 0)
       const data = response.data.data || []
       if (Array.isArray(data) && data.length > 0) {
         this.lastRecommendCache = data
@@ -117,7 +115,6 @@ class TVBoxService {
    */
   async getDetail(id: number | string): Promise<Film | null> {
     try {
-      console.log('正在获取真实电影详情, ID:', id)
       const response = await axios.get(`${PROXY_BASE_URL}/detail/${encodeURIComponent(id)}`, {
         timeout: 5000,
       })
@@ -158,24 +155,20 @@ class TVBoxService {
    */
   async getPlayUrl(id: number | string): Promise<{ playUrl: string, episodes: any[] }> {
     try {
-      console.log('正在获取真实播放链接, ID:', id)
 
       // 处理数字ID (降级数据): 尝试通过标题搜索真实资源
       if (this.isNumericId(id)) {
         // Resolve numeric fallback IDs to real TVBox IDs when possible
         const fallback = this.getFallbackData().find(f => f.id === Number(id))
         if (fallback) {
-          console.log(`Detected numeric ID ${id} (${fallback.title}); resolving to real source...`)
           const cachedId = this.findCachedIdByTitle(fallback.title)
           if (cachedId && cachedId !== String(id)) {
-            console.log(`Mapped numeric ID ${id} to cached ID: ${cachedId}`)
             return this.getPlayUrl(cachedId)
           }
           const searchResults = await this.search(fallback.title)
           if (searchResults && searchResults.length > 0) {
             const realId = searchResults[0].id
             if (realId && !this.isNumericId(realId)) {
-              console.log(`Search hit, mapped to real ID: ${realId}`)
               return this.getPlayUrl(realId)
             }
           }

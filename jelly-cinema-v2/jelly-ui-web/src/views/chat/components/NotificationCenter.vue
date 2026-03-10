@@ -33,9 +33,7 @@ async function loadApplyList() {
   loading.value = true
   try {
     const type = activeTab.value === 'friend' ? 1 : activeTab.value === 'group' ? 2 : undefined
-    console.log('加载申请列表, type:', type)
     const res = await getApplyList(type)
-    console.log('申请列表结果:', res.data)
     applyList.value = res.data || []
   } catch (e) {
     console.error('加载申请列表失败:', e)

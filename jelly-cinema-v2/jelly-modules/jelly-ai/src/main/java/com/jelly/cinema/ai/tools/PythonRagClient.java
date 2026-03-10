@@ -3,11 +3,15 @@ package com.jelly.cinema.ai.tools;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.channel.ChannelOption;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.reactive.ReactorClientHttpConnector;
 import org.springframework.stereotype.Component;
 import org.springframework.web.reactive.function.client.WebClient;
+import reactor.netty.http.client.HttpClient;
 
+import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -29,9 +33,15 @@ public class PythonRagClient {
     @Value("${ai.rag.python-service-url:http://localhost:8500}")
     private String pythonServiceUrl;
 
+    private static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
     public PythonRagClient(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
+        HttpClient httpClient = HttpClient.create()
+                .option(ChannelOption.CONNECT_TIMEOUT_MILLIS, 5000)
+                .responseTimeout(Duration.ofSeconds(30));
         this.webClient = WebClient.builder()
+                .clientConnector(new ReactorClientHttpConnector(httpClient))
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(10 * 1024 * 1024))
                 .build();
     }
@@ -57,7 +67,7 @@ public class PythonRagClient {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
 
             if (responseJson == null) {
                 return "";
@@ -117,7 +127,7 @@ public class PythonRagClient {
                     .bodyValue(requestBody)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
             return parseJson(responseJson);
         } catch (Exception e) {
             log.error("Python RAG searchRaw failed", e);
@@ -138,7 +148,7 @@ public class PythonRagClient {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
 
             if (responseJson == null) {
                 return "同步请求无响应";
@@ -171,7 +181,7 @@ public class PythonRagClient {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
             return parseJson(responseJson);
         } catch (Exception e) {
             log.error("Python RAG syncRaw failed", e);
@@ -189,7 +199,7 @@ public class PythonRagClient {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
             return parseJson(responseJson);
         } catch (Exception e) {
             log.warn("Python RAG healthRaw failed: {}", e.getMessage());
@@ -210,7 +220,7 @@ public class PythonRagClient {
                     .uri(url)
                     .retrieve()
                     .bodyToMono(String.class)
-                    .block();
+                    .block(REQUEST_TIMEOUT);
             
             return response != null && response.contains("healthy");
         } catch (Exception e) {

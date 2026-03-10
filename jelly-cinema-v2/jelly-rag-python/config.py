@@ -62,7 +62,7 @@ class Settings(BaseSettings):
     mysql_port: int = 3306
     mysql_database: str = "jelly_cinema"
     mysql_user: str = "root"
-    mysql_password: str = "123456"
+    mysql_password: str = ""  # Set via MYSQL_PASSWORD env var or .env file
 
     # ==================== Rate Limiting ====================
     enable_rate_limit: bool = True
@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     retry_wait_seconds: float = 1.0
     circuit_breaker_threshold: int = 5
     circuit_breaker_timeout: int = 30
+
+    # ==================== CORS ====================
+    cors_origins: str = "http://localhost:5174,http://localhost:8080"
+
+    # ==================== Admin ====================
+    admin_api_key: str = ""  # Set via ADMIN_API_KEY env var
 
     # ==================== Service ====================
     service_port: int = 8500

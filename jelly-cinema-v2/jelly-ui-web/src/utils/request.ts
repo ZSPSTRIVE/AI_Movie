@@ -16,12 +16,9 @@ const service: AxiosInstance = axios.create({
 service.interceptors.request.use(
   (config) => {
     const userStore = useUserStore()
-    console.log('请求拦截器 - URL:', config.url, 'Token:', userStore.token ? '有' : '无')
     if (userStore.token) {
       // Sa-Token 不需要 Bearer 前缀
       ; (config.headers as any).Authorization = userStore.token
-    } else {
-      console.warn('请求未携带Token:', config.url)
     }
 
     // 文件上传使用 FormData 时，让浏览器自动设置 multipart/form-data 边界

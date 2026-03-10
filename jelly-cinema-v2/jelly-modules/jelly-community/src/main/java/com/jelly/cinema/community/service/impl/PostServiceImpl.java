@@ -2,6 +2,7 @@ package com.jelly.cinema.community.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.http.HtmlUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.jelly.cinema.common.core.domain.PageQuery;
@@ -21,6 +22,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -39,8 +41,19 @@ public class PostServiceImpl implements PostService {
     private static final String POST_VIEW_KEY = "jelly:post:view:";
     private static final String POST_VOTE_KEY = "jelly:post:vote:";
 
+    /** Pattern to match dangerous HTML attributes: event handlers (onclick, onerror, etc.) and javascript: URLs */
+    private static final Pattern DANGEROUS_ATTR_PATTERN = Pattern.compile(
+            "\\s+on\\w+\\s*=\\s*[\"'][^\"']*[\"']|\\s+on\\w+\\s*=\\s*\\S+|javascript\\s*:", Pattern.CASE_INSENSITIVE);
+
+    /** Dangerous HTML tags to strip completely */
+    private static final String[] DANGEROUS_TAGS = {"script", "iframe", "object", "embed", "form", "input", "textarea",
+            "select", "button", "applet", "base", "link", "meta", "style"};
+
     @Override
     public PageResult<PostVO> list(PageQuery query, String keyword, Long filmId) {
+        if (StrUtil.isNotBlank(keyword) && keyword.length() > 100) {
+            throw new ServiceException("搜索关键词不能超过100字");
+        }
         LambdaQueryWrapper<Post> wrapper = new LambdaQueryWrapper<>();
         wrapper.like(StrUtil.isNotBlank(keyword), Post::getTitle, keyword);
         wrapper.eq(filmId != null, Post::getFilmId, filmId);
@@ -78,8 +91,8 @@ public class PostServiceImpl implements PostService {
 
         Post post = new Post();
         post.setUserId(userId);
-        post.setTitle(dto.getTitle());
-        post.setContentHtml(dto.getContentHtml());
+        post.setTitle(HtmlUtil.cleanHtmlTag(dto.getTitle()));
+        post.setContentHtml(sanitizeHtml(dto.getContentHtml()));
         post.setContentSummary(extractSummary(dto.getContentHtml()));
         post.setFilmId(dto.getFilmId());
         post.setVoteUp(0);
@@ -113,6 +126,7 @@ public class PostServiceImpl implements PostService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public void vote(Long id, Integer type) {
         Long userId = LoginHelper.getUserId();
         if (userId == null) {
@@ -125,26 +139,25 @@ public class PostServiceImpl implements PostService {
             currentVote = 0;
         }
 
+        // Verify post exists
         Post post = postMapper.selectById(id);
         if (post == null) {
             throw new ServiceException("帖子不存在");
         }
 
-        // 取消之前的投票
+        // Undo previous vote using atomic SQL
         if (currentVote == 1) {
-            post.setVoteUp(post.getVoteUp() - 1);
+            postMapper.updateVoteUp(id, -1);
         } else if (currentVote == -1) {
-            post.setVoteDown(post.getVoteDown() - 1);
+            postMapper.updateVoteDown(id, -1);
         }
 
-        // 应用新投票
+        // Apply new vote using atomic SQL
         if (type == 1) {
-            post.setVoteUp(post.getVoteUp() + 1);
+            postMapper.updateVoteUp(id, 1);
         } else if (type == -1) {
-            post.setVoteDown(post.getVoteDown() + 1);
+            postMapper.updateVoteDown(id, 1);
         }
-
-        postMapper.updateById(post);
 
         if (type == 0) {
             redisService.delete(key);
@@ -192,6 +205,20 @@ public class PostServiceImpl implements PostService {
                 .collect(Collectors.toList());
 
         return PageResult.build(voList, page.getTotal(), query.getPageNum(), query.getPageSize());
+    }
+
+    /**
+     * 清理 HTML 内容，移除危险标签和事件属性，防止 XSS 攻击
+     */
+    private String sanitizeHtml(String html) {
+        if (StrUtil.isBlank(html)) {
+            return "";
+        }
+        // 1. Remove dangerous tags (script, iframe, etc.)
+        String sanitized = HtmlUtil.removeHtmlTag(html, DANGEROUS_TAGS);
+        // 2. Remove dangerous attributes (onclick, onerror, javascript:, etc.)
+        sanitized = DANGEROUS_ATTR_PATTERN.matcher(sanitized).replaceAll("");
+        return sanitized;
     }
 
     /**
