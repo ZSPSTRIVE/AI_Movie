@@ -8,14 +8,14 @@
 
 ### **影视** · **社交** · **AI** · **RAG** · **积分**
 
-**新一代全栈微服务平台 | Spring Cloud + Vue3 + AI 赋能**
+**新一代全栈微服务平台 | Spring Cloud + Vue3 + AI **
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=for-the-badge&logo=springboot)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?style=for-the-badge&logo=vue.js)](https://vuejs.org/)
 [![Elasticsearch](https://img.shields.io/badge/Elasticsearch-7.6-005571?style=for-the-badge&logo=elasticsearch)](https://www.elastic.co/)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
-[**� 快速开始**](#-快速开始) · [**✨ 功能亮点**](#-功能亮点) · [**🏗️ 技术架构**](#️-技术栈) · [**📄 API 文档**](#-api-接口)
+[**🚀 快速开始**](#-快速开始) · [**✨ 功能亮点**](#-功能亮点) · [**📸 界面预览**](#-界面预览) · [**🏗️ 技术栈**](#️-技术栈) · [**📄 API 接口**](#-api-接口)
 
 </div>
 
@@ -47,7 +47,7 @@
 <tr>
 <td width="50%">
 
-###  **极客社区**
+### 📝 **极客社区**
 -  **Markdown**: 极致的富文本编辑体验
 -  **互动投票**: 仿知乎风格的高质量问答
 -  **圈子话题**: 聚合兴趣内容与热门讨论
@@ -76,7 +76,7 @@
 </td>
 <td width="50%">
 
-### �️ **企业级后台管理**
+### 🛠️ **企业级后台管理**
 -  **RBAC 权限**: 细粒度的菜单与按钮控制
 -  **数据大屏**: 实时监控系统核心指标
 -  **用户画像**: 全方位的用户行为分析
@@ -86,25 +86,27 @@
 </tr>
 </table>
 
-## **界面预览**
+## 📸 **界面预览**
 
-###  **首页**
-![首页](./doc/screenshots/Home1.png)
+### 🏠 **首页**
+![首页](./doc/screenshots/home.png)
 
-###  **电影中心**
-![电影](./doc/screenshots/movie1.png)
+### 🎬 **电影中心**
+![电影中心](./doc/screenshots/movie.png)
 
-###  **社区论坛**
-![社区](./doc/screenshots/community1.png)
+### 📝 **社区论坛**
+![社区论坛](./doc/screenshots/community.png)
 
-###  **即时通讯**
-![聊天](./doc/screenshots/IMchat1.png)
+### 💬 **即时通讯**
+![即时通讯](./doc/screenshots/IMchat.png)
 
-###  **AI 实验室**
-![AI聊天](./doc/screenshots/AIchat1.png)
+### 🤖 **AI 实验室**
+![AI 实验室](./doc/screenshots/AIchat.png)
 
-###  **积分中心**
+### 🎁 **积分中心**
 ![积分中心](./doc/screenshots/coupons1.png)
+
+
 
 ## 📋 项目简介
 
@@ -112,7 +114,6 @@
 
 **适用场景**：
 - 🎓 学习微服务架构的完整实战项目
-- 💼 求职面试的亮眼作品集
 - 🚀 二次开发的基础框架
 
 ## 🏗️ **技术栈**
@@ -143,7 +144,7 @@
 
 ---
 
-## � **项目结构**
+## 📁 **项目结构**
 
 ```bash
 jelly-cinema-v2/

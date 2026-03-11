@@ -65,19 +65,22 @@
 ## 📸 界面预览
 
 ### 🏠 首页
-![首页](./doc/screenshots/home.png)
+![首页](../doc/screenshots/home.png)
 
 ### 🎬 电影中心
-![电影](./doc/screenshots/movie.png)
+![电影中心](../doc/screenshots/movie.png)
 
 ### 📝 社区论坛
-![社区](./doc/screenshots/community.png)
+![社区论坛](../doc/screenshots/community.png)
 
 ### 💬 即时通讯
-![聊天](./doc/screenshots/IMchat.png)
+![即时通讯](../doc/screenshots/IMchat.png)
 
 ### 🤖 AI 助手
-![AI聊天](./doc/screenshots/AIchat.png)
+![AI 助手](../doc/screenshots/AIchat.png)
+
+### 🎁 积分中心
+![积分中心](../doc/screenshots/coupons1.png)
 
 ## 📋 项目简介
 
