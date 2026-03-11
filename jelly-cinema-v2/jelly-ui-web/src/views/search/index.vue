@@ -67,30 +67,30 @@ function goToDetail(id: string | number) {
 
 <template>
   <div class="space-y-6">
-    <!-- 标题 - Neo-Brutalism -->
-    <div class="bg-pop-yellow border-3 border-black shadow-brutal rounded-2xl px-6 py-4 inline-block">
-      <h1 class="text-3xl font-black text-black uppercase">
-        🔍 搜索结果: <span class="text-pop-blue">{{ keyword }}</span>
+    <!-- 标题 -->
+    <div>
+      <h1 class="text-2xl font-semibold" style="color: var(--text-primary);">
+        搜索结果：<span style="color: var(--text-secondary);">{{ keyword }}</span>
       </h1>
     </div>
 
     <div v-if="loading" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-      <div v-for="i in 6" :key="i" class="aspect-[2/3] rounded-xl skeleton border-3 border-black" />
+      <div v-for="i in 6" :key="i" class="aspect-[2/3] rounded-xl skeleton-loading" />
     </div>
 
     <div v-else-if="filmList.length === 0" class="text-center py-20">
-      <div class="text-8xl mb-6">🤔</div>
-      <div class="nb-badge text-lg">未找到与「{{ keyword }}」相关的内容</div>
+      <div class="text-4xl mb-6 font-light" style="color: var(--text-tertiary);">无结果</div>
+      <div class="text-base" style="color: var(--text-secondary);">未找到与「{{ keyword }}」相关的内容</div>
     </div>
 
     <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
       <div
         v-for="film in filmList"
         :key="film.id"
-        class="cursor-pointer group"
+        class="cursor-pointer group stagger-item"
         @click="goToDetail(film.id)"
       >
-        <div class="relative aspect-[2/3] rounded-xl overflow-hidden bg-white border-3 border-black shadow-brutal-sm transition-all group-hover:translate-x-1 group-hover:-translate-y-1 group-hover:shadow-brutal">
+        <div class="relative aspect-[2/3] rounded-xl overflow-hidden transition-all group-hover:-translate-y-1" style="background: var(--bg-card);">
           <img
             :src="film.coverUrl"
             :alt="film.title"
@@ -102,11 +102,11 @@ function goToDetail(id: string | number) {
               <p class="text-sm text-white font-bold line-clamp-2">{{ film.description }}</p>
             </div>
           </div>
-          <div class="absolute top-2 right-2 bg-pop-yellow text-black text-xs font-black px-2 py-1 border-2 border-black rounded">
-            ⭐ {{ film.rating }}
+          <div class="absolute top-2 right-2 text-xs font-medium px-2 py-1 rounded-md" style="background: rgba(0,0,0,0.6); color: #fff; backdrop-filter: blur(8px);">
+            {{ film.rating }}
           </div>
         </div>
-        <h3 class="mt-3 text-black font-bold truncate">{{ film.title }}</h3>
+        <h3 class="mt-3 font-semibold truncate" style="color: var(--text-primary);">{{ film.title }}</h3>
       </div>
     </div>
   </div>

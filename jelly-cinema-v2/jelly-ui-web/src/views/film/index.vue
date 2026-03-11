@@ -178,13 +178,13 @@ function formatPlayCount(count: number): string {
 
     <!-- 空状态 -->
     <div v-else-if="filmList.length === 0" class="text-center py-20">
-      <div class="text-6xl mb-6">🎬</div>
+      <div class="text-4xl mb-6 font-light" style="color: var(--text-tertiary);">暂无内容</div>
       <div class="text-lg font-medium" style="color: var(--glass-text);">暂无电影</div>
     </div>
 
     <!-- 电影列表 -->
     <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
-      <div v-for="film in filmList" :key="film.id" class="cursor-pointer group" @click="goToDetail(film.id)">
+      <div v-for="film in filmList" :key="film.id" class="cursor-pointer group stagger-item" @click="goToDetail(film.id)">
         <div class="relative aspect-[2/3] rounded-xl overflow-hidden transition-all duration-300 film-card">
           <img :src="film.coverUrl" :alt="film.title" v-img-fallback="film.title" loading="lazy" class="w-full h-full object-cover" />
           <div class="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -192,12 +192,12 @@ function formatPlayCount(count: number): string {
               <p class="text-xs text-white/90 font-medium line-clamp-3 leading-relaxed">{{ film.description }}</p>
             </div>
           </div>
-          <div class="absolute top-2 left-2 px-2 py-1 text-xs font-bold rounded" style="background: rgba(0, 0, 0, 0.6); backdrop-filter: blur(8px); color: #fbbf24;">{{ film.rating }}</div>
-          <div v-if="film.isVip" class="absolute top-2 right-2 px-2 py-0.5 text-xs font-bold rounded" style="background: linear-gradient(135deg, #f59e0b, #d97706); color: white;">VIP</div>
+          <div class="film-rating-badge">{{ film.rating }}</div>
+          <div v-if="film.isVip" class="film-vip-badge">VIP</div>
         </div>
         <div class="mt-2 px-0.5">
-          <h3 class="text-sm font-bold truncate" style="color: #0f172a;">{{ film.title }}</h3>
-          <p class="text-xs font-medium mt-0.5" style="color: #94a3b8;">{{ formatPlayCount(film.playCount) }}次</p>
+          <h3 class="film-card-title">{{ film.title }}</h3>
+          <p class="film-card-meta">{{ formatPlayCount(film.playCount) }}次</p>
         </div>
       </div>
     </div>
@@ -210,54 +210,42 @@ function formatPlayCount(count: number): string {
 </template>
 
 <style scoped>
-/* 页面标题 */
+/* ─── Page Title ─── */
 .glass-section-title {
-  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 1.75rem;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 1rem;
   letter-spacing: -0.02em;
 }
 
-/* 筛选栏容器 */
+/* ─── Filter Bar ─── */
 .glass-filter-bar {
-  background: linear-gradient(135deg, rgba(255, 255, 255, 0.95) 0%, rgba(248, 250, 252, 0.9) 100%);
-  backdrop-filter: blur(20px);
-  border-radius: 16px;
+  background: var(--glass-bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-xl);
   padding: 20px 24px;
-  border: 1px solid rgba(226, 232, 240, 0.8);
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02);
   margin-bottom: 24px;
 }
 
-/* 筛选行 */
 .filter-row {
   display: flex;
   align-items: flex-start;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(226, 232, 240, 0.5);
+  border-bottom: 1px solid var(--border-light);
 }
-.filter-row:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-.filter-row:first-child {
-  padding-top: 0;
-}
+.filter-row:last-child { border-bottom: none; padding-bottom: 0; }
+.filter-row:first-child { padding-top: 0; }
 
-/* 筛选标签 */
 .filter-label {
-  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 14px;
   font-weight: 600;
-  color: #64748b !important;
+  color: var(--text-secondary);
   min-width: 56px;
   padding-top: 6px;
   flex-shrink: 0;
 }
 
-/* 筛选选项容器 */
 .filter-options {
   display: flex;
   flex-wrap: wrap;
@@ -265,35 +253,32 @@ function formatPlayCount(count: number): string {
   flex: 1;
 }
 
-/* 筛选选项按钮 */
 .filter-option {
-  font-family: 'Inter', 'DM Sans', -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', sans-serif;
   font-size: 13px;
   font-weight: 500;
-  color: #475569 !important;
-  background: rgba(241, 245, 249, 0.8);
+  color: var(--text-secondary);
+  background: var(--bg-base);
   border: 1px solid transparent;
   padding: 6px 14px;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all 0.2s ease;
+  transition: all var(--duration-fast) var(--ease-apple);
   white-space: nowrap;
 }
 .filter-option:hover {
-  background: rgba(226, 232, 240, 0.9);
-  color: #334155 !important;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   transform: translateY(-1px);
 }
 .filter-option.active {
-  background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
-  color: white;
+  background: var(--color-primary);
+  color: var(--text-inverse);
   border-color: transparent;
-  box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
 }
 
-/* 骨架屏加载 */
+/* ─── Skeleton ─── */
 .skeleton-loading {
-  background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+  background: linear-gradient(90deg, var(--bg-base) 25%, var(--bg-card) 50%, var(--bg-base) 75%);
   background-size: 200% 100%;
   animation: skeleton-loading 1.5s ease-in-out infinite;
 }
@@ -302,37 +287,64 @@ function formatPlayCount(count: number): string {
   100% { background-position: -200% 0; }
 }
 
-/* 电影卡片 */
+/* ─── Film Card ─── */
 .film-card {
-  background: #fff;
-  border-radius: 12px;
-  border: 1px solid rgba(226, 232, 240, 0.6);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   overflow: hidden;
+  transition: all var(--duration-slow) var(--ease-apple);
 }
 .group:hover .film-card {
-  transform: translateY(-6px);
-  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.12);
-  border-color: rgba(99, 102, 241, 0.3);
+  transform: scale(1.02);
+  box-shadow: var(--shadow-lg);
 }
 
-/* 响应式 */
+.film-rating-badge {
+  position: absolute;
+  top: 8px; left: 8px;
+  padding: 4px 8px;
+  background: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(8px);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-warning);
+}
+
+.film-vip-badge {
+  position: absolute;
+  top: 8px; right: 8px;
+  padding: 2px 8px;
+  background: var(--color-warning);
+  color: var(--text-inverse);
+  font-size: 11px;
+  font-weight: 600;
+  border-radius: var(--radius-sm);
+}
+
+.film-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin: 0;
+}
+
+.film-card-meta {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin: 2px 0 0 0;
+}
+
+/* ─── Responsive ─── */
 @media (max-width: 768px) {
-  .glass-filter-bar {
-    padding: 16px;
-    border-radius: 12px;
-  }
-  .filter-label {
-    min-width: 48px;
-    font-size: 13px;
-  }
-  .filter-option {
-    font-size: 12px;
-    padding: 5px 12px;
-  }
-  .glass-section-title {
-    font-size: 1.5rem;
-  }
+  .glass-filter-bar { padding: 16px; border-radius: var(--radius-lg); }
+  .filter-label { min-width: 48px; font-size: 13px; }
+  .filter-option { font-size: 12px; padding: 5px 12px; }
+  .glass-section-title { font-size: 1.5rem; }
 }
 </style>
 

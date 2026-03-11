@@ -40,7 +40,7 @@ async function handleLogout() {
     // 调用 store 的 logout action (确保它是 Promise 或者同步执行无误)
     // 如果 logout 是异步的，加 await；如果是同步的，也不影响。
     // 通常 Pinia action 处理异步请求需要 await
-    await userStore.logout()
+    await userStore.doLogout()
     
     router.push('/login')
   } catch (error) {
@@ -50,79 +50,76 @@ async function handleLogout() {
 </script>
 
 <template>
-  <div class="admin-layout-root flex h-screen bg-gray-50">
-    <!-- 侧边栏 - Light Theme -->
-    <aside :class="['bg-white border-r border-gray-200 flex flex-col transition-all duration-300 z-20', { 'w-64': !isCollapsed, 'w-20': isCollapsed }]">
+  <div class="admin-layout-root flex h-screen">
+    <!-- 侧边栏 -->
+    <aside :class="['admin-sidebar', { 'admin-sidebar--collapsed': isCollapsed }]">
       <!-- Logo -->
-      <div class="h-16 flex items-center justify-center border-b border-gray-100">
+      <div class="sidebar-logo">
         <router-link to="/admin" class="flex items-center gap-3 overflow-hidden px-4">
-          <div class="w-8 h-8 rounded-lg bg-indigo-600 flex items-center justify-center shrink-0">
-            <svg-icon name="icon-a-24Hanbao" size="22" color="#FFF" />
+          <div class="logo-icon">
+            <svg-icon name="icon-a-24Hanbao" size="20" color="#FFF" />
           </div>
-          <span v-if="!isCollapsed" class="text-lg font-bold text-gray-800 whitespace-nowrap">JELLY ADMIN</span>
+          <span v-if="!isCollapsed" class="logo-label">JELLY ADMIN</span>
         </router-link>
       </div>
 
       <!-- 菜单 -->
-      <nav class="flex-1 py-4 space-y-1 px-3 overflow-y-auto">
+      <nav class="sidebar-nav">
         <router-link
           v-for="item in menuItems"
           :key="item.path"
           :to="item.path"
-          :class="['flex items-center gap-3 px-3 py-3 rounded-lg transition-all duration-200 group mb-1', { 
-            'bg-indigo-50 text-indigo-600': route.path === item.path,
-            'text-gray-600 hover:bg-gray-50 hover:text-gray-900': route.path !== item.path
-          }]"
+          :class="['sidebar-menu-item', { 'sidebar-menu-item--active': route.path === item.path }]"
         >
-          <el-icon size="18" :class="route.path === item.path ? 'text-indigo-600' : 'text-gray-400 group-hover:text-gray-600'"><svg-icon :name="item.icon" /></el-icon>
-          <span v-if="!isCollapsed" class="font-medium text-sm whitespace-nowrap">{{ item.title }}</span>
+          <el-icon size="18"><svg-icon :name="item.icon" /></el-icon>
+          <span v-if="!isCollapsed" class="menu-label">{{ item.title }}</span>
         </router-link>
       </nav>
 
       <!-- 底部 -->
-      <div class="p-4 border-t border-gray-100">
-        <router-link to="/" class="flex items-center gap-3 px-3 py-2 rounded-lg text-gray-500 hover:bg-gray-50 hover:text-gray-700 transition-all justify-center group" title="返回前台">
+      <div class="sidebar-bottom">
+        <router-link to="/" class="sidebar-menu-item" title="返回前台">
           <el-icon size="18"><svg-icon name="icon-qiantai" /></el-icon>
-          <span v-if="!isCollapsed" class="font-medium text-sm">返回前台</span>
+          <span v-if="!isCollapsed" class="menu-label">返回前台</span>
         </router-link>
       </div>
     </aside>
 
     <!-- 主内容区 -->
     <div class="flex-1 flex flex-col overflow-hidden">
-      <!-- 顶部栏 - Light Theme -->
-      <header class="h-16 bg-white border-b border-gray-200 flex items-center justify-between px-6 shadow-sm z-10">
+      <!-- 顶部栏 -->
+      <header class="admin-header">
         <div class="flex items-center gap-4">
-          <button class="p-2 rounded-lg hover:bg-gray-100 text-gray-500 transition-colors" @click="isCollapsed = !isCollapsed">
-            <el-icon size="20"><svg-icon :name="!isCollapsed ? 'icon-a-xiala2' : 'icon-a-24Hanbao'" :style="{ transform: !isCollapsed ? 'rotate(90deg)' : '' }" /></el-icon>
+          <button class="header-toggle-btn" @click="isCollapsed = !isCollapsed">
+            <el-icon size="18"><svg-icon :name="!isCollapsed ? 'icon-a-xiala2' : 'icon-a-24Hanbao'" :style="{ transform: !isCollapsed ? 'rotate(90deg)' : '' }" /></el-icon>
           </button>
           
           <!-- 面包屑 -->
           <el-breadcrumb separator="/" class="hidden md:block">
             <el-breadcrumb-item v-for="item in breadcrumbs" :key="item.path" :to="item.path">
-              <span class="font-medium text-gray-600">{{ item.title }}</span>
+              <span class="breadcrumb-text">{{ item.title }}</span>
             </el-breadcrumb-item>
           </el-breadcrumb>
         </div>
 
         <div class="flex items-center gap-4">
           <div class="flex items-center gap-2">
-             <button class="p-2 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+             <button class="header-action-btn">
                 <el-icon size="18"><svg-icon name="icon-tishi" /></el-icon>
              </button>
-             <button class="p-2 rounded-full text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all">
+             <button class="header-action-btn">
                 <el-icon size="18"><svg-icon name="icon-guanliyuanzhongxin" /></el-icon>
              </button>
           </div>
           
-          <div class="h-6 w-px bg-gray-200 mx-2"></div>
+          <div class="header-divider"></div>
 
           <el-dropdown trigger="click">
-            <div class="flex items-center gap-3 cursor-pointer py-1 px-2 rounded-lg hover:bg-gray-50 transition-all">
-              <el-avatar :size="32" :src="userStore.avatar" class="bg-indigo-100 text-indigo-600 font-bold">{{ userStore.nickname?.[0]?.toUpperCase() }}</el-avatar>
+            <div class="header-user-btn">
+              <el-avatar :size="32" :src="userStore.avatar" class="user-avatar-fallback">{{ userStore.nickname?.[0]?.toUpperCase() }}</el-avatar>
               <div class="hidden md:flex flex-col text-right">
-                 <span class="text-sm font-semibold text-gray-700 leading-tight">{{ userStore.nickname }}</span>
-                 <span class="text-xs text-gray-400">Administrator</span>
+                 <span class="user-name-text">{{ userStore.nickname }}</span>
+                 <span class="user-role-text">Administrator</span>
               </div>
               <el-icon class="text-gray-400"><ArrowDown /></el-icon>
             </div>
@@ -131,7 +128,7 @@ async function handleLogout() {
                 <el-dropdown-item @click="router.push('/user')">
                   <el-icon><svg-icon name="icon-gerenzhongxin-zhihui" /></el-icon>个人中心
                 </el-dropdown-item>
-                <el-dropdown-item divided @click="handleLogout" class="text-red-500 hover:bg-red-50">
+                <el-dropdown-item divided @click="handleLogout" class="logout-item">
                   <el-icon><svg-icon name="icon-guanbi" /></el-icon>退出登录
                 </el-dropdown-item>
               </el-dropdown-menu>
@@ -141,11 +138,11 @@ async function handleLogout() {
       </header>
 
       <!-- 页面内容 -->
-      <main class="flex-1 overflow-hidden relative bg-gray-50">
+      <main class="admin-main">
         <div class="absolute inset-0 overflow-auto scroll-smooth">
           <router-view v-slot="{ Component }">
-             <transition name="fade" mode="out-in">
-               <component :is="Component" />
+             <transition name="page" mode="out-in">
+               <component :is="Component" :key="$route.path" />
              </transition>
           </router-view>
         </div>
@@ -158,61 +155,227 @@ async function handleLogout() {
 </template>
 
 <style scoped>
-.fade-enter-active,
-.fade-leave-active {
-  transition: opacity 0.2s ease;
+/* ─── Sidebar ─── */
+.admin-sidebar {
+  width: 256px;
+  background: var(--bg-card);
+  border-right: 1px solid var(--border-color);
+  display: flex;
+  flex-direction: column;
+  transition: width var(--duration-base) var(--ease-apple);
+  z-index: 20;
 }
 
-.fade-enter-from,
-.fade-leave-to {
-  opacity: 0;
+.admin-sidebar--collapsed {
+  width: 80px;
+}
+
+.sidebar-logo {
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.logo-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radius-sm);
+  background: var(--color-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.logo-label {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.sidebar-nav {
+  flex: 1;
+  padding: 16px 12px;
+  overflow-y: auto;
+}
+
+.sidebar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-sm);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all var(--duration-base) var(--ease-apple);
+  margin-bottom: 4px;
+  position: relative;
+}
+
+.sidebar-menu-item:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.sidebar-menu-item--active {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  font-weight: 600;
+}
+
+.sidebar-menu-item--active::before {
+  content: '';
+  position: absolute;
+  left: -12px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 20px;
+  background: var(--color-primary);
+  border-radius: 0 2px 2px 0;
+}
+
+.menu-label {
+  white-space: nowrap;
+}
+
+.sidebar-bottom {
+  padding: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+/* ─── Header ─── */
+.admin-header {
+  height: 64px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 24px;
+  box-shadow: var(--shadow-sm);
+  z-index: 10;
+}
+
+.header-toggle-btn {
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.header-toggle-btn:hover {
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+}
+
+.breadcrumb-text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+}
+
+.header-action-btn {
+  padding: 8px;
+  border-radius: var(--radius-full);
+  border: none;
+  background: transparent;
+  color: var(--text-tertiary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.header-action-btn:hover {
+  color: var(--color-primary);
+  background: var(--color-primary-bg);
+}
+
+.header-divider {
+  height: 24px;
+  width: 1px;
+  background: var(--border-color);
+  margin: 0 8px;
+}
+
+.header-user-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.header-user-btn:hover {
+  background: var(--color-primary-bg);
+}
+
+.user-avatar-fallback {
+  background: var(--color-primary-bg) !important;
+  color: var(--color-primary) !important;
+  font-weight: 600 !important;
+}
+
+.user-name-text {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.3;
+}
+
+.user-role-text {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+}
+
+/* ─── Main ─── */
+.admin-main {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  background: var(--bg-base);
+}
+
+/* ─── Logout ─── */
+:deep(.logout-item) {
+  color: var(--color-danger) !important;
+}
+
+:deep(.logout-item:hover) {
+  background: rgba(255, 59, 48, 0.08) !important;
+  color: var(--color-danger) !important;
 }
 </style>
 
 <style>
-/* 全局后台字体风格：黑体 + 加粗 + 纯黑 */
+/* 后台字体风格：苹果字体栈 + 黑色加粗 */
 .admin-layout-root {
-  font-family: "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif;
-  color: #000;
-  font-weight: 600; /* 全局基准字重 */
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC',
+    'Noto Sans SC', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+  color: var(--text-primary);
 }
 
-/* 强制覆盖 Element Plus 组件内部字体 */
-.admin-layout-root .el-button,
-.admin-layout-root .el-input,
-.admin-layout-root .el-form-item__label,
-.admin-layout-root .el-table,
-.admin-layout-root .el-dialog__title,
-.admin-layout-root .el-drawer__header {
-  font-family: "SimHei", "Heiti SC", "Microsoft YaHei", sans-serif !important;
-  font-weight: 600 !important;
-  color: #000 !important;
-}
-
-/* 强化表格内容 */
-.admin-layout-root .el-table {
-  --el-table-text-color: #000;
-  --el-table-header-text-color: #000;
-}
-
-/* 覆盖 Tailwind 的灰色文本，使其更黑 */
-.admin-layout-root .text-gray-500,
-.admin-layout-root .text-gray-400,
-.admin-layout-root .text-gray-600 {
-  color: #222 !important; /* 深黑灰，保证可读性但接近纯黑 */
-}
-
-/* 标题极粗纯黑 */
-.admin-layout-root h1, 
-.admin-layout-root h2, 
-.admin-layout-root h3, 
-.admin-layout-root .font-bold {
-  font-weight: 800 !important;
-  color: #000 !important;
-}
-
-/* 侧边栏菜单文字增强 */
-.admin-layout-root nav span {
+/* 标题加粗纯黑 */
+.admin-layout-root h1,
+.admin-layout-root h2,
+.admin-layout-root h3 {
   font-weight: 700 !important;
+  color: var(--text-primary) !important;
+}
+
+/* 表格增强 */
+.admin-layout-root .el-table {
+  --el-table-text-color: var(--text-primary);
+  --el-table-header-text-color: var(--text-secondary);
 }
 </style>

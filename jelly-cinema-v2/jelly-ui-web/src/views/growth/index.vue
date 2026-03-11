@@ -335,7 +335,7 @@ function onTabChange(tab: string) {
               <span>加载中...</span>
             </div>
             <div v-else-if="couponTemplates.length === 0" class="glass-card empty-card">
-              <div class="empty-icon">🎁</div>
+              <div class="empty-icon">暂无</div>
               <span>暂无可兑换的优惠券</span>
             </div>
             <div v-else class="coupon-grid">
@@ -347,7 +347,7 @@ function onTabChange(tab: string) {
               >
                 <div class="coupon-badge" v-if="template.remainStock <= 5 && template.remainStock > 0">限量</div>
                 <div class="coupon-icon-wrap">
-                  <span class="coupon-icon">🎫</span>
+                  <span class="coupon-icon">券</span>
                 </div>
                 <div class="coupon-info">
                   <h3 class="coupon-title">{{ template.title }}</h3>
@@ -380,7 +380,7 @@ function onTabChange(tab: string) {
               <span>加载中...</span>
             </div>
             <div v-else-if="myCoupons.length === 0" class="glass-card empty-card">
-              <div class="empty-icon">🎫</div>
+              <div class="empty-icon">暂无</div>
               <span>暂无优惠券，快去兑换吧~</span>
             </div>
             <div v-else class="my-coupon-list">
@@ -391,7 +391,7 @@ function onTabChange(tab: string) {
                 :class="{ used: coupon.status === 1, expired: coupon.status === 2 }"
               >
                 <div class="coupon-left">
-                  <div class="coupon-icon-sm">🎫</div>
+                  <div class="coupon-icon-sm">券</div>
                 </div>
                 <div class="coupon-content">
                   <div class="coupon-name">{{ coupon.title }}</div>
@@ -423,7 +423,7 @@ function onTabChange(tab: string) {
               <span>加载中...</span>
             </div>
             <div v-else-if="pointLogs.length === 0" class="glass-card empty-card">
-              <div class="empty-icon">📜</div>
+              <div class="empty-icon">暂无</div>
               <span>暂无积分记录</span>
             </div>
             <div v-else class="logs-list">
@@ -449,23 +449,19 @@ function onTabChange(tab: string) {
 
 <style scoped>
 /* ═══════════════════════════════════════════════════════════
-   Apple Glassmorphism + Anime Aesthetic UI System
+   Apple Glassmorphism Growth System
    ═══════════════════════════════════════════════════════════ */
 
 .growth-page {
   position: relative;
   min-height: 100vh;
   overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'SF Pro Text', sans-serif;
 }
 
 /* ─── Dynamic Background ─── */
 .dynamic-bg {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   z-index: 0;
   overflow: hidden;
 }
@@ -473,11 +469,11 @@ function onTabChange(tab: string) {
 .gradient-layer {
   position: absolute;
   inset: 0;
-  background: 
-    radial-gradient(ellipse at 20% 20%, rgba(14, 165, 233, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse at 80% 30%, rgba(6, 182, 212, 0.18) 0%, transparent 50%),
-    radial-gradient(ellipse at 40% 80%, rgba(56, 189, 248, 0.15) 0%, transparent 50%),
-    linear-gradient(135deg, #e0f2fe 0%, #f0fdfa 30%, #ecfeff 60%, #f0f9ff 100%);
+  background:
+    radial-gradient(ellipse at 20% 20%, var(--glow-1) 0%, transparent 50%),
+    radial-gradient(ellipse at 80% 30%, var(--glow-2) 0%, transparent 50%),
+    radial-gradient(ellipse at 40% 80%, var(--glow-3) 0%, transparent 50%),
+    var(--bg-base);
 }
 
 .particles {
@@ -490,12 +486,12 @@ function onTabChange(tab: string) {
   position: absolute;
   width: 6px;
   height: 6px;
-  background: rgba(255, 255, 255, 0.9);
+  background: var(--text-inverse);
   border-radius: 50%;
   left: var(--x);
   animation: float var(--duration) ease-in-out infinite;
   animation-delay: var(--delay);
-  box-shadow: 0 0 12px rgba(14, 165, 233, 0.5);
+  box-shadow: 0 0 12px var(--color-primary-bg);
 }
 
 @keyframes float {
@@ -523,7 +519,7 @@ function onTabChange(tab: string) {
 .page-title {
   font-size: 34px;
   font-weight: 700;
-  background: linear-gradient(135deg, #0ea5e9 0%, #06b6d4 100%);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -533,36 +529,25 @@ function onTabChange(tab: string) {
 
 .page-subtitle {
   font-size: 17px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   margin: 0;
   font-weight: 400;
 }
 
 /* ─── Glass Card Base ─── */
 .glass-card {
-  background: rgba(255, 255, 255, 0.15);
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
-  border-radius: 24px;
-  border: 1.5px solid rgba(255, 255, 255, 0.35);
-  box-shadow: 
-    0 20px 40px rgba(0, 0, 0, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.1),
-    inset 1px 0 0 rgba(255, 255, 255, 0.2),
-    inset -1px 0 0 rgba(255, 255, 255, 0.2);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  background: var(--glass-bg-card);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-radius: var(--radius-2xl);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-md);
+  transition: all var(--duration-slow) var(--ease-apple);
 }
 
 .glass-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(255, 255, 255, 0.5);
-  box-shadow: 
-    0 28px 56px rgba(0, 0, 0, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.7),
-    inset 0 -1px 0 rgba(255, 255, 255, 0.15),
-    inset 1px 0 0 rgba(255, 255, 255, 0.25),
-    inset -1px 0 0 rgba(255, 255, 255, 0.25);
+  box-shadow: var(--shadow-lg);
 }
 
 /* ─── Main Layout ─── */
@@ -610,7 +595,7 @@ function onTabChange(tab: string) {
   height: 64px;
   border-radius: 50%;
   object-fit: cover;
-  border: 3px solid rgba(255, 255, 255, 0.6);
+  border: 1px solid var(--border-color);
 }
 
 .avatar-ring {
@@ -618,7 +603,7 @@ function onTabChange(tab: string) {
   inset: -6px;
   border-radius: 50%;
   border: 2px solid transparent;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4) border-box;
+  background: linear-gradient(135deg, var(--color-primary), var(--color-info)) border-box;
   -webkit-mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   mask: linear-gradient(#fff 0 0) padding-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
@@ -637,22 +622,23 @@ function onTabChange(tab: string) {
 .nickname {
   font-size: 20px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .user-level {
   font-size: 13px;
-  color: #64748b;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(6, 182, 212, 0.12));
+  font-weight: 400;
+  color: var(--text-secondary);
+  background: var(--color-primary-bg);
   padding: 4px 10px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: inline-block;
 }
 
 .points-display {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(6, 182, 212, 0.08));
-  border-radius: 16px;
+  background: var(--color-primary-bg);
+  border-radius: var(--radius-xl);
   padding: 20px;
   margin-bottom: 20px;
 }
@@ -660,7 +646,7 @@ function onTabChange(tab: string) {
 .points-display .points-value {
   font-size: 42px;
   font-weight: 700;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -669,7 +655,8 @@ function onTabChange(tab: string) {
 
 .points-display .points-label {
   font-size: 14px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
   margin-top: 4px;
 }
 
@@ -688,18 +675,19 @@ function onTabChange(tab: string) {
   display: block;
   font-size: 24px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .stat-text {
   font-size: 12px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 .stat-divider {
   width: 1px;
   height: 32px;
-  background: rgba(0, 0, 0, 0.08);
+  background: var(--border-color);
 }
 
 /* ─── Calendar Card ─── */
@@ -717,7 +705,7 @@ function onTabChange(tab: string) {
 .calendar-title {
   font-size: 17px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-primary);
 }
 
 .checkin-btn {
@@ -726,24 +714,24 @@ function onTabChange(tab: string) {
   gap: 6px;
   padding: 10px 18px;
   border: none;
-  border-radius: 20px;
+  border-radius: var(--radius-full);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  transition: all var(--duration-base) var(--ease-apple);
+  background: var(--color-primary);
   color: white;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.35);
+  box-shadow: 0 4px 16px var(--color-primary-bg);
 }
 
 .checkin-btn:hover:not(:disabled) {
   transform: scale(1.05);
-  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.45);
+  box-shadow: 0 6px 24px var(--color-primary-bg-hover);
 }
 
 .checkin-btn.checked {
-  background: rgba(0, 0, 0, 0.06);
-  color: #94a3b8;
+  background: var(--bg-base);
+  color: var(--text-tertiary);
   box-shadow: none;
 }
 
@@ -767,30 +755,31 @@ function onTabChange(tab: string) {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 12px;
-  background: rgba(0, 0, 0, 0.02);
+  border-radius: var(--radius-lg);
+  background: var(--border-light);
   position: relative;
   font-size: 13px;
-  color: #64748b;
-  transition: all 0.2s;
+  font-weight: 400;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-apple);
 }
 
 .calendar-day.today {
-  background: rgba(14, 165, 233, 0.12);
-  color: #0ea5e9;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
   font-weight: 600;
 }
 
 .calendar-day.signed {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(6, 182, 212, 0.12));
-  color: #0ea5e9;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
 }
 
 .day-check {
   position: absolute;
   bottom: 2px;
   font-size: 10px;
-  color: #06b6d4;
+  color: var(--color-info);
 }
 
 /* ─── Tabs Card ─── */
@@ -811,23 +800,23 @@ function onTabChange(tab: string) {
   gap: 8px;
   padding: 14px 20px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   font-size: 15px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--duration-base) var(--ease-apple);
   background: transparent;
-  color: #64748b;
+  color: var(--text-secondary);
 }
 
 .tab-item:hover {
-  background: rgba(0, 0, 0, 0.03);
+  background: var(--border-light);
 }
 
 .tab-item.active {
-  background: rgba(255, 255, 255, 0.7);
-  color: #0ea5e9;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+  background: var(--bg-card);
+  color: var(--color-primary);
+  box-shadow: var(--shadow-sm);
 }
 
 .tab-icon {
@@ -860,19 +849,19 @@ function onTabChange(tab: string) {
   position: absolute;
   top: 16px;
   right: 16px;
-  background: linear-gradient(135deg, #f97316, #fb923c);
+  background: var(--color-warning);
   color: white;
   font-size: 11px;
   font-weight: 600;
   padding: 4px 10px;
-  border-radius: 10px;
+  border-radius: var(--radius-md);
 }
 
 .coupon-icon-wrap {
   width: 56px;
   height: 56px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(6, 182, 212, 0.1));
-  border-radius: 16px;
+  background: var(--color-primary-bg);
+  border-radius: var(--radius-xl);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -886,7 +875,7 @@ function onTabChange(tab: string) {
 .coupon-info .coupon-title {
   font-size: 17px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
@@ -894,7 +883,8 @@ function onTabChange(tab: string) {
   display: flex;
   gap: 12px;
   font-size: 13px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 .coupon-footer {
@@ -903,7 +893,7 @@ function onTabChange(tab: string) {
   align-items: center;
   margin-top: 20px;
   padding-top: 16px;
-  border-top: 1px solid rgba(0, 0, 0, 0.05);
+  border-top: 1px solid var(--border-light);
 }
 
 .price-tag {
@@ -915,7 +905,7 @@ function onTabChange(tab: string) {
 .price-num {
   font-size: 28px;
   font-weight: 700;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-info));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -923,30 +913,31 @@ function onTabChange(tab: string) {
 
 .price-unit {
   font-size: 13px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 .exchange-btn {
   padding: 12px 24px;
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radius-xl);
   font-size: 14px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.3s;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  transition: all var(--duration-base) var(--ease-apple);
+  background: var(--color-primary);
   color: white;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+  box-shadow: 0 4px 16px var(--color-primary-bg);
 }
 
 .exchange-btn:hover:not(:disabled) {
   transform: scale(1.03);
-  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.4);
+  box-shadow: 0 6px 24px var(--color-primary-bg-hover);
 }
 
 .exchange-btn:disabled {
-  background: rgba(0, 0, 0, 0.08);
-  color: #475569;
+  background: var(--bg-base);
+  color: var(--text-tertiary);
   box-shadow: none;
   cursor: not-allowed;
 }
@@ -977,8 +968,8 @@ function onTabChange(tab: string) {
 .coupon-icon-sm {
   width: 48px;
   height: 48px;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(6, 182, 212, 0.1));
-  border-radius: 14px;
+  background: var(--color-primary-bg);
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -992,13 +983,14 @@ function onTabChange(tab: string) {
 .coupon-name {
   font-size: 16px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   margin-bottom: 4px;
 }
 
 .coupon-date {
   font-size: 13px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 .coupon-action {
@@ -1010,26 +1002,27 @@ function onTabChange(tab: string) {
 
 .status-tag {
   font-size: 12px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
   padding: 4px 10px;
-  background: rgba(0, 0, 0, 0.04);
-  border-radius: 8px;
+  background: var(--bg-base);
+  border-radius: var(--radius-md);
 }
 
 .status-tag.available {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.1), rgba(6, 182, 212, 0.1));
-  color: #0ea5e9;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
 }
 
 .use-btn {
   padding: 10px 20px;
   border: none;
-  border-radius: 14px;
+  border-radius: var(--radius-lg);
   font-size: 14px;
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.3s;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
+  transition: all var(--duration-base) var(--ease-apple);
+  background: var(--color-primary);
   color: white;
 }
 
@@ -1054,19 +1047,19 @@ function onTabChange(tab: string) {
 .log-icon {
   width: 40px;
   height: 40px;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
-  background: rgba(239, 68, 68, 0.1);
-  color: #ef4444;
+  background: var(--color-danger-bg, rgba(255, 59, 48, 0.10));
+  color: var(--color-danger);
 }
 
 .log-icon.income {
-  background: rgba(14, 165, 233, 0.1);
-  color: #0ea5e9;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
 }
 
 .log-info {
@@ -1076,26 +1069,27 @@ function onTabChange(tab: string) {
 .log-title {
   font-size: 15px;
   font-weight: 600;
-  color: #334155;
+  color: var(--text-primary);
   margin-bottom: 2px;
 }
 
 .log-desc {
   font-size: 13px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 .log-amount {
   font-size: 20px;
   font-weight: 700;
-  color: #ef4444;
+  color: var(--color-danger);
 }
 
 .log-amount.positive {
-  color: #0ea5e9;
+  color: var(--color-primary);
 }
 
-/* ─── Loading & Empty States ─── */
+/* ─── Loading & Empty ─── */
 .loading-card,
 .empty-card {
   display: flex;
@@ -1104,15 +1098,16 @@ function onTabChange(tab: string) {
   justify-content: center;
   padding: 60px 20px;
   gap: 16px;
-  color: #94a3b8;
+  color: var(--text-tertiary);
   font-size: 15px;
+  font-weight: 400;
 }
 
 .loading-spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(14, 165, 233, 0.2);
-  border-top-color: #0ea5e9;
+  border: 2px solid var(--color-primary-bg);
+  border-top-color: var(--color-primary);
   border-radius: 50%;
   animation: spin 1s linear infinite;
 }

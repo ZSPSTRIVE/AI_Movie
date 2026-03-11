@@ -210,9 +210,7 @@ const sectionLabels: Record<string, string> = {
 </template>
 
 <style scoped>
-.homepage-config {
-  /* 适配 Layout，移除自身背景和内边距 */
-}
+.homepage-config {}
 
 .header-bar {
   display: flex;
@@ -220,15 +218,16 @@ const sectionLabels: Record<string, string> = {
   align-items: center;
   margin-bottom: 24px;
   padding: 20px 24px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 .page-title {
   font-size: 22px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0;
 }
 
@@ -251,12 +250,12 @@ const sectionLabels: Record<string, string> = {
   margin-right: 6px;
 }
 
-/* 草案面板 */
 .draft-panel {
-  background: #fff;
-  border-radius: 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
   padding: 24px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  box-shadow: var(--shadow-sm);
+  border: 1px solid var(--border-color);
 }
 
 .draft-header {
@@ -264,7 +263,7 @@ const sectionLabels: Record<string, string> = {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 20px;
-  border-bottom: 1px solid #ebeef5;
+  border-bottom: 1px solid var(--border-color);
   margin-bottom: 24px;
 }
 
@@ -275,10 +274,10 @@ const sectionLabels: Record<string, string> = {
 }
 
 .draft-badge {
-  background: linear-gradient(135deg, #ff9a44 0%, #fc6076 100%);
+  background: var(--color-warning);
   color: #fff;
   padding: 4px 12px;
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
 }
@@ -286,13 +285,14 @@ const sectionLabels: Record<string, string> = {
 .version-text {
   font-size: 18px;
   font-weight: 700;
-  color: #303133;
+  color: var(--text-primary);
 }
 
 .checksum-text {
   font-size: 12px;
-  color: #909399;
-  font-family: 'Courier New', monospace;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  font-family: 'SF Mono', 'Courier New', monospace;
 }
 
 .publish-btn {
@@ -304,7 +304,6 @@ const sectionLabels: Record<string, string> = {
   margin-right: 6px;
 }
 
-/* 板块 */
 .section-block {
   margin-bottom: 32px;
 }
@@ -312,15 +311,14 @@ const sectionLabels: Record<string, string> = {
 .section-title {
   font-size: 16px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   margin: 0 0 16px 0;
   padding: 8px 16px;
-  background: #f0f2f5;
-  border-left: 4px solid #409eff;
-  border-radius: 0 8px 8px 0;
+  background: var(--bg-base);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
-/* 坑位网格 */
 .slots-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
@@ -333,29 +331,28 @@ const sectionLabels: Record<string, string> = {
   }
 }
 
-/* 坑位卡片 */
 .slot-card {
-  background: #fafafa;
-  border: 2px solid #e4e7ed;
-  border-radius: 8px;
+  background: var(--bg-base);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   padding: 12px;
   position: relative;
-  transition: all 0.2s;
+  transition: all var(--duration-fast) var(--ease-apple);
 }
 
 .slot-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  box-shadow: var(--shadow-md);
 }
 
 .slot-card.slot-filled {
-  background: #f0f9eb;
-  border-color: #67c23a;
+  background: rgba(52, 199, 89, 0.08);
+  border-color: var(--color-success);
 }
 
 .slot-card.slot-empty {
-  background: #fef0f0;
-  border-color: #f56c6c;
+  background: rgba(255, 59, 48, 0.06);
+  border-color: var(--color-danger);
 }
 
 .slot-position {
@@ -363,16 +360,17 @@ const sectionLabels: Record<string, string> = {
   top: 8px;
   right: 8px;
   font-size: 11px;
-  color: #909399;
+  font-weight: 400;
+  color: var(--text-tertiary);
   font-family: monospace;
 }
 
 .slot-cover {
   width: 100%;
   height: 140px;
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   margin-bottom: 10px;
-  background: #e4e7ed;
+  background: var(--border-color);
 }
 
 .image-placeholder {
@@ -381,9 +379,10 @@ const sectionLabels: Record<string, string> = {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #909399;
+  color: var(--text-tertiary);
   font-size: 12px;
-  background: #f0f2f5;
+  font-weight: 400;
+  background: var(--bg-base);
 }
 
 .slot-info {
@@ -393,7 +392,7 @@ const sectionLabels: Record<string, string> = {
 .slot-title {
   font-size: 13px;
   font-weight: 600;
-  color: #303133;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -402,7 +401,12 @@ const sectionLabels: Record<string, string> = {
 
 .slot-meta {
   font-size: 11px;
-  color: #606266;
+  font-weight: 400;
+  color: var(--text-secondary);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 6px;
 }
 
 .slot-placeholder {
@@ -410,73 +414,65 @@ const sectionLabels: Record<string, string> = {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #c0c4cc;
+  color: var(--text-tertiary);
   font-size: 14px;
   font-style: italic;
 }
 
-/* 空状态 */
 .empty-state {
   text-align: center;
   padding: 80px 20px;
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .empty-state p {
   margin: 16px 0 0 0;
   font-size: 16px;
-  color: #606266;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
 .empty-state .hint {
   font-size: 13px;
-  color: #909399;
+  font-weight: 400;
+  color: var(--text-tertiary);
   margin-top: 8px;
 }
 
 .section-count {
   font-size: 14px;
-  color: #909399;
+  font-weight: 400;
+  color: var(--text-tertiary);
   margin-left: 8px;
-  font-weight: normal;
-}
-
-.slot-meta {
-  font-size: 11px;
-  color: #606266;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 6px;
 }
 
 .rating-badge {
-  background: #ff9a44;
+  background: var(--color-warning);
   color: white;
   padding: 1px 4px;
-  border-radius: 3px;
-  font-weight: bold;
+  border-radius: var(--radius-sm);
+  font-weight: 600;
 }
 
 .ai-score-tag {
   margin-top: 6px;
-  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  background: var(--color-info);
   color: white;
   font-size: 10px;
   padding: 2px 6px;
-  border-radius: 10px;
+  border-radius: var(--radius-full);
   display: inline-block;
   font-weight: 600;
 }
 
 .slot-card.is-ai-best {
-  border-color: #8b5cf6;
-  background: #f5f3ff;
+  border-color: var(--color-info);
+  background: rgba(88, 86, 214, 0.06);
 }
 
 .section-filter :deep(.el-radio-button__inner) {
-    padding: 8px 16px;
+  padding: 8px 16px;
 }
 </style>

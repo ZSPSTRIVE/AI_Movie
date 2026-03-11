@@ -6,7 +6,7 @@
       :class="{ active: isOpen }"
       @click="toggleChat"
     >
-      <span class="btn-icon" v-if="!isOpen">🤖</span>
+      <span class="btn-icon" v-if="!isOpen">AI</span>
       <span class="btn-icon close-icon" v-else>✕</span>
       <span class="btn-pulse" v-if="!isOpen"></span>
     </button>
@@ -16,12 +16,12 @@
       <div v-if="isOpen" class="ai-chat-panel">
         <div class="panel-header">
           <div class="header-title">
-            <span class="title-icon">🎬</span>
+            <span class="title-icon">J</span>
             <span>果冻 AI 助手</span>
           </div>
           <div class="header-actions">
             <button class="action-btn" @click="clearMessages" title="清空对话">
-              🗑️
+              清空
             </button>
           </div>
         </div>
@@ -29,7 +29,7 @@
         <div class="panel-body" ref="messagesContainer">
           <!-- 欢迎消息 -->
           <div v-if="messages.length === 0" class="welcome-section">
-            <div class="welcome-icon">🎬</div>
+            <div class="welcome-icon">J</div>
             <h3 class="welcome-title">你好，我是果冻 AI</h3>
             <p class="welcome-desc">我可以帮你搜索电影、推荐好片、解决播放问题</p>
             

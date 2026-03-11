@@ -126,10 +126,10 @@ watch(() => route.params.id, loadDetail)
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-card);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(var(--glass-blur));
 }
 
 .detail-wrapper {
@@ -143,18 +143,19 @@ watch(() => route.params.id, loadDetail)
   grid-template-columns: 220px 1fr;
   gap: 18px;
   padding: 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
+  border-radius: var(--radius-xl);
+  background: var(--glass-bg-card);
+  border: 1px solid var(--border-color);
+  backdrop-filter: blur(var(--glass-blur));
+  box-shadow: var(--shadow-sm);
 }
 
 .detail-cover {
   width: 220px;
   height: 320px;
   object-fit: cover;
-  border-radius: 14px;
-  border: 1px solid rgba(0, 0, 0, 0.08);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--border-color);
 }
 
 .detail-meta {
@@ -163,21 +164,24 @@ watch(() => route.params.id, loadDetail)
 
 .detail-title {
   font-size: 28px;
-  font-weight: 800;
-  color: #0f172a;
+  font-weight: 700;
+  color: var(--text-primary);
   margin: 0;
 }
 
 .detail-sub {
   margin-top: 8px;
-  color: rgba(15, 23, 42, 0.6);
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 14px;
 }
 
 .detail-desc {
   margin-top: 14px;
-  color: rgba(15, 23, 42, 0.75);
+  color: var(--text-secondary);
   line-height: 1.6;
+  font-size: 14px;
+  font-weight: 400;
 }
 
 .detail-tags {
@@ -189,27 +193,28 @@ watch(() => route.params.id, loadDetail)
 
 .tag {
   padding: 6px 10px;
-  border-radius: 999px;
+  border-radius: var(--radius-full);
   font-size: 12px;
-  font-weight: 700;
-  background: rgba(14, 165, 233, 0.12);
-  color: #0ea5e9;
-  border: 1px solid rgba(14, 165, 233, 0.18);
+  font-weight: 500;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  border: 1px solid var(--color-primary-bg);
 }
 
 .detail-player {
-  border-radius: 18px;
+  border-radius: var(--radius-xl);
   overflow: hidden;
   min-height: 320px;
-  background: rgba(15, 23, 42, 0.6);
+  background: var(--bg-elevated);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .detail-player-empty {
-  color: rgba(255, 255, 255, 0.85);
-  font-weight: 600;
+  color: var(--text-secondary);
+  font-weight: 500;
+  font-size: 15px;
 }
 
 @media (max-width: 768px) {

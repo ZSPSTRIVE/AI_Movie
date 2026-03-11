@@ -286,6 +286,7 @@ onMounted(() => {
   align-items: center;
   justify-content: center;
   padding: 24px;
+  background: var(--bg-base);
 }
 
 .login-container {
@@ -294,22 +295,23 @@ onMounted(() => {
   min-height: 560px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  background: #fff;
-  border-radius: 16px;
+  background: var(--bg-card);
+  border-radius: var(--radius-2xl);
   overflow: hidden;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-xl);
+  border: 1px solid var(--border-color);
 }
 
-/* ─── 品牌区 ─── */
+/* ─── Brand ─── */
 .brand-panel {
-  background: linear-gradient(160deg, #0284c7 0%, #0ea5e9 50%, #06b6d4 100%);
+  background: linear-gradient(160deg, var(--color-primary) 0%, var(--color-info) 100%);
   padding: 60px 48px;
   display: flex;
   align-items: center;
 }
 
 .brand-inner {
-  color: #fff;
+  color: var(--text-inverse);
 }
 
 .brand-logo {
@@ -340,6 +342,7 @@ onMounted(() => {
   align-items: center;
   gap: 14px;
   font-size: 15px;
+  font-weight: 400;
   opacity: 0.95;
 }
 
@@ -348,13 +351,13 @@ onMounted(() => {
   opacity: 0.9;
 }
 
-/* ─── 表单区 ─── */
+/* ─── Form ─── */
 .form-panel {
   padding: 60px 48px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: var(--bg-card);
 }
 
 .form-wrapper {
@@ -369,17 +372,18 @@ onMounted(() => {
 .form-header h2 {
   font-size: 28px;
   font-weight: 700;
-  color: #1e293b;
+  color: var(--text-primary);
   margin: 0 0 8px 0;
 }
 
 .form-header p {
   font-size: 14px;
-  color: #64748b;
+  font-weight: 400;
+  color: var(--text-secondary);
   margin: 0;
 }
 
-/* ─── 表单字段 ─── */
+/* ─── Fields ─── */
 .field-group {
   margin-bottom: 24px;
 }
@@ -388,7 +392,7 @@ onMounted(() => {
   display: block;
   font-size: 14px;
   font-weight: 500;
-  color: #334155;
+  color: var(--text-primary);
   margin-bottom: 8px;
 }
 
@@ -404,19 +408,20 @@ onMounted(() => {
 .captcha-image {
   width: 120px;
   height: 40px;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
   overflow: hidden;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #f8fafc;
+  background: var(--bg-base);
   flex-shrink: 0;
+  transition: border-color var(--duration-fast) var(--ease-apple);
 }
 
 .captcha-image:hover {
-  border-color: #cbd5e1;
+  border-color: var(--color-primary);
 }
 
 .captcha-image img {
@@ -427,42 +432,46 @@ onMounted(() => {
 
 .captcha-image span {
   font-size: 12px;
-  color: #94a3b8;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
-/* ─── 安全提示 ─── */
+/* ─── Security Alert ─── */
 .security-alert {
   display: flex;
   align-items: center;
   gap: 8px;
   font-size: 13px;
-  color: #c2410c;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  font-weight: 400;
+  color: var(--color-warning);
+  background: var(--color-warning-bg, rgba(255, 149, 0, 0.08));
+  border: 1px solid var(--color-warning-border, rgba(255, 149, 0, 0.20));
   padding: 12px 14px;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   margin-bottom: 16px;
 }
 
-/* ─── 提交按钮 ─── */
+/* ─── Submit ─── */
 .submit-btn {
   width: 100%;
   height: 48px;
   font-size: 16px;
   font-weight: 600;
   margin-top: 8px;
+  border-radius: var(--radius-lg) !important;
 }
 
-/* ─── 表单底部 ─── */
+/* ─── Footer ─── */
 .form-footer {
   text-align: center;
   margin-top: 24px;
   font-size: 14px;
-  color: #64748b;
+  font-weight: 400;
+  color: var(--text-secondary);
 }
 
 .form-footer a {
-  color: #0ea5e9;
+  color: var(--color-primary);
   text-decoration: none;
   font-weight: 500;
 }
@@ -471,28 +480,30 @@ onMounted(() => {
   text-decoration: underline;
 }
 
-/* ─── Element Plus 样式覆盖 ─── */
+/* ─── Element Plus Overrides ─── */
 :deep(.el-input__wrapper) {
-  border-radius: 8px !important;
-  box-shadow: 0 0 0 1px #e2e8f0 !important;
+  border-radius: var(--radius-md) !important;
+  box-shadow: 0 0 0 1px var(--border-color) !important;
   padding: 4px 12px !important;
+  background: var(--bg-card) !important;
+  transition: box-shadow var(--duration-fast) var(--ease-apple) !important;
 }
 
 :deep(.el-input__inner) {
-  color: #000 !important;
-  caret-color: #000 !important;
+  color: var(--text-primary) !important;
+  caret-color: var(--color-primary) !important;
 }
 
 :deep(.el-input__inner::placeholder) {
-  color: #94a3b8 !important;
+  color: var(--text-tertiary) !important;
 }
 
 :deep(.el-input__wrapper:hover) {
-  box-shadow: 0 0 0 1px #cbd5e1 !important;
+  box-shadow: 0 0 0 1px var(--text-tertiary) !important;
 }
 
 :deep(.el-input__wrapper.is-focus) {
-  box-shadow: 0 0 0 2px #0ea5e9 !important;
+  box-shadow: 0 0 0 2px var(--color-primary) !important;
 }
 
 :deep(.el-form-item) {
@@ -504,34 +515,34 @@ onMounted(() => {
 }
 
 :deep(.el-button--primary) {
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4) !important;
+  background: var(--color-primary) !important;
   border: none !important;
 }
 
 :deep(.el-button--primary:hover) {
-  background: linear-gradient(135deg, #0284c7, #0891b2) !important;
+  background: var(--color-primary-dark) !important;
 }
 
-/* ─── 响应式 ─── */
+/* ─── Responsive ─── */
 @media (max-width: 800px) {
   .login-container {
     grid-template-columns: 1fr;
     max-width: 420px;
     min-height: auto;
   }
-  
+
   .brand-panel {
     padding: 40px 32px;
   }
-  
+
   .brand-tagline {
     margin-bottom: 32px;
   }
-  
+
   .feature-list {
     gap: 14px;
   }
-  
+
   .form-panel {
     padding: 40px 32px;
   }

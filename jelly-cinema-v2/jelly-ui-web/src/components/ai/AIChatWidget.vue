@@ -169,7 +169,7 @@ function handlePlayEntry(entry: any) {
         <div class="messages-area" ref="messagesContainer">
           <!-- Welcome Message -->
           <div v-if="messages.length === 0" class="welcome-screen">
-            <div class="welcome-icon">👋</div>
+            <div class="welcome-icon">你好</div>
             <h2>你好，{{ userStore.nickname || '朋友' }}</h2>
             <p>我是您的智能观影助手，可以帮您找电影、解决播放问题或推荐内容。</p>
             

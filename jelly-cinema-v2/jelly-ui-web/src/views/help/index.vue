@@ -79,79 +79,63 @@ const activeNames = ref<string[]>([])
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto space-y-8">
+  <div class="help-page">
     <!-- 头部 -->
-    <div class="bg-pop-green border-3 border-black rounded-2xl p-8 text-center shadow-brutal">
-      <div class="text-6xl mb-4">💬</div>
-      <h1 class="text-4xl font-black text-black uppercase mb-2">帮助与反馈</h1>
-      <p class="text-black/70 text-lg">有问题？我们来帮您解决！</p>
+    <div class="help-hero">
+      <h1 class="hero-title">帮助与反馈</h1>
+      <p class="hero-subtitle">有问题？我们来帮您解决</p>
     </div>
 
     <!-- 常见问题 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-yellow border-2 border-black rounded-lg px-4 py-2 mr-3">❓</span>
-        常见问题
-      </h2>
+    <section class="help-section">
+      <h2 class="section-title">常见问题</h2>
       
-      <el-collapse v-model="activeNames" class="!border-none">
+      <el-collapse v-model="activeNames" class="faq-collapse">
         <el-collapse-item
           v-for="(faq, index) in faqs"
           :key="index"
           :name="String(index)"
-          class="!border-2 !border-black !rounded-xl !mb-3 overflow-hidden"
+          class="faq-item"
         >
           <template #title>
-            <span class="font-bold text-nb-text">{{ faq.question }}</span>
+            <span class="faq-question">{{ faq.question }}</span>
           </template>
-          <div class="text-gray-600 bg-nb-bg p-4 -mx-4 -mb-4 mt-2 border-t-2 border-black">
+          <div class="faq-answer">
             {{ faq.answer }}
           </div>
         </el-collapse-item>
       </el-collapse>
-    </div>
+    </section>
 
     <!-- 联系方式 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-blue text-white border-2 border-black rounded-lg px-4 py-2 mr-3">📞</span>
-        联系我们
-      </h2>
+    <section class="help-section">
+      <h2 class="section-title">联系我们</h2>
       
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="bg-nb-bg border-2 border-black rounded-xl p-4 text-center">
-          <div class="text-3xl mb-2">📧</div>
-          <h3 class="font-bold mb-1">邮箱</h3>
-          <p class="text-gray-600 text-sm">support@jellycinema.com</p>
+      <div class="contact-grid">
+        <div class="contact-card">
+          <div class="contact-label">邮箱</div>
+          <p class="contact-value">3080714093@qq.com</p>
         </div>
-        <div class="bg-nb-bg border-2 border-black rounded-xl p-4 text-center">
-          <div class="text-3xl mb-2">💻</div>
-          <h3 class="font-bold mb-1">在线客服</h3>
-          <p class="text-gray-600 text-sm">工作日 9:00-18:00</p>
+        <div class="contact-card">
+          <div class="contact-label">在线客服</div>
+          <p class="contact-value">工作日 9:00 - 18:00</p>
         </div>
-        <div class="bg-nb-bg border-2 border-black rounded-xl p-4 text-center">
-          <div class="text-3xl mb-2">📱</div>
-          <h3 class="font-bold mb-1">微信公众号</h3>
-          <p class="text-gray-600 text-sm">JellyCinema</p>
-        </div>
+        
       </div>
-    </div>
+    </section>
 
     <!-- 反馈表单 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-orange border-2 border-black rounded-lg px-4 py-2 mr-3">✍️</span>
-        提交反馈
-      </h2>
+    <section class="help-section">
+      <h2 class="section-title">提交反馈</h2>
       
-      <el-form :model="feedbackForm" label-position="top">
+      <el-form :model="feedbackForm" label-position="top" class="feedback-form">
         <el-form-item label="反馈类型">
-          <el-radio-group v-model="feedbackForm.type" class="!flex !flex-wrap !gap-3">
+          <el-radio-group v-model="feedbackForm.type" class="radio-group">
             <el-radio
               v-for="type in feedbackTypes"
               :key="type.value"
               :value="type.value"
-              class="!border-2 !border-black !rounded-lg !px-4 !py-2 !m-0"
+              class="radio-option"
             >
               {{ type.label }}
             </el-radio>
@@ -164,7 +148,6 @@ const activeNames = ref<string[]>([])
             placeholder="请简要描述您的问题或建议"
             maxlength="50"
             show-word-limit
-            class="!border-2 !border-black !rounded-xl"
           />
         </el-form-item>
         
@@ -176,7 +159,6 @@ const activeNames = ref<string[]>([])
             placeholder="请详细描述您遇到的问题或建议，以便我们更好地为您服务"
             maxlength="500"
             show-word-limit
-            class="!border-2 !border-black !rounded-xl"
           />
         </el-form-item>
         
@@ -184,7 +166,6 @@ const activeNames = ref<string[]>([])
           <el-input
             v-model="feedbackForm.contact"
             placeholder="请留下您的邮箱或手机号，方便我们回复您"
-            class="!border-2 !border-black !rounded-xl"
           />
         </el-form-item>
         
@@ -193,35 +174,204 @@ const activeNames = ref<string[]>([])
             type="primary"
             size="large"
             :loading="submitting"
-            class="w-full !bg-pop-blue !text-white !border-3 !border-black !font-black !shadow-brutal-sm"
+            class="submit-btn"
             @click="submitFeedback"
           >
             提交反馈
           </el-button>
         </el-form-item>
       </el-form>
-    </div>
+    </section>
   </div>
 </template>
 
 <style scoped>
+.help-page {
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 40px 20px 80px;
+}
+
+.help-hero {
+  text-align: center;
+  padding: 48px 0 40px;
+}
+
+.hero-title {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+  margin-bottom: 8px;
+}
+
+.hero-subtitle {
+  font-size: 17px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.help-section {
+  margin-bottom: 48px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.01em;
+  margin-bottom: 20px;
+}
+
+/* FAQ */
+.faq-collapse {
+  border: none !important;
+}
+
+.faq-item {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 12px !important;
+  margin-bottom: 8px !important;
+  overflow: hidden;
+  background: var(--bg-card);
+}
+
+.faq-question {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.faq-answer {
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-secondary);
+  padding: 0 20px 16px;
+}
+
 :deep(.el-collapse-item__header) {
   background: transparent;
   border: none;
-  padding: 16px;
-  font-size: 16px;
+  padding: 16px 20px;
+  font-size: 15px;
+  height: auto;
+  line-height: 1.5;
 }
 
 :deep(.el-collapse-item__wrap) {
   border: none;
+  background: transparent;
 }
 
 :deep(.el-collapse-item__content) {
   padding: 0;
 }
 
+/* Contact */
+.contact-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+}
+
+.contact-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px 16px;
+  text-align: center;
+  transition: background 0.2s var(--ease-apple);
+}
+
+.contact-card:hover {
+  background: var(--bg-elevated);
+}
+
+.contact-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+
+.contact-value {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+/* Feedback Form */
+.feedback-form {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.radio-group {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+}
+
+.radio-option {
+  border: 1px solid var(--border-color) !important;
+  border-radius: 8px !important;
+  padding: 6px 14px !important;
+  margin: 0 !important;
+  transition: border-color 0.2s;
+}
+
+.radio-option:hover {
+  border-color: var(--color-primary) !important;
+}
+
 :deep(.el-radio.is-checked .el-radio__inner) {
-  background: #4A90E2;
-  border-color: #000;
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+:deep(.el-input__wrapper),
+:deep(.el-textarea__inner) {
+  border-radius: 8px !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: none !important;
+}
+
+:deep(.el-form-item__label) {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.submit-btn {
+  width: 100%;
+  border-radius: 980px !important;
+  height: 44px;
+  font-size: 15px;
+  font-weight: 500;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .help-page {
+    padding: 20px 16px 60px;
+  }
+
+  .help-hero {
+    padding: 32px 0 28px;
+  }
+
+  .hero-title {
+    font-size: 28px;
+  }
+
+  .contact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .feedback-form {
+    padding: 16px;
+  }
 }
 </style>

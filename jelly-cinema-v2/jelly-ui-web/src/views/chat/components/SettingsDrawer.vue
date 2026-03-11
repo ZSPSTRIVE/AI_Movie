@@ -112,17 +112,17 @@ async function loadSettings() {
   >
     <div v-loading="loading" class="space-y-6">
       <!-- 个人信息 -->
-      <div class="bg-pop-blue border-3 border-black rounded-2xl p-4">
+      <div class="bg-primary rounded-2xl p-4">
         <div class="flex items-center gap-4">
-          <el-avatar :size="60" :src="userStore.avatar" class="!border-3 !border-white">
+          <el-avatar :size="60" :src="userStore.avatar" class="!border-2 !border-white/30">
             {{ userInfo?.nickname?.[0] }}
           </el-avatar>
           <div class="flex-1 text-white">
-            <h3 class="font-black text-lg">{{ userInfo?.nickname }}</h3>
+            <h3 class="font-bold text-lg">{{ userInfo?.nickname }}</h3>
             <p class="text-sm opacity-80">ID: {{ userInfo?.userId }}</p>
           </div>
           <router-link to="/user/profile">
-            <el-button size="small" class="!bg-white !text-black !border-2 !border-black !font-bold">
+            <el-button size="small" class="!bg-white !text-gray-900 !border !border-gray-200 !font-medium">
               编辑资料
             </el-button>
           </router-link>
@@ -130,67 +130,67 @@ async function loadSettings() {
       </div>
 
       <!-- 消息通知设置 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div class="flex items-center mb-4">
-          <span class="bg-pop-orange border-2 border-black rounded-lg px-3 py-1 font-bold text-black">🔔 消息通知</span>
+          <span class="bg-warning/20 text-warning border border-warning/30 rounded-lg px-3 py-1 font-semibold">消息通知</span>
         </div>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">开启消息通知</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">开启消息通知</span>
             <el-switch v-model="settings.enableNotification" @change="saveSetting('enableNotification')" />
           </div>
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">消息提示音</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">消息提示音</span>
             <el-switch v-model="settings.enableSound" @change="saveSetting('enableSound')" />
           </div>
         </div>
       </div>
 
       <!-- 隐私设置 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div class="flex items-center mb-4">
-          <span class="bg-pop-purple text-white border-2 border-black rounded-lg px-3 py-1 font-bold">🔒 隐私设置</span>
+          <span class="bg-info/20 text-info border border-info/30 rounded-lg px-3 py-1 font-semibold">隐私设置</span>
         </div>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">显示在线状态</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">显示在线状态</span>
             <el-switch v-model="settings.showOnlineStatus" @change="saveSetting('showOnlineStatus')" />
           </div>
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">允许陌生人消息</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">允许陌生人消息</span>
             <el-switch v-model="settings.allowStrangerMsg" @change="saveSetting('allowStrangerMsg')" />
           </div>
         </div>
       </div>
 
       <!-- 聊天设置 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div class="flex items-center mb-4">
-          <span class="bg-pop-green border-2 border-black rounded-lg px-3 py-1 font-bold text-black">💬 聊天设置</span>
+          <span class="bg-success/20 text-success border border-success/30 rounded-lg px-3 py-1 font-semibold">聊天设置</span>
         </div>
         <div class="space-y-4">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">按 Enter 发送消息</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">按 Enter 发送消息</span>
             <el-switch v-model="settings.enterToSend" @change="saveSetting('enterToSend')" />
           </div>
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">显示已读状态</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">显示已读状态</span>
             <el-switch v-model="settings.showReadStatus" @change="saveSetting('showReadStatus')" />
           </div>
         </div>
       </div>
 
       <!-- 其他操作 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4 space-y-3">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-3">
         <router-link to="/about" class="block">
-          <div class="flex items-center justify-between py-2 cursor-pointer hover:bg-nb-bg rounded-lg px-2 -mx-2 transition-colors">
-            <span class="font-bold text-nb-text">关于我们</span>
+          <div class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-2 -mx-2 transition-colors">
+            <span class="font-medium text-gray-900 dark:text-gray-100">关于我们</span>
             <el-icon><ArrowRight /></el-icon>
           </div>
         </router-link>
         <router-link to="/help" class="block">
-          <div class="flex items-center justify-between py-2 cursor-pointer hover:bg-nb-bg rounded-lg px-2 -mx-2 transition-colors">
-            <span class="font-bold text-nb-text">帮助与反馈</span>
+          <div class="flex items-center justify-between py-2 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 rounded-lg px-2 -mx-2 transition-colors">
+            <span class="font-medium text-gray-900 dark:text-gray-100">帮助与反馈</span>
             <el-icon><ArrowRight /></el-icon>
           </div>
         </router-link>
@@ -198,7 +198,7 @@ async function loadSettings() {
 
       <!-- 退出登录 -->
       <el-button
-        class="w-full !bg-pop-red !text-white !border-3 !border-black !font-black !shadow-brutal-sm"
+        class="w-full !bg-danger !text-white !border !border-danger !font-semibold"
         @click="handleLogout"
       >
         退出登录

@@ -124,47 +124,47 @@ function copyId() {
     class="nb-drawer"
   >
     <div v-if="localFriend" class="space-y-6">
-      <!-- 好友信息 - Neo-Brutalism -->
-      <div class="text-center bg-pop-blue border-3 border-black rounded-2xl p-6">
-        <el-avatar :size="80" :src="localFriend.avatar" class="!border-3 !border-white">
+      <!-- 好友信息 -->
+      <div class="text-center bg-primary rounded-2xl p-6">
+        <el-avatar :size="80" :src="localFriend.avatar" class="!border-2 !border-white/30">
           {{ localFriend.nickname?.[0] }}
         </el-avatar>
-        <h3 class="text-xl font-black text-white mt-3">{{ localFriend.nickname }}</h3>
+        <h3 class="text-xl font-bold text-white mt-3">{{ localFriend.nickname }}</h3>
         <p v-if="localFriend.username" class="text-white/80 text-sm font-medium">@{{ localFriend.username }}</p>
-        <div class="flex items-center justify-center gap-2 mt-2 bg-white border-2 border-black rounded-lg px-3 py-1 inline-flex">
-          <span class="font-bold text-black text-sm">ID: {{ localFriend.id }}</span>
-          <el-button link size="small" class="!text-pop-blue" @click="copyId">
+        <div class="flex items-center justify-center gap-2 mt-2 bg-white/20 rounded-lg px-3 py-1 inline-flex">
+          <span class="font-semibold text-white text-sm">ID: {{ localFriend.id }}</span>
+          <el-button link size="small" class="!text-white/80" @click="copyId">
             <el-icon><CopyDocument /></el-icon>
           </el-button>
         </div>
-        <div v-if="localFriend.status === 1" class="mt-2 bg-pop-red text-white border-2 border-black rounded-lg px-3 py-1 inline-block font-bold text-sm">
+        <div v-if="localFriend.status === 1" class="mt-2 bg-danger text-white rounded-lg px-3 py-1 inline-block font-semibold text-sm">
           ⛔ 已拉黑
         </div>
       </div>
 
       <!-- 个性签名 -->
-      <div v-if="localFriend.signature" class="bg-white border-3 border-black rounded-xl p-4">
+      <div v-if="localFriend.signature" class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div class="flex items-center mb-2">
-          <span class="bg-pop-purple text-white border-2 border-black rounded-lg px-3 py-1 font-bold text-sm">✍️ 个性签名</span>
+          <span class="bg-info/20 text-info border border-info/30 rounded-lg px-3 py-1 font-semibold text-sm">个性签名</span>
         </div>
-        <p class="text-nb-text font-medium bg-nb-bg border-2 border-black rounded-lg p-3">
+        <p class="text-gray-900 dark:text-gray-100 font-medium bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
           {{ localFriend.signature }}
         </p>
       </div>
 
       <!-- 备注设置 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
         <div class="flex items-center justify-between">
-          <span class="font-bold text-nb-text">好友备注</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">好友备注</span>
           <template v-if="editingRemark">
             <div class="flex items-center gap-2">
               <el-input v-model="newRemark" size="small" placeholder="设置备注" style="width: 120px" />
-              <el-button size="small" class="!border-2 !border-black" @click="editingRemark = false">取消</el-button>
-              <el-button type="primary" size="small" class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="saveRemark">保存</el-button>
+              <el-button size="small" class="!border !border-gray-200 dark:!border-gray-700" @click="editingRemark = false">取消</el-button>
+              <el-button type="primary" size="small" class="!bg-success !text-white !border !border-success !font-medium" @click="saveRemark">保存</el-button>
             </div>
           </template>
           <template v-else>
-            <span class="font-bold text-pop-blue cursor-pointer hover:underline" @click="editingRemark = true; newRemark = localFriend.remark || ''">
+            <span class="font-medium text-primary cursor-pointer hover:underline" @click="editingRemark = true; newRemark = localFriend.remark || ''">
               {{ localFriend.remark || '点击设置' }}
               <el-icon class="ml-1"><ArrowRight /></el-icon>
             </span>
@@ -173,13 +173,13 @@ function copyId() {
       </div>
 
       <!-- 消息设置 -->
-      <div class="bg-white border-3 border-black rounded-xl p-4 space-y-4">
+      <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4 space-y-4">
         <div class="flex items-center justify-between">
-          <span class="font-bold text-nb-text">消息免打扰</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">消息免打扰</span>
           <el-switch />
         </div>
         <div class="flex items-center justify-between">
-          <span class="font-bold text-nb-text">置顶聊天</span>
+          <span class="font-medium text-gray-900 dark:text-gray-100">置顶聊天</span>
           <el-switch />
         </div>
       </div>
@@ -187,21 +187,21 @@ function copyId() {
       <!-- 底部操作 -->
       <div class="pt-4 space-y-3">
         <el-button
-          class="w-full !border-3 !border-black !font-bold"
-          :class="localFriend.status === 1 ? '!bg-pop-green !text-black' : '!bg-gray-100 !text-black'"
+          class="w-full !border !border-gray-200 dark:!border-gray-700 !font-medium"
+          :class="localFriend.status === 1 ? '!bg-success !text-white' : '!bg-gray-100 dark:!bg-gray-700 !text-gray-900 dark:!text-gray-100'"
           @click="toggleBlock"
         >
           <el-icon class="mr-2"><Hide /></el-icon>
           {{ localFriend.status === 1 ? '解除拉黑' : '拉黑好友' }}
         </el-button>
         <el-button
-          class="w-full !bg-pop-red !text-white !border-3 !border-black !font-black"
+          class="w-full !bg-danger !text-white !border !border-danger !font-semibold"
           @click="handleDelete"
         >
           <el-icon class="mr-2"><Delete /></el-icon>删除好友
         </el-button>
         <el-button
-          class="w-full !bg-orange-400 !text-black !border-3 !border-black !font-bold"
+          class="w-full !bg-warning !text-white !border !border-warning !font-medium"
           @click="reportVisible = true"
         >
           <el-icon class="mr-2"><Warning /></el-icon>举报该用户

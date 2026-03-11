@@ -318,22 +318,22 @@ async function confirmInvite() {
   >
     <div v-loading="loading" class="space-y-6">
       <template v-if="group">
-        <!-- 群信息 - Neo-Brutalism -->
-        <div class="text-center bg-pop-blue border-3 border-black rounded-2xl p-6">
-          <el-avatar :size="80" :src="group.avatar" shape="square" class="!border-3 !border-white">
+        <!-- 群信息 -->
+        <div class="text-center bg-primary rounded-2xl p-6">
+          <el-avatar :size="80" :src="group.avatar" shape="square" class="!border-2 !border-white/30">
             {{ group.name?.[0] }}
           </el-avatar>
           <!-- 群名称（可编辑） -->
           <template v-if="editingName">
             <div class="mt-3 flex items-center justify-center gap-2">
               <el-input v-model="newName" size="small" style="width: 150px" placeholder="群名称" />
-              <el-button size="small" class="!bg-white !text-black !border-2 !border-black" @click="editingName = false">取消</el-button>
-              <el-button size="small" class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="saveGroupName">保存</el-button>
+              <el-button size="small" class="!bg-white !text-gray-900 !border !border-gray-200" @click="editingName = false">取消</el-button>
+              <el-button size="small" class="!bg-success !text-white !border !border-success !font-medium" @click="saveGroupName">保存</el-button>
             </div>
           </template>
           <template v-else>
             <h3 
-              class="text-xl font-black text-white mt-3 uppercase"
+              class="text-xl font-bold text-white mt-3"
               :class="{ 'cursor-pointer hover:underline': isOwner }"
               @click="isOwner && (editingName = true, newName = group.name)"
             >
@@ -341,62 +341,62 @@ async function confirmInvite() {
               <el-icon v-if="isOwner" class="text-sm ml-1"><Edit /></el-icon>
             </h3>
           </template>
-          <div class="flex items-center justify-center gap-2 mt-2 bg-white border-2 border-black rounded-lg px-3 py-1 inline-flex">
-            <span class="font-bold text-black">群号: {{ group.groupNo }}</span>
-            <el-button link size="small" class="!text-pop-blue" @click="copyGroupNo">
+          <div class="flex items-center justify-center gap-2 mt-2 bg-white/20 rounded-lg px-3 py-1 inline-flex">
+            <span class="font-semibold text-white">群号: {{ group.groupNo }}</span>
+            <el-button link size="small" class="!text-white/80" @click="copyGroupNo">
               <el-icon><CopyDocument /></el-icon>
             </el-button>
           </div>
-          <div class="mt-2 bg-pop-yellow border-2 border-black rounded-lg px-3 py-1 inline-block font-bold text-black">
-            👥 {{ group.memberCount }}/{{ group.maxMember }} 人
+          <div class="mt-2 bg-white/20 rounded-lg px-3 py-1 inline-block font-semibold text-white">
+                        {{ group.memberCount }}/{{ group.maxMember }} 人
           </div>
         </div>
 
-        <!-- 群简介 - Neo-Brutalism -->
-        <div class="bg-white border-3 border-black rounded-xl p-4">
+        <!-- 群简介 -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="bg-pop-green border-2 border-black rounded-lg px-3 py-1 font-bold text-black">📝 群简介</span>
-            <el-button v-if="isOwner && !editingDesc" size="small" class="!border-2 !border-black !font-bold" @click="editingDesc = true; newDesc = group.description || ''">
+            <span class="bg-success/20 text-success border border-success/30 rounded-lg px-3 py-1 font-semibold">群简介</span>
+            <el-button v-if="isOwner && !editingDesc" size="small" class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="editingDesc = true; newDesc = group.description || ''">
               编辑
             </el-button>
           </div>
           <template v-if="editingDesc">
-            <el-input v-model="newDesc" type="textarea" :rows="2" placeholder="输入群简介" class="nb-input" />
+            <el-input v-model="newDesc" type="textarea" :rows="2" placeholder="输入群简介" />
             <div class="flex justify-end gap-2 mt-3">
-              <el-button size="small" class="!border-2 !border-black" @click="editingDesc = false">取消</el-button>
-              <el-button type="primary" size="small" class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="saveGroupDesc">保存</el-button>
+              <el-button size="small" class="!border !border-gray-200 dark:!border-gray-700" @click="editingDesc = false">取消</el-button>
+              <el-button type="primary" size="small" class="!bg-success !text-white !border !border-success !font-medium" @click="saveGroupDesc">保存</el-button>
             </div>
           </template>
-          <p v-else class="text-nb-text font-medium bg-nb-bg border-2 border-black rounded-lg p-3">
+          <p v-else class="text-gray-900 dark:text-gray-100 font-medium bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
             {{ group.description || '暂无简介' }}
           </p>
         </div>
 
-        <!-- 群公告 - Neo-Brutalism -->
-        <div class="bg-white border-3 border-black rounded-xl p-4">
+        <!-- 群公告 -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="bg-pop-orange border-2 border-black rounded-lg px-3 py-1 font-bold text-black">📢 群公告</span>
-            <el-button v-if="isAdmin && !editingNotice" size="small" class="!border-2 !border-black !font-bold" @click="editingNotice = true; newNotice = group.notice || ''">
+            <span class="bg-warning/20 text-warning border border-warning/30 rounded-lg px-3 py-1 font-semibold">群公告</span>
+            <el-button v-if="isAdmin && !editingNotice" size="small" class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="editingNotice = true; newNotice = group.notice || ''">
               编辑
             </el-button>
           </div>
           <template v-if="editingNotice">
-            <el-input v-model="newNotice" type="textarea" :rows="3" placeholder="输入群公告" class="nb-input" />
+            <el-input v-model="newNotice" type="textarea" :rows="3" placeholder="输入群公告" />
             <div class="flex justify-end gap-2 mt-3">
-              <el-button size="small" class="!border-2 !border-black" @click="editingNotice = false">取消</el-button>
-              <el-button type="primary" size="small" class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="saveNotice">保存</el-button>
+              <el-button size="small" class="!border !border-gray-200 dark:!border-gray-700" @click="editingNotice = false">取消</el-button>
+              <el-button type="primary" size="small" class="!bg-success !text-white !border !border-success !font-medium" @click="saveNotice">保存</el-button>
             </div>
           </template>
-          <p v-else class="text-nb-text font-medium whitespace-pre-wrap bg-nb-bg border-2 border-black rounded-lg p-3">
+          <p v-else class="text-gray-900 dark:text-gray-100 font-medium whitespace-pre-wrap bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-3">
             {{ group.notice || '暂无公告' }}
           </p>
         </div>
 
-        <!-- 群成员 - Neo-Brutalism -->
-        <div class="bg-white border-3 border-black rounded-xl p-4">
+        <!-- 群成员 -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <div class="flex items-center justify-between mb-3">
-            <span class="bg-pop-purple text-white border-2 border-black rounded-lg px-3 py-1 font-bold">👥 群成员 ({{ group.memberCount }})</span>
-            <el-button size="small" class="!border-2 !border-black !font-bold" @click="loadAllMembers">查看全部</el-button>
+            <span class="bg-info/20 text-info border border-info/30 rounded-lg px-3 py-1 font-semibold">群成员 ({{ group.memberCount }})</span>
+            <el-button size="small" class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="loadAllMembers">查看全部</el-button>
           </div>
           <div class="flex flex-wrap gap-3">
             <div
@@ -404,41 +404,41 @@ async function confirmInvite() {
               :key="member.userId"
               class="text-center"
             >
-              <el-avatar :size="44" :src="member.avatar" class="!border-2 !border-black">
+              <el-avatar :size="44" :src="member.avatar" class="!border !border-gray-200 dark:!border-gray-700">
                 {{ (member.groupNick || member.nickname)?.[0] }}
               </el-avatar>
-              <div class="text-xs font-bold text-nb-text mt-1 w-12 truncate">
+              <div class="text-xs font-medium text-gray-900 dark:text-gray-100 mt-1 w-12 truncate">
                 {{ member.groupNick || member.nickname }}
               </div>
             </div>
             <!-- 邀请按钮 -->
             <div class="text-center cursor-pointer hover:scale-110 transition-transform" @click="openInviteDialog">
-              <div class="w-11 h-11 rounded-full border-3 border-dashed border-pop-green bg-pop-green/10 flex items-center justify-center">
-                <el-icon class="text-pop-green text-lg"><Plus /></el-icon>
+              <div class="w-11 h-11 rounded-full border-2 border-dashed border-success bg-success/10 flex items-center justify-center">
+                <el-icon class="text-success text-lg"><Plus /></el-icon>
               </div>
             </div>
             <!-- 踢人按钮 -->
             <div v-if="isAdmin" class="text-center cursor-pointer hover:scale-110 transition-transform" @click="loadAllMembers(); kickMode = true">
-              <div class="w-11 h-11 rounded-full border-3 border-dashed border-pop-red bg-pop-red/10 flex items-center justify-center">
-                <el-icon class="text-pop-red text-lg"><Minus /></el-icon>
+              <div class="w-11 h-11 rounded-full border-2 border-dashed border-danger bg-danger/10 flex items-center justify-center">
+                <el-icon class="text-danger text-lg"><Minus /></el-icon>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- 我的群名片 - Neo-Brutalism -->
-        <div class="bg-white border-3 border-black rounded-xl p-4">
+        <!-- 我的群名片 -->
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
           <div class="flex items-center justify-between">
-            <span class="font-bold text-nb-text">我在本群的昵称</span>
+            <span class="font-medium text-gray-900 dark:text-gray-100">我在本群的昵称</span>
             <template v-if="editingNick">
               <div class="flex items-center gap-2">
                 <el-input v-model="newNick" size="small" style="width: 100px" />
-                <el-button size="small" class="!border-2 !border-black" @click="editingNick = false">取消</el-button>
-                <el-button type="primary" size="small" class="!bg-pop-green !text-black !border-2 !border-black !font-bold" @click="saveNickname">保存</el-button>
+                <el-button size="small" class="!border !border-gray-200 dark:!border-gray-700" @click="editingNick = false">取消</el-button>
+                <el-button type="primary" size="small" class="!bg-success !text-white !border !border-success !font-medium" @click="saveNickname">保存</el-button>
               </div>
             </template>
             <template v-else>
-              <span class="font-bold text-pop-blue cursor-pointer hover:underline" @click="editingNick = true; newNick = group.myGroupNick || ''">
+              <span class="font-medium text-primary cursor-pointer hover:underline" @click="editingNick = true; newNick = group.myGroupNick || ''">
                 {{ group.myGroupNick || '点击设置' }}
                 <el-icon class="ml-1"><ArrowRight /></el-icon>
               </span>
@@ -446,17 +446,17 @@ async function confirmInvite() {
           </div>
         </div>
 
-        <!-- 管理员选项 - Neo-Brutalism -->
+        <!-- 管理员选项 -->
         <template v-if="isAdmin">
-          <div class="bg-pop-yellow border-3 border-black rounded-xl px-4 py-2 text-center">
-            <span class="font-black text-black uppercase flex items-center justify-center">
+          <div class="bg-primary-50 dark:bg-primary-900/30 border border-primary-200 dark:border-primary-800 rounded-xl px-4 py-2 text-center">
+            <span class="font-semibold text-primary flex items-center justify-center">
               <el-icon class="mr-2"><Setting /></el-icon>管理员功能
             </span>
           </div>
           
-          <div class="bg-white border-3 border-black rounded-xl p-4">
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-nb-text">全员禁言</span>
+              <span class="font-medium text-gray-900 dark:text-gray-100">全员禁言</span>
               <el-switch
                 :model-value="group.isMuteAll === 1"
                 @change="toggleMuteAll"
@@ -465,24 +465,24 @@ async function confirmInvite() {
           </div>
         </template>
 
-        <!-- 底部操作 - Neo-Brutalism -->
+        <!-- 底部操作 -->
         <div class="pt-4 space-y-3">
           <el-button
             v-if="isOwner"
-            class="w-full !bg-red-500 !text-white !border-3 !border-black !font-black !shadow-brutal-sm hover:!translate-x-0.5 hover:!-translate-y-0.5 transition-all"
+            class="w-full !bg-danger !text-white !border !border-danger !font-semibold"
             @click="handleDissolve"
           >
             <el-icon class="mr-2"><Delete /></el-icon>解散群聊
           </el-button>
           <el-button
             v-else
-            class="w-full !bg-red-500 !text-white !border-3 !border-black !font-black !shadow-brutal-sm hover:!translate-x-0.5 hover:!-translate-y-0.5 transition-all"
+            class="w-full !bg-danger !text-white !border !border-danger !font-semibold"
             @click="handleQuit"
           >
             <el-icon class="mr-2"><SwitchButton /></el-icon>退出群聊
           </el-button>
           <el-button
-            class="w-full !bg-orange-400 !text-black !border-3 !border-black !font-bold"
+            class="w-full !bg-warning !text-white !border !border-warning !font-medium"
             @click="reportVisible = true"
           >
             <el-icon class="mr-2"><Warning /></el-icon>举报该群
@@ -499,19 +499,18 @@ async function confirmInvite() {
       :target-name="group?.name"
     />
 
-    <!-- 成员管理弹窗 - Neo-Brutalism -->
+    <!-- 成员管理弹窗 -->
     <el-dialog
       v-model="memberDialogVisible"
       :title="kickMode ? '选择要踢出的成员' : '群成员'"
       width="420px"
       append-to-body
-      class="nb-dialog"
     >
       <div class="max-h-96 overflow-y-auto space-y-2">
         <div
           v-for="member in allMembers"
           :key="member.userId"
-          class="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:border-black hover:bg-nb-bg transition-all"
+          class="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-900 transition-all"
         >
           <!-- 踢人模式的复选框 -->
           <el-checkbox
@@ -520,27 +519,27 @@ async function confirmInvite() {
             :value="member.userId"
           />
           
-          <el-avatar :size="44" :src="member.avatar" class="!border-2 !border-black">
+          <el-avatar :size="44" :src="member.avatar" class="!border !border-gray-200 dark:!border-gray-700">
             {{ (member.groupNick || member.nickname)?.[0] }}
           </el-avatar>
           
           <div class="flex-1 min-w-0">
             <div class="flex items-center gap-2">
-              <span class="font-bold text-nb-text">{{ member.groupNick || member.nickname }}</span>
-              <span v-if="member.role > 0" class="text-xs font-bold px-2 py-0.5 rounded border-2 border-black" :class="member.role === 2 ? 'bg-pop-red text-white' : 'bg-pop-orange text-black'">
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{ member.groupNick || member.nickname }}</span>
+              <span v-if="member.role > 0" class="text-xs font-medium px-2 py-0.5 rounded border" :class="member.role === 2 ? 'bg-danger/10 text-danger border-danger/30' : 'bg-warning/10 text-warning border-warning/30'">
                 {{ getRoleText(member.role) }}
               </span>
-              <span v-if="member.isMuted" class="text-xs font-bold px-2 py-0.5 rounded border-2 border-black bg-gray-200">🔇 禁言中</span>
+              <span v-if="member.isMuted" class="text-xs font-medium px-2 py-0.5 rounded border border-gray-200 dark:border-gray-700 bg-gray-100 dark:bg-gray-700">禁言中</span>
             </div>
           </div>
 
           <!-- 操作下拉菜单 -->
           <el-dropdown v-if="isAdmin && member.role < (group?.myRole || 0) && !kickMode" trigger="click">
-            <el-button circle size="small" class="!border-2 !border-black">
+            <el-button circle size="small" class="!border !border-gray-200 dark:!border-gray-700">
               <el-icon><MoreFilled /></el-icon>
             </el-button>
             <template #dropdown>
-              <el-dropdown-menu class="!border-3 !border-black !shadow-brutal !rounded-xl">
+              <el-dropdown-menu>
                 <el-dropdown-item v-if="isOwner" @click="toggleAdmin(member)">
                   {{ member.role === 1 ? '取消管理员' : '设为管理员' }}
                 </el-dropdown-item>
@@ -551,7 +550,7 @@ async function confirmInvite() {
                   <el-dropdown trigger="hover" placement="right-start">
                     <span>禁言</span>
                     <template #dropdown>
-                      <el-dropdown-menu class="!border-2 !border-black !rounded-lg">
+                      <el-dropdown-menu>
                         <el-dropdown-item @click="muteMember(member, 10)">10分钟</el-dropdown-item>
                         <el-dropdown-item @click="muteMember(member, 60)">1小时</el-dropdown-item>
                         <el-dropdown-item @click="muteMember(member, 1440)">1天</el-dropdown-item>
@@ -569,24 +568,23 @@ async function confirmInvite() {
       </div>
       
       <template v-if="kickMode" #footer>
-        <el-button class="!border-2 !border-black !font-bold" @click="kickMode = false; selectedMembers = []">取消</el-button>
-        <el-button class="!bg-pop-red !text-white !border-2 !border-black !font-bold" @click="confirmKick">
+        <el-button class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="kickMode = false; selectedMembers = []">取消</el-button>
+        <el-button class="!bg-danger !text-white !border !border-danger !font-medium" @click="confirmKick">
           踢出 ({{ selectedMembers.length }})
         </el-button>
       </template>
     </el-dialog>
 
-    <!-- 邀请好友弹窗 - Neo-Brutalism -->
+    <!-- 邀请好友弹窗 -->
     <el-dialog
       v-model="inviteDialogVisible"
       title="邀请好友入群"
       width="420px"
       append-to-body
-      class="nb-dialog"
     >
       <div v-loading="loadingInvite" class="max-h-80 overflow-y-auto">
         <div v-if="inviteFriends.length === 0 && !loadingInvite" class="text-center py-8">
-          <div class="text-5xl mb-4">👥</div>
+          <div class="text-5xl mb-4"><el-icon :size="48" class="text-gray-300"><User /></el-icon></div>
           <div class="nb-badge">暂无可邀请的好友</div>
         </div>
         <el-checkbox-group v-model="selectedInvitees">
@@ -594,19 +592,19 @@ async function confirmInvite() {
             <div
               v-for="friend in inviteFriends"
               :key="friend.id"
-              class="flex items-center gap-3 p-3 rounded-xl border-2 border-transparent hover:border-black hover:bg-pop-green/10 transition-all"
+              class="flex items-center gap-3 p-3 rounded-xl border border-transparent hover:border-success/30 hover:bg-success/5 transition-all"
             >
               <el-checkbox :value="String(friend.id)" />
-              <el-avatar :size="40" :src="friend.avatar" class="!border-2 !border-black">{{ friend.nickname?.[0] }}</el-avatar>
-              <span class="font-bold text-nb-text">{{ friend.remark || friend.nickname }}</span>
+              <el-avatar :size="40" :src="friend.avatar" class="!border !border-gray-200 dark:!border-gray-700">{{ friend.nickname?.[0] }}</el-avatar>
+              <span class="font-medium text-gray-900 dark:text-gray-100">{{ friend.remark || friend.nickname }}</span>
             </div>
           </div>
         </el-checkbox-group>
       </div>
       <template #footer>
-        <el-button class="!border-2 !border-black !font-bold" @click="inviteDialogVisible = false">取消</el-button>
-        <el-button class="!bg-pop-green !text-black !border-2 !border-black !font-bold" :disabled="selectedInvitees.length === 0" @click="confirmInvite">
-          ✅ 邀请 ({{ selectedInvitees.length }})
+        <el-button class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="inviteDialogVisible = false">取消</el-button>
+        <el-button class="!bg-success !text-white !border !border-success !font-medium" :disabled="selectedInvitees.length === 0" @click="confirmInvite">
+          邀请 ({{ selectedInvitees.length }})
         </el-button>
       </template>
     </el-dialog>

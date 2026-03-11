@@ -1,105 +1,211 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { VideoPlay, ChatDotRound, MagicStick, ChatLineSquare, Reading, Lock } from '@element-plus/icons-vue'
 
 const version = ref('2.0.0')
 const buildDate = ref('2025-12-03')
 
 const features = [
-  { icon: '🎬', title: '高清影视', desc: '海量正版高清影视资源，流畅播放体验' },
-  { icon: '💬', title: '即时聊天', desc: '与好友实时聊天，分享观影心得' },
-  { icon: '🤖', title: 'AI 助手', desc: '智能 AI 助手，为您推荐个性化内容' },
-  { icon: '📝', title: '社区互动', desc: '发帖评论，与影迷交流讨论' },
-  { icon: '📚', title: 'AI 小说', desc: 'AI 驱动的小说创作与阅读体验' },
-  { icon: '🔒', title: '安全可靠', desc: '多重安全防护，保护您的隐私' }
+  { icon: VideoPlay, title: '高清影视', desc: '海量正版高清影视资源，流畅播放体验' },
+  { icon: ChatDotRound, title: '即时聊天', desc: '与好友实时聊天，分享观影心得' },
+  { icon: MagicStick, title: 'AI 助手', desc: '智能 AI 助手，为您推荐个性化内容' },
+  { icon: ChatLineSquare, title: '社区互动', desc: '发帖评论，与影迷交流讨论' },
+  { icon: Reading, title: 'AI 小说', desc: 'AI 驱动的小说创作与阅读体验' },
+  { icon: Lock, title: '安全可靠', desc: '多重安全防护，保护您的隐私' }
 ]
 
-const team = [
-  { name: 'Jelly', role: '项目负责人', avatar: '🍮' },
-  { name: 'AI Assistant', role: '技术支持', avatar: '🤖' }
+const techStack = [
+  'Vue 3', 'TypeScript', 'Tailwind CSS', 'Element Plus',
+  'Spring Boot', 'Spring Cloud', 'MySQL', 'Redis', 'RabbitMQ', 'WebSocket'
 ]
 </script>
 
 <template>
-  <div class="max-w-4xl mx-auto space-y-8">
+  <div class="about-page">
     <!-- 头部 -->
-    <div class="bg-pop-blue border-3 border-black rounded-2xl p-8 text-center shadow-brutal">
-      <div class="text-6xl mb-4">🍮</div>
-      <h1 class="text-4xl font-black text-white uppercase mb-2">Jelly Cinema</h1>
-      <p class="text-white/80 text-lg">果冻影院 - 您的专属影视娱乐平台</p>
-      <div class="mt-4 flex justify-center gap-4">
-        <span class="bg-white border-2 border-black rounded-lg px-4 py-2 font-bold">
-          版本 v{{ version }}
-        </span>
-        <span class="bg-pop-yellow border-2 border-black rounded-lg px-4 py-2 font-bold">
-          {{ buildDate }}
-        </span>
+    <div class="about-hero">
+      <h1 class="about-hero-title">Jelly Cinema</h1>
+      <p class="about-hero-subtitle">您的专属影视娱乐平台</p>
+      <div class="about-hero-meta">
+        <span class="meta-tag">v{{ version }}</span>
+        <span class="meta-tag">{{ buildDate }}</span>
       </div>
     </div>
 
     <!-- 功能特点 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-orange border-2 border-black rounded-lg px-4 py-2 mr-3">✨</span>
-        功能特点
-      </h2>
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <section class="about-section">
+      <h2 class="about-section-title">功能特点</h2>
+      <div class="features-grid">
         <div
           v-for="feature in features"
           :key="feature.title"
-          class="bg-nb-bg border-2 border-black rounded-xl p-4 hover:bg-pop-yellow/20 transition-colors"
+          class="feature-card stagger-item"
         >
-          <div class="text-3xl mb-2">{{ feature.icon }}</div>
-          <h3 class="font-bold text-lg mb-1">{{ feature.title }}</h3>
-          <p class="text-gray-600 text-sm">{{ feature.desc }}</p>
+          <div class="feature-icon">
+            <el-icon :size="24"><component :is="feature.icon" /></el-icon>
+          </div>
+          <h3 class="feature-title">{{ feature.title }}</h3>
+          <p class="feature-desc">{{ feature.desc }}</p>
         </div>
       </div>
-    </div>
+    </section>
 
     <!-- 技术栈 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-purple text-white border-2 border-black rounded-lg px-4 py-2 mr-3">🛠️</span>
-        技术栈
-      </h2>
-      <div class="flex flex-wrap gap-3">
-        <span class="bg-green-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Vue 3</span>
-        <span class="bg-blue-100 border-2 border-black rounded-lg px-4 py-2 font-bold">TypeScript</span>
-        <span class="bg-cyan-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Tailwind CSS</span>
-        <span class="bg-purple-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Element Plus</span>
-        <span class="bg-red-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Spring Boot</span>
-        <span class="bg-orange-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Spring Cloud</span>
-        <span class="bg-yellow-100 border-2 border-black rounded-lg px-4 py-2 font-bold">MySQL</span>
-        <span class="bg-pink-100 border-2 border-black rounded-lg px-4 py-2 font-bold">Redis</span>
-        <span class="bg-indigo-100 border-2 border-black rounded-lg px-4 py-2 font-bold">RabbitMQ</span>
-        <span class="bg-gray-100 border-2 border-black rounded-lg px-4 py-2 font-bold">WebSocket</span>
+    <section class="about-section">
+      <h2 class="about-section-title">技术栈</h2>
+      <div class="tech-grid">
+        <span v-for="tech in techStack" :key="tech" class="tech-tag">{{ tech }}</span>
       </div>
-    </div>
-
-    <!-- 团队 -->
-    <div class="bg-white border-3 border-black rounded-2xl p-6 shadow-brutal">
-      <h2 class="text-2xl font-black mb-6 flex items-center">
-        <span class="bg-pop-green border-2 border-black rounded-lg px-4 py-2 mr-3">👥</span>
-        开发团队
-      </h2>
-      <div class="flex justify-center gap-8">
-        <div
-          v-for="member in team"
-          :key="member.name"
-          class="text-center"
-        >
-          <div class="w-20 h-20 bg-nb-bg border-3 border-black rounded-full flex items-center justify-center text-4xl mb-3 mx-auto">
-            {{ member.avatar }}
-          </div>
-          <h3 class="font-bold text-lg">{{ member.name }}</h3>
-          <p class="text-gray-500 text-sm">{{ member.role }}</p>
-        </div>
-      </div>
-    </div>
+    </section>
 
     <!-- 版权信息 -->
-    <div class="text-center text-gray-500 text-sm pb-8">
+    <footer class="about-footer">
       <p>© 2025 Jelly Cinema. All rights reserved.</p>
-      <p class="mt-1">Made with ❤️ by Jelly Team</p>
-    </div>
+    </footer>
   </div>
 </template>
+
+<style scoped>
+.about-page {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 0 22px 60px;
+}
+
+.about-hero {
+  text-align: center;
+  padding: 80px 0 48px;
+}
+
+.about-hero-title {
+  font-size: 48px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.03em;
+  margin: 0 0 8px;
+}
+
+.about-hero-subtitle {
+  font-size: 21px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin: 0 0 20px;
+}
+
+.about-hero-meta {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.meta-tag {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-tertiary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 4px 14px;
+}
+
+.about-section {
+  margin-bottom: 48px;
+}
+
+.about-section-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+  margin: 0 0 24px;
+}
+
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 768px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .about-hero-title { font-size: 36px; }
+  .about-hero-subtitle { font-size: 17px; }
+}
+
+@media (max-width: 480px) {
+  .features-grid { grid-template-columns: 1fr; }
+}
+
+.feature-card {
+  padding: 24px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-xl);
+  transition: transform var(--duration-base) var(--ease-apple);
+}
+
+.feature-card:hover {
+  transform: scale(1.02);
+}
+
+.feature-icon {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-primary-bg);
+  color: var(--color-primary);
+  border-radius: var(--radius-lg);
+  margin-bottom: 14px;
+}
+
+.feature-title {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 6px;
+}
+
+.feature-desc {
+  font-size: 14px;
+  font-weight: 400;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.tech-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.tech-tag {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--bg-base);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-full);
+  padding: 6px 16px;
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.tech-tag:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary-bg-hover);
+  background: var(--color-primary-bg);
+}
+
+.about-footer {
+  text-align: center;
+  padding: 24px 0;
+  font-size: 13px;
+  color: var(--text-tertiary);
+}
+
+.about-footer p {
+  margin: 0;
+}
+</style>

@@ -4,80 +4,101 @@ export default {
     "./index.html",
     "./src/**/*.{vue,js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        // Neo-Brutalism 核心色板
-        'nb-bg': '#F8FAFC',        // 极浅灰白
-        'nb-card': '#FFFFFF',
-        'nb-border': '#1E293B',    // 深蓝灰
-        
-        // Pop 强力主色 - 更新为大胆且不刺眼的阳光色
-        'pop-yellow': '#FFA62B',   // 阳光橙黄 (Deep Saffron) - 替代原刺眼黄
-        'pop-blue': '#3B82F6',     // Blue 500
-        'pop-red': '#EF4444',      // Red 500
-        'pop-green': '#10B981',    // Emerald 500
-        'pop-orange': '#F97316',   // Orange 500
-        'pop-purple': '#8B5CF6',   // Violet 500
-        'pop-pink': '#EC4899',     // Pink 500
-        
-        // 文字色
-        'nb-text': '#0F172A',      // Slate 900
-        'nb-text-sub': '#475569',  // Slate 600
-        
-        // 兼容旧的 primary
+        // Apple-inspired Primary
         primary: {
-          DEFAULT: '#10B981',
-          500: '#10B981',
-        }
+          DEFAULT: '#007AFF',
+          50:  '#E5F2FF',
+          100: '#CCE4FF',
+          200: '#99CAFF',
+          300: '#66AFFF',
+          400: '#3395FF',
+          500: '#007AFF',
+          600: '#0062CC',
+          700: '#004999',
+          800: '#003166',
+          900: '#001833',
+        },
+        // Semantic
+        success: { DEFAULT: '#34C759', light: '#D1FAE5' },
+        warning: { DEFAULT: '#FF9500', light: '#FEF3C7' },
+        danger:  { DEFAULT: '#FF3B30', light: '#FEE2E2' },
+        info:    { DEFAULT: '#5856D6', light: '#EDE9FE' },
+        // Apple Gray Scale
+        gray: {
+          50:  '#F9FAFB',
+          100: '#F3F4F6',
+          200: '#E5E7EB',
+          300: '#D1D5DB',
+          400: '#9CA3AF',
+          500: '#6B7280',
+          600: '#4B5563',
+          700: '#374151',
+          800: '#1F2937',
+          900: '#111827',
+          950: '#030712',
+        },
       },
       fontFamily: {
-        sans: ['Archivo', 'Microsoft YaHei', 'sans-serif'],
-        mono: ['JetBrains Mono', 'Consolas', 'monospace'],
+        sans: [
+          '-apple-system', 'BlinkMacSystemFont',
+          'SF Pro Display', 'SF Pro Text',
+          'PingFang SC', 'Noto Sans SC',
+          'Microsoft YaHei', 'Helvetica Neue',
+          'Arial', 'sans-serif'
+        ],
+        mono: ['SF Mono', 'JetBrains Mono', 'Consolas', 'monospace'],
+      },
+      borderRadius: {
+        'sm': '6px',
+        DEFAULT: '10px',
+        'md': '10px',
+        'lg': '14px',
+        'xl': '20px',
+        '2xl': '28px',
       },
       boxShadow: {
-        'brutal': '4px 4px 0 #1E293B',
-        'brutal-sm': '2px 2px 0 #1E293B',
-        'brutal-lg': '6px 6px 0 #1E293B',
-        'brutal-xl': '10px 10px 0 #1E293B', // 更大的阴影
-        'brutal-hover': '8px 8px 0 #1E293B',
-      },
-      borderWidth: {
-        '3': '3px',
+        'sm':    '0 1px 3px rgba(0, 0, 0, 0.08)',
+        DEFAULT: '0 4px 12px rgba(0, 0, 0, 0.08)',
+        'md':    '0 4px 12px rgba(0, 0, 0, 0.08)',
+        'lg':    '0 8px 24px rgba(0, 0, 0, 0.10)',
+        'xl':    '0 16px 48px rgba(0, 0, 0, 0.12)',
+        '2xl':   '0 24px 64px rgba(0, 0, 0, 0.16)',
+        'glass': '0 8px 32px rgba(0, 0, 0, 0.06)',
       },
       animation: {
-        'bounce-in': 'bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55)', // 更Q弹
-        'slide-up': 'slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
-        'shake': 'shake 0.5s ease-in-out',
-        'wiggle': 'wiggle 1s ease-in-out infinite',
-        'pop': 'pop 0.3s ease-out',
+        'fade-in':    'fadeIn 0.3s ease-out',
+        'slide-up':   'slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'float':      'float 20s ease-in-out infinite',
+        'glow-pulse': 'glowPulse 3s ease-in-out infinite',
       },
       keyframes: {
-        bounceIn: {
-          '0%': { transform: 'scale(0.8)', opacity: '0' },
-          '70%': { transform: 'scale(1.05)' },
-          '100%': { transform: 'scale(1)', opacity: '1' },
+        fadeIn: {
+          from: { opacity: '0', transform: 'translateY(8px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
         },
         slideUp: {
-          '0%': { transform: 'translateY(40px)', opacity: '0' },
-          '100%': { transform: 'translateY(0)', opacity: '1' },
+          from: { opacity: '0', transform: 'translateY(20px)' },
+          to:   { opacity: '1', transform: 'translateY(0)' },
         },
-        shake: {
-          '0%, 100%': { transform: 'translateX(0) rotate(0deg)' },
-          '25%': { transform: 'translateX(-5px) rotate(-5deg)' }, // 增加旋转
-          '75%': { transform: 'translateX(5px) rotate(5deg)' },
+        float: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%':      { transform: 'translate(30px, -30px) scale(1.05)' },
+          '66%':      { transform: 'translate(-20px, 20px) scale(0.95)' },
         },
-        wiggle: {
-          '0%, 100%': { transform: 'rotate(-3deg)' },
-          '50%': { transform: 'rotate(3deg)' },
+        glowPulse: {
+          '0%, 100%': { opacity: '0.6' },
+          '50%':      { opacity: '1' },
         },
-        pop: {
-          '0%': { transform: 'scale(1)' },
-          '50%': { transform: 'scale(1.1)' },
-          '100%': { transform: 'scale(1)' },
-        }
       },
-    }
+      transitionTimingFunction: {
+        'apple':  'cubic-bezier(0.25, 0.1, 0.25, 1)',
+        'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+    },
   },
-  plugins: []
+  plugins: [],
 }

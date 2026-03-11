@@ -2,8 +2,8 @@
   <div class="chat-message" :class="[`role-${message.role}`, { streaming: message.isStreaming }]">
     <!-- 头像 -->
     <div class="message-avatar">
-      <span v-if="message.role === 'user'" class="avatar-icon">👤</span>
-      <span v-else class="avatar-icon ai-avatar">🤖</span>
+      <span v-if="message.role === 'user'" class="avatar-icon">U</span>
+      <span v-else class="avatar-icon ai-avatar">AI</span>
     </div>
     
     <!-- 消息内容 -->

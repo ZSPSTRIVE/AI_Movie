@@ -1,7 +1,7 @@
 <template>
   <div class="evidence-list" v-if="evidence?.length">
     <div class="evidence-header">
-      <span class="header-icon">📚</span>
+      <span class="header-icon">参考</span>
       <span class="header-title">参考来源</span>
     </div>
     

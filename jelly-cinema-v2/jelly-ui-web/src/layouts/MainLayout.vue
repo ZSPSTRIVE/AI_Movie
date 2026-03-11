@@ -5,10 +5,12 @@ import { useUserStore } from '@/stores/user'
 import { useMessageStore } from '@/stores/message'
 import { ElMessage } from 'element-plus'
 import AIChatWidget from '@/components/ai/AIChatWidget.vue'
+import { useTheme } from '@/composables/useTheme'
 
 const router = useRouter()
 const userStore = useUserStore()
 const messageStore = useMessageStore()
+const { isDark, toggleTheme } = useTheme()
 
 const searchKeyword = ref('')
 
@@ -101,6 +103,11 @@ function goToChat() {
 
         <!-- User Area -->
         <div class="header-right">
+          <!-- 主题切换 -->
+          <button class="glass-icon-btn" @click="toggleTheme" :title="isDark ? '切换亮色模式' : '切换暗色模式'">
+            <el-icon><Sunny v-if="isDark" /><Moon v-else /></el-icon>
+          </button>
+
           <!-- 消息通知 -->
           <el-badge :value="unreadCount" :max="99" :hidden="unreadCount === 0" v-if="isLogin">
             <button class="glass-icon-btn" @click="goToChat">
@@ -152,7 +159,11 @@ function goToChat() {
 
     <!-- Main Content -->
     <main class="main-content">
-      <router-view />
+      <router-view v-slot="{ Component }">
+        <transition name="page" mode="out-in">
+          <component :is="Component" :key="$route.path" />
+        </transition>
+      </router-view>
     </main>
 
     <!-- Footer - Glass -->
@@ -179,18 +190,17 @@ function goToChat() {
   position: sticky;
   top: 0;
   z-index: 100;
-  background: rgba(255, 255, 255, 0.75);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.3);
-  box-shadow: 0 4px 30px rgba(0, 0, 0, 0.05);
+  background: var(--glass-bg);
+  backdrop-filter: saturate(180%) blur(20px);
+  -webkit-backdrop-filter: saturate(180%) blur(20px);
+  border-bottom: 1px solid var(--border-light);
 }
 
 .header-content {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 0 24px;
-  height: 72px;
+  padding: 0 22px;
+  height: 48px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -199,7 +209,7 @@ function goToChat() {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 40px;
+  gap: 32px;
 }
 
 .logo {
@@ -207,167 +217,162 @@ function goToChat() {
 }
 
 .logo-text {
-  font-size: 24px;
-  font-weight: 700;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
 }
 
 .nav-links {
   display: flex;
-  gap: 8px;
+  gap: 0;
 }
 
 .nav-link {
-  padding: 10px 18px;
-  border-radius: 12px;
-  font-size: 15px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.6);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-secondary);
   text-decoration: none;
-  transition: all 0.3s;
+  transition: all var(--duration-base) var(--ease-apple);
+  letter-spacing: 0.01em;
 }
 
 .nav-link:hover {
-  background: rgba(14, 165, 233, 0.08);
-  color: #0ea5e9;
+  color: var(--text-primary);
 }
 
 .nav-link.active {
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.12), rgba(6, 182, 212, 0.1));
-  color: #0ea5e9;
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
 /* ─── Search ─── */
 .search-wrapper {
   flex: 1;
-  max-width: 400px;
-  margin: 0 32px;
+  max-width: 320px;
+  margin: 0 24px;
 }
 
 .glass-search {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 18px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 16px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
-  transition: all 0.3s;
+  gap: 8px;
+  padding: 7px 14px;
+  background: var(--glass-bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  transition: all var(--duration-base) var(--ease-apple);
 }
 
 .glass-search:focus-within {
-  background: rgba(255, 255, 255, 0.8);
-  border-color: rgba(14, 165, 233, 0.3);
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.1);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.12);
 }
 
 .search-icon {
-  color: rgba(0, 0, 0, 0.4);
-  font-size: 18px;
+  color: var(--text-tertiary);
+  font-size: 16px;
 }
 
 .search-input {
   flex: 1;
   border: none;
   background: transparent;
-  font-size: 15px;
-  color: rgba(0, 0, 0, 0.8);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary);
   outline: none;
+  font-family: inherit;
 }
 
 .search-input::placeholder {
-  color: rgba(0, 0, 0, 0.35);
+  color: var(--text-tertiary);
 }
 
 /* ─── Header Right ─── */
 .header-right {
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
 }
 
 .glass-icon-btn {
-  width: 42px;
-  height: 42px;
+  width: 32px;
+  height: 32px;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 12px;
-  color: rgba(0, 0, 0, 0.6);
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
+  color: var(--text-secondary);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--duration-base) var(--ease-apple);
+  font-size: 16px;
 }
 
 .glass-icon-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
-  color: #0ea5e9;
+  color: var(--text-primary);
 }
 
 .user-avatar-btn {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 16px 6px 6px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.6);
-  border-radius: 24px;
+  gap: 8px;
+  padding: 2px 12px 2px 2px;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: all 0.3s;
+  transition: all var(--duration-base) var(--ease-apple);
 }
 
 .user-avatar-btn:hover {
-  background: rgba(255, 255, 255, 0.8);
+  opacity: 0.7;
 }
 
 .avatar-img {
-  border: 2px solid rgba(255, 255, 255, 0.8);
+  border: none;
 }
 
 .user-name {
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-primary);
 }
 
 .glass-btn-primary {
-  padding: 12px 24px;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
-  color: white;
+  padding: 6px 16px;
+  background: var(--color-primary);
+  color: #FFFFFF;
   border: none;
-  border-radius: 14px;
-  font-size: 15px;
-  font-weight: 600;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 400;
   cursor: pointer;
-  transition: all 0.3s;
-  box-shadow: 0 4px 16px rgba(14, 165, 233, 0.3);
+  transition: all var(--duration-base) var(--ease-apple);
 }
 
 .glass-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 24px rgba(14, 165, 233, 0.4);
+  opacity: 0.85;
 }
 
 /* ─── Main Content ─── */
 .main-content {
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 24px;
+  padding: 40px 22px;
   min-height: calc(100vh - 200px);
 }
 
 /* ─── Footer ─── */
 .glass-footer {
-  background: rgba(255, 255, 255, 0.6);
-  backdrop-filter: blur(16px);
-  border-top: 1px solid rgba(255, 255, 255, 0.4);
-  padding: 40px 24px;
-  margin-top: 48px;
+  background: transparent;
+  border-top: 1px solid var(--border-light);
+  padding: 20px 22px;
+  margin-top: 0;
 }
 
 .footer-content {
@@ -377,48 +382,48 @@ function goToChat() {
 }
 
 .footer-brand {
-  font-size: 16px;
-  font-weight: 600;
-  background: linear-gradient(135deg, #0ea5e9, #06b6d4);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 8px;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
+  margin-bottom: 4px;
 }
 
 .footer-slogan {
-  font-size: 14px;
-  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-tertiary);
 }
 
 /* ─── Dropdown Override ─── */
 :deep(.glass-dropdown) {
-  background: rgba(255, 255, 255, 0.9) !important;
-  backdrop-filter: blur(20px) !important;
-  border: 1px solid rgba(255, 255, 255, 0.5) !important;
-  border-radius: 16px !important;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.12) !important;
-  padding: 8px !important;
+  background: var(--glass-bg-popover) !important;
+  backdrop-filter: blur(var(--glass-blur-heavy)) !important;
+  border: 1px solid var(--border-color) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-xl) !important;
+  padding: 6px !important;
 }
 
 :deep(.glass-dropdown .el-dropdown-menu__item) {
-  border-radius: 10px !important;
+  border-radius: var(--radius-sm) !important;
   padding: 10px 16px !important;
   margin: 2px 0 !important;
+  font-weight: 400 !important;
+  font-size: 14px !important;
 }
 
 :deep(.glass-dropdown .el-dropdown-menu__item:hover) {
-  background: rgba(14, 165, 233, 0.08) !important;
-  color: #0ea5e9 !important;
+  background: var(--color-primary-bg) !important;
+  color: var(--color-primary) !important;
 }
 
 :deep(.logout-item) {
-  color: #ef4444 !important;
+  color: var(--color-danger) !important;
 }
 
 :deep(.logout-item:hover) {
-  background: rgba(239, 68, 68, 0.08) !important;
-  color: #ef4444 !important;
+  background: rgba(255, 59, 48, 0.08) !important;
+  color: var(--color-danger) !important;
 }
 
 /* ─── Responsive ─── */
@@ -433,6 +438,18 @@ function goToChat() {
   
   .user-name {
     display: none;
+  }
+
+  .header-content {
+    padding: 0 12px;
+  }
+
+  .main-content {
+    padding: 0 12px;
+  }
+
+  .footer-content {
+    padding: 16px 12px;
   }
 }
 </style>

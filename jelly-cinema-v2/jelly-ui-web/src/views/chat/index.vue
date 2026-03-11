@@ -1047,9 +1047,9 @@ function scrollToMessage(msg: Message) {
     if (msgElement) {
       msgElement.scrollIntoView({ behavior: 'smooth', block: 'center' })
       // 高亮效果
-      msgElement.classList.add('bg-pop-orange/30', 'rounded-xl')
+      msgElement.classList.add('bg-warning/20', 'rounded-xl')
       setTimeout(() => {
-        msgElement.classList.remove('bg-pop-orange/30', 'rounded-xl')
+        msgElement.classList.remove('bg-warning/20', 'rounded-xl')
       }, 2000)
     }
   })
@@ -1057,29 +1057,29 @@ function scrollToMessage(msg: Message) {
 </script>
 
 <template>
-  <div class="h-screen flex bg-nb-bg p-4 gap-4">
-    <!-- 左侧功能栏 - Neo-Brutalism 风格 -->
-    <div class="w-20 bg-pop-blue border-3 border-nb-border shadow-brutal rounded-2xl flex flex-col items-center py-6">
-      <router-link to="/" class="mb-6 text-3xl hover:animate-shake">
-        🍮
+  <div class="h-screen flex" style="background: var(--bg-base);">
+    <!-- 左侧功能栏 -->
+    <div class="w-16 flex flex-col items-center py-4 border-r" style="background: var(--bg-card); border-color: var(--border-color);">
+      <router-link to="/" class="mb-6 text-sm font-semibold hover:opacity-70 transition-opacity" style="color: var(--text-primary); letter-spacing: -0.02em;">
+        Jelly
       </router-link>
-      <el-button circle class="mb-4 !bg-pop-yellow !text-black" type="primary">
+      <el-button circle class="mb-3" style="background: var(--color-primary); color: var(--text-inverse); border: none;">
         <el-icon><ChatDotRound /></el-icon>
       </el-button>
-      <el-badge :value="unreadApplyCount" :hidden="unreadApplyCount === 0" :max="99" class="mb-4">
-        <el-button circle class="!bg-white" @click="notificationVisible = true">
+      <el-badge :value="unreadApplyCount" :hidden="unreadApplyCount === 0" :max="99" class="mb-3">
+        <el-button circle style="background: var(--bg-base); color: var(--text-secondary); border: 1px solid var(--border-color);" @click="notificationVisible = true">
           <el-icon><Bell /></el-icon>
         </el-button>
       </el-badge>
-      <el-button circle class="mb-4 !bg-pop-green" @click="friendManagerVisible = true">
+      <el-button circle class="mb-3" style="background: var(--bg-base); color: var(--text-secondary); border: 1px solid var(--border-color);" @click="friendManagerVisible = true">
         <el-icon><User /></el-icon>
       </el-button>
       <el-dropdown trigger="click">
-        <el-button circle class="mb-4 !bg-pop-orange">
+        <el-button circle class="mb-3" style="background: var(--bg-base); color: var(--text-secondary); border: 1px solid var(--border-color);">
           <el-icon><Plus /></el-icon>
         </el-button>
         <template #dropdown>
-          <el-dropdown-menu class="!border-3 !border-black !shadow-brutal !rounded-xl">
+          <el-dropdown-menu>
             <el-dropdown-item @click="addContactVisible = true">
               <el-icon class="mr-2"><User /></el-icon>添加好友/群
             </el-dropdown-item>
@@ -1090,23 +1090,23 @@ function scrollToMessage(msg: Message) {
         </template>
       </el-dropdown>
       <div class="flex-1" />
-      <el-button circle class="!bg-white" @click="settingsVisible = true">
+      <el-button circle style="background: var(--bg-base); color: var(--text-secondary); border: 1px solid var(--border-color);" @click="settingsVisible = true">
         <el-icon><Setting /></el-icon>
       </el-button>
     </div>
 
-    <!-- 会话列表 - Neo-Brutalism 风格 -->
-    <div class="w-80 bg-white border-3 border-nb-border shadow-brutal rounded-2xl flex flex-col overflow-hidden">
+    <!-- 会话列表-->
+    <div class="w-72 flex flex-col overflow-hidden border-r" style="background: var(--bg-card); border-color: var(--border-color);">
       <!-- 会话列表头部 -->
-      <div class="p-4 bg-pop-yellow border-b-3 border-nb-border">
-        <h2 class="font-black text-xl uppercase mb-3">消息</h2>
+      <div class="p-4 border-b" style="border-color: var(--border-color);">
+        <h2 class="font-semibold text-base mb-3" style="color: var(--text-primary);">消息</h2>
         <el-input v-model="searchKeyword" placeholder="搜索会话" prefix-icon="Search" clearable />
       </div>
       
       <!-- 会话项列表 -->
-      <div class="flex-1 overflow-y-auto bg-nb-bg p-2">
+      <div class="flex-1 overflow-y-auto p-2">
         <div v-if="filteredSessions.length === 0" class="p-4 text-center">
-          <div class="nb-badge">暂无会话</div>
+          <span style="color: var(--text-tertiary); font-size: 13px;">暂无会话</span>
         </div>
         
         <div
@@ -1114,75 +1114,77 @@ function scrollToMessage(msg: Message) {
           :key="session.sessionId"
           @click="selectSession(session)"
           @contextmenu.prevent="handleSessionContextMenu($event, session)"
-          class="flex items-center gap-3 p-3 cursor-pointer border-2 border-transparent hover:border-nb-border hover:bg-white rounded-xl transition-all mb-2"
-          :class="{ 'bg-white border-nb-border shadow-brutal-sm': activeSession?.sessionId === session.sessionId }"
+          class="flex items-center gap-3 p-3 cursor-pointer rounded-lg transition-all mb-0.5"
+          :style="activeSession?.sessionId === session.sessionId ? 'background: var(--bg-base);' : ''"
+          style="border: none;"
         >
           <!-- 头像 + 在线状态 + 未读红点 -->
           <div class="relative">
-            <el-avatar :size="48" :src="session.avatar" class="!border-2 !border-black">{{ session.nickname?.[0] }}</el-avatar>
+            <el-avatar :size="44" :src="session.avatar">{{ session.nickname?.[0] }}</el-avatar>
             <!-- 在线状态指示器（仅私聊） -->
             <div
               v-if="session.type === 1 && chatSettings.showOnlineStatus"
               class="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full border-2 border-white"
-              :class="onlineStatus[String(session.userId)] ? 'bg-green-500' : 'bg-gray-400'"
+              :class="onlineStatus[String(session.userId)] ? 'bg-success' : 'bg-gray-400'"
               :title="onlineStatus[String(session.userId)] ? '在线' : '离线'"
             />
             <!-- 未读消息红点 -->
             <div
               v-if="session.unreadCount && session.unreadCount > 0"
-              class="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-pop-red text-white text-xs font-bold rounded-full border-2 border-white flex items-center justify-center"
+              class="absolute -top-1 -right-1 min-w-[20px] h-5 px-1.5 bg-danger text-white text-xs font-bold rounded-full border-2 border-white flex items-center justify-center"
             >
               {{ session.unreadCount > 99 ? '99+' : session.unreadCount }}
             </div>
           </div>
           <div class="flex-1 min-w-0">
             <div class="flex items-center justify-between">
-              <span class="font-bold text-nb-text truncate">{{ session.nickname }}</span>
-              <span class="text-xs font-semibold text-nb-text-sub bg-gray-100 px-2 py-0.5 rounded border border-gray-300">{{ formatTime(session.lastTime) }}</span>
+              <span class="font-medium truncate" style="color: var(--text-primary); font-size: 14px;">{{ session.nickname }}</span>
+              <span class="text-xs" style="color: var(--text-tertiary);">{{ formatTime(session.lastTime) }}</span>
             </div>
             <div class="flex items-center justify-between mt-1">
-              <p class="text-sm text-nb-text-sub truncate flex-1 mr-2">{{ session.lastMessage }}</p>
+              <p class="text-sm text-gray-500 dark:text-gray-400 truncate flex-1 mr-2">{{ session.lastMessage }}</p>
               <!-- 群聊标识 -->
-              <span v-if="session.type === 2" class="text-xs bg-pop-blue text-white px-1.5 py-0.5 rounded font-bold shrink-0">群</span>
+              <span v-if="session.type === 2" class="text-xs bg-primary text-white px-1.5 py-0.5 rounded font-semibold shrink-0">群</span>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 聊天区域 - Neo-Brutalism 风格 -->
-    <div class="flex-1 bg-white border-3 border-nb-border shadow-brutal rounded-2xl flex flex-col overflow-hidden">
+    <!-- 聊天区域 -->
+    <div class="flex-1 flex flex-col overflow-hidden" style="background: var(--bg-card);">
       <!-- 无选中状态 -->
-      <div v-if="!activeSession" class="flex-1 flex items-center justify-center bg-nb-bg">
+      <div v-if="!activeSession" class="flex-1 flex items-center justify-center" style="background: var(--bg-base);">
         <div class="text-center">
-          <el-icon size="64" class="mb-6 animate-bounce-in"><ChatLineSquare /></el-icon>
-          <div class="nb-badge text-lg">选择一个会话开始聊天</div>
+          <el-icon size="48" class="mb-4" style="color: var(--text-quaternary);"><ChatLineSquare /></el-icon>
+          <div style="color: var(--text-tertiary); font-size: 15px;">选择一个会话开始聊天</div>
         </div>
       </div>
       
       <!-- 聊天内容 -->
       <template v-else>
-        <!-- 顶部栏 - Neo-Brutalism -->
-        <div class="h-18 px-6 bg-pop-blue border-b-3 border-nb-border flex items-center justify-between">
+        <!-- 顶部栏 -->
+        <div class="h-14 px-5 flex items-center justify-between border-b" style="background: var(--bg-card); border-color: var(--border-color);">
           <div class="flex items-center gap-3">
             <div class="relative">
-              <el-avatar :size="40" :src="activeSession.avatar" class="!border-2 !border-white">{{ activeSession.nickname?.[0] }}</el-avatar>
+              <el-avatar :size="36" :src="activeSession.avatar">{{ activeSession.nickname?.[0] }}</el-avatar>
               <!-- 在线状态指示器 -->
               <div
                 v-if="activeSession.type === 1 && chatSettings.showOnlineStatus"
-                class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
-                :class="onlineStatus[String(activeSession.userId)] ? 'bg-green-500' : 'bg-gray-400'"
+                class="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2"
+                :class="onlineStatus[String(activeSession.userId)] ? 'bg-success' : 'bg-gray-400'"
+                style="border-color: var(--bg-card);"
               />
             </div>
             <div>
-              <span class="font-bold text-white text-lg uppercase">{{ activeSession.nickname }}</span>
+              <span class="font-medium" style="color: var(--text-primary); font-size: 15px;">{{ activeSession.nickname }}</span>
               <!-- 在线状态文字 -->
-              <div v-if="activeSession.type === 1 && chatSettings.showOnlineStatus" class="text-xs text-white/70">
+              <div v-if="activeSession.type === 1 && chatSettings.showOnlineStatus" class="text-xs" style="color: var(--text-tertiary);">
                 {{ onlineStatus[String(activeSession.userId)] ? '在线' : '离线' }}
               </div>
             </div>
           </div>
-          <div class="flex items-center gap-2">
+          <div class="flex items-center gap-1">
             <!-- 搜索按钮 -->
             <el-popover
               :visible="searchVisible"
@@ -1191,7 +1193,7 @@ function scrollToMessage(msg: Message) {
               trigger="click"
             >
               <template #reference>
-                <el-button circle size="small" class="!bg-white !text-black" @click="searchVisible = !searchVisible">
+                <el-button circle size="small" style="background: transparent; color: var(--text-secondary); border: none;" @click="searchVisible = !searchVisible">
                   <el-icon><Search /></el-icon>
                 </el-button>
               </template>
@@ -1207,7 +1209,7 @@ function scrollToMessage(msg: Message) {
                   <div
                     v-for="msg in searchResults"
                     :key="msg.id"
-                    class="p-2 rounded-lg bg-nb-bg hover:bg-pop-yellow cursor-pointer border-2 border-transparent hover:border-black transition-all"
+                    class="p-2 rounded-lg bg-gray-50 dark:bg-gray-900 hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer border border-transparent hover:border-primary-200 dark:hover:border-primary-800 transition-all"
                     @click="scrollToMessage(msg)"
                   >
                     <div class="text-xs text-gray-500 mb-1">{{ formatTime(msg.createTime) }}</div>
@@ -1220,7 +1222,7 @@ function scrollToMessage(msg: Message) {
               </div>
             </el-popover>
             <el-dropdown trigger="click" @command="handleChatCommand">
-            <el-button circle size="small" class="!bg-white !text-black">
+            <el-button circle size="small" style="background: transparent; color: var(--text-secondary); border: none;">
               <el-icon><MoreFilled /></el-icon>
             </el-button>
             <template #dropdown>
@@ -1256,22 +1258,18 @@ function scrollToMessage(msg: Message) {
         </div>
 
         <!-- 群公告提示条（群聊时显示） -->
-        <div 
-          v-if="activeSession?.type === 2 && groupNoticeContent"
-          class="px-4 py-2 bg-pop-orange/20 border-b-2 border-pop-orange flex items-center gap-2 cursor-pointer hover:bg-pop-orange/30 transition-colors"
-          @click="showGroupNotice = true"
-        >
-          <el-icon class="text-pop-orange"><Notification /></el-icon>
-          <span class="text-sm font-medium text-nb-text truncate flex-1">
-            📢 群公告：{{ groupNoticeContent.length > 30 ? groupNoticeContent.slice(0, 30) + '...' : groupNoticeContent }}
+        <div v-if="activeSession?.type === 2 && groupNoticeContent" class="px-4 py-2 flex items-center gap-2 cursor-pointer border-b transition-colors" style="background: var(--color-warning-bg); border-color: var(--border-color);" @click="showGroupNotice = true">
+          <el-icon class="text-warning"><Notification /></el-icon>
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate flex-1">
+                        群公告：{{ groupNoticeContent.length > 30 ? groupNoticeContent.slice(0, 30) + '...' : groupNoticeContent }}
           </span>
           <el-icon class="text-gray-400"><ArrowRight /></el-icon>
         </div>
         
-        <!-- 消息列表 - Neo-Brutalism -->
-        <div ref="messagesRef" class="flex-1 overflow-y-auto p-6 space-y-4 bg-nb-bg">
+        <!-- 消息列表 -->
+        <div ref="messagesRef" class="flex-1 overflow-y-auto p-5 space-y-3" style="background: var(--bg-base);">
           <div v-if="loading" class="flex justify-center">
-            <div class="nb-badge animate-pulse">加载中...</div>
+            <span style="color: var(--text-tertiary); font-size: 13px;">加载中...</span>
           </div>
           
           <div
@@ -1282,13 +1280,13 @@ function scrollToMessage(msg: Message) {
             :class="isMyMessage(msg) ? 'justify-end' : 'justify-start'"
           >
             <div class="flex gap-3 max-w-[70%]" :class="isMyMessage(msg) ? 'flex-row-reverse' : ''">
-              <el-avatar :size="40" :src="isMyMessage(msg) ? userStore.userInfo?.avatar : (msg.fromAvatar || activeSession.avatar)" class="!border-2 !border-black !shadow-brutal-sm">
+              <el-avatar :size="36" :src="isMyMessage(msg) ? userStore.userInfo?.avatar : (msg.fromAvatar || activeSession.avatar)">
                 {{ isMyMessage(msg) ? userStore.userInfo?.nickname?.[0] : (msg.fromNickname?.[0] || activeSession.nickname?.[0]) }}
               </el-avatar>
               <div class="relative" @contextmenu="handleMessageContextMenu($event, msg)">
                 <div
-                  class="rounded-xl px-4 py-3 cursor-pointer border-2 border-black shadow-brutal-sm transition-all hover:translate-x-0.5 hover:-translate-y-0.5"
-                  :class="isMyMessage(msg) ? 'bg-pop-yellow text-black' : 'bg-white text-nb-text'"
+                  class="rounded-2xl px-4 py-2.5 cursor-pointer transition-all text-sm"
+                  :style="isMyMessage(msg) ? 'background: var(--color-primary); color: var(--text-inverse);' : 'background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border-color);'"
                 >
                   <template v-if="msg.status === 1">
                     <p class="text-gray-400 italic">{{ msg.content }}</p>
@@ -1323,7 +1321,7 @@ function scrollToMessage(msg: Message) {
                     <span
                       v-if="isMyMessage(msg) && activeSession?.type === 1 && chatSettings.showReadStatus"
                       class="text-xs"
-                      :class="msg.readStatus ? 'text-green-500' : 'text-gray-400'"
+                      :class="msg.readStatus ? 'text-success' : 'text-gray-400'"
                     >
                       {{ msg.readStatus ? '已读' : '未读' }}
                     </span>
@@ -1335,7 +1333,7 @@ function scrollToMessage(msg: Message) {
                   class="absolute top-0 opacity-0 group-hover:opacity-100 transition-opacity"
                   :class="isMyMessage(msg) ? 'right-full mr-2' : 'left-full ml-2'"
                 >
-                  <el-button size="small" text style="color: #000;" @click="handleRecallMessage(msg)">
+                  <el-button size="small" text style="color: var(--text-secondary);" @click="handleRecallMessage(msg)">
                     撤回
                   </el-button>
                 </div>
@@ -1344,10 +1342,10 @@ function scrollToMessage(msg: Message) {
           </div>
         </div>
         
-        <!-- 输入区域 - Neo-Brutalism -->
-        <div class="p-4 bg-white border-t-3 border-nb-border">
+        <!-- 输入区域 -->
+        <div class="p-4 border-t" style="background: var(--bg-card); border-color: var(--border-color);">
           <!-- 工具栏 -->
-          <div class="flex items-center gap-2 mb-3">
+          <div class="flex items-center gap-1 mb-3">
             <el-popover :visible="showEmojiPicker" placement="top" :width="320" trigger="click">
               <template #reference>
                 <el-button circle size="small" class="chat-tool-btn chat-tool-emoji" @click="showEmojiPicker = !showEmojiPicker">
@@ -1397,12 +1395,11 @@ function scrollToMessage(msg: Message) {
               resize="none"
               @keydown="handleInputKeydown"
             />
-            <el-button type="primary" size="large" class="!bg-pop-green !px-6 !h-10" @click="sendMessage">
-              <el-icon class="mr-1"><Promotion /></el-icon>
+            <el-button type="primary" size="default" style="border-radius: var(--radius-full); padding: 0 20px; height: 36px;" @click="sendMessage">
               发送
             </el-button>
           </div>
-          <div class="text-xs text-gray-400 mt-1">
+          <div class="text-xs mt-1" style="color: var(--text-quaternary);">
             {{ chatSettings.enterToSend ? 'Enter 发送，Shift+Enter 换行' : 'Ctrl+Enter 发送' }}
           </div>
         </div>
@@ -1463,23 +1460,23 @@ function scrollToMessage(msg: Message) {
       class="nb-dialog group-notice-dialog"
     >
       <div class="text-center">
-        <div class="bg-pop-orange border-3 border-black rounded-xl p-4 mb-4">
+        <div class="bg-warning/20 border border-gray-200 dark:border-gray-700 rounded-xl p-4 mb-4">
           <div class="flex items-center justify-center gap-2 mb-2">
             <el-icon class="text-2xl"><Notification /></el-icon>
-            <span class="font-black text-xl">群公告</span>
+            <span class="font-bold text-xl">群公告</span>
           </div>
         </div>
-        <div class="bg-nb-bg border-3 border-black rounded-xl p-4 text-left max-h-60 overflow-y-auto">
-          <p class="whitespace-pre-wrap text-nb-text font-medium">{{ groupNoticeContent || '暂无公告' }}</p>
+        <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4 text-left max-h-60 overflow-y-auto">
+          <p class="whitespace-pre-wrap text-gray-900 dark:text-gray-100 font-medium">{{ groupNoticeContent || '暂无公告' }}</p>
         </div>
       </div>
       <template #footer>
         <div class="flex justify-center gap-3">
-          <el-button class="!border-2 !border-black !font-bold" @click="showGroupNotice = false">
+          <el-button class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="showGroupNotice = false">
             我知道了
           </el-button>
           <el-button 
-            class="!bg-pop-blue !text-white !border-2 !border-black !font-bold"
+            class="!bg-primary !text-white !border !border-primary !font-medium"
             @click="markNoticeRead"
           >
             不再提示
@@ -1488,35 +1485,35 @@ function scrollToMessage(msg: Message) {
       </template>
     </el-dialog>
 
-    <!-- 会话右键菜单 - Neo-Brutalism -->
+    <!-- 会话右键菜单 -->
     <Teleport to="body">
       <div
         v-if="contextMenuVisible"
-        class="fixed z-50 bg-white border-3 border-nb-border rounded-xl shadow-brutal py-2 min-w-[180px] animate-bounce-in"
+        class="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 min-w-[180px] animate-fade-in"
         :style="{ left: contextMenuPosition.x + 'px', top: contextMenuPosition.y + 'px' }"
         @click.stop
       >
         <div
           v-if="contextMenuSession?.unreadCount"
-          class="px-4 py-2 text-sm font-bold text-nb-text hover:bg-pop-yellow cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer flex items-center"
           @click="handleMarkAsRead"
         >
           <el-icon class="mr-2"><Check /></el-icon>标记已读
         </div>
         <div
-          class="px-4 py-2 text-sm font-bold text-nb-text hover:bg-pop-orange cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-warning/10 cursor-pointer flex items-center"
           @click="handleClearMessages"
         >
           <el-icon class="mr-2"><Delete /></el-icon>清空消息
         </div>
         <div
-          class="px-4 py-2 text-sm font-bold text-nb-text hover:bg-gray-100 cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer flex items-center"
           @click="handleDeleteSession(true)"
         >
           <el-icon class="mr-2"><FolderRemove /></el-icon>删除会话
         </div>
         <div
-          class="px-4 py-2 text-sm font-bold text-pop-red hover:bg-pop-red hover:text-white cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 cursor-pointer flex items-center"
           @click="handleDeleteSession(false)"
         >
           <el-icon class="mr-2"><DeleteFilled /></el-icon>删除会话和消息
@@ -1530,29 +1527,29 @@ function scrollToMessage(msg: Message) {
         @contextmenu.prevent="closeContextMenu"
       />
 
-      <!-- 消息右键菜单 - Neo-Brutalism -->
+      <!-- 消息右键菜单 -->
       <div
         v-if="msgContextMenuVisible"
-        class="fixed z-50 bg-white border-3 border-nb-border rounded-xl shadow-brutal py-2 min-w-[160px] animate-bounce-in"
+        class="fixed z-50 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg py-2 min-w-[160px] animate-fade-in"
         :style="{ left: msgContextMenuPosition.x + 'px', top: msgContextMenuPosition.y + 'px' }"
         @click.stop
       >
         <div
           v-if="contextMenuMessage?.msgType === 1"
-          class="px-4 py-2 text-sm font-bold text-nb-text hover:bg-pop-blue hover:text-white cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-primary-50 dark:hover:bg-primary-900/30 cursor-pointer flex items-center"
           @click="handleCopyMessage"
         >
           <el-icon class="mr-2"><CopyDocument /></el-icon>复制
         </div>
         <div
           v-if="isMyMessage(contextMenuMessage!) && contextMenuMessage?.status !== 1"
-          class="px-4 py-2 text-sm font-bold text-nb-text hover:bg-pop-orange cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-gray-900 dark:text-gray-100 hover:bg-warning/10 cursor-pointer flex items-center"
           @click="handleRecallMessage(contextMenuMessage!); closeMsgContextMenu()"
         >
           <el-icon class="mr-2"><RefreshLeft /></el-icon>撤回
         </div>
         <div
-          class="px-4 py-2 text-sm font-bold text-pop-red hover:bg-pop-red hover:text-white cursor-pointer flex items-center"
+          class="px-4 py-2 text-sm font-medium text-danger hover:bg-danger/10 cursor-pointer flex items-center"
           @click="handleDeleteMessage"
         >
           <el-icon class="mr-2"><Delete /></el-icon>删除
@@ -1571,23 +1568,30 @@ function scrollToMessage(msg: Message) {
 
 <style scoped>
 .chat-tool-btn {
-  background: #ffffff !important;
-  border: 3px solid #111827 !important;
-  box-shadow: 2px 2px 0 #111827;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border-color) !important;
+  box-shadow: var(--shadow-sm);
   width: 44px;
   height: 44px;
+  border-radius: var(--radius-lg);
+  transition: all var(--duration-fast) var(--ease-apple);
+}
+
+.chat-tool-btn:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
 }
 
 .chat-tool-emoji {
-  color: #f59e0b !important;
+  color: var(--color-warning) !important;
 }
 
 .chat-tool-image {
-  color: #7c3aed !important;
+  color: var(--color-info) !important;
 }
 
 .chat-tool-file {
-  color: #ec4899 !important;
+  color: var(--color-danger) !important;
 }
 
 :deep(.chat-tool-btn .el-icon svg) {

@@ -259,25 +259,25 @@ onMounted(() => {
 
 <template>
   <div class="space-y-6">
-    <!-- 标题 - Neo-Brutalism -->
-    <div class="bg-pop-purple border-3 border-black shadow-brutal rounded-2xl px-6 py-4 inline-block">
-      <h1 class="text-3xl font-black text-white uppercase flex items-center">
+    <!-- 标题 -->
+    <div class="bg-info shadow-lg rounded-2xl px-6 py-4 inline-block">
+      <h1 class="text-3xl font-bold text-white flex items-center">
         <el-icon class="mr-3"><MagicStick /></el-icon>
          AI 实验室
       </h1>
     </div>
 
     <el-tabs v-model="activeTab" class="nb-tabs">
-      <!-- AI 对话 - Neo-Brutalism -->
-      <el-tab-pane label="💬 AI 对话" name="chat">
-        <div class="bg-white border-3 border-black shadow-brutal rounded-2xl overflow-hidden flex flex-col h-[600px]">
+      <!-- AI 对话 -->
+      <el-tab-pane label="AI 对话" name="chat">
+        <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-2xl overflow-hidden flex flex-col h-[600px]">
           <!-- 对话区域 -->
-          <div ref="chatContainerRef" class="flex-1 overflow-y-auto p-6 space-y-6 bg-nb-bg">
+          <div ref="chatContainerRef" class="flex-1 overflow-y-auto p-6 space-y-6 bg-gray-50 dark:bg-gray-900">
             <div v-if="chatMessages.length === 0" class="h-full flex items-center justify-center">
               <div class="text-center">
                 <div class="text-8xl mb-6"></div>
                 <div class="nb-badge text-lg mb-4">开始与 AI 助手对话吧！</div>
-                <p class="font-bold text-nb-text-sub">可以询问电影知识、剧情解析等问题</p>
+                <p class="font-medium text-gray-500 dark:text-gray-400">可以询问电影知识、剧情解析等问题</p>
               </div>
             </div>
             
@@ -287,10 +287,10 @@ onMounted(() => {
               class="flex items-start gap-3"
               :class="msg.role === 'user' ? 'flex-row-reverse' : 'flex-row'"
             >
-              <!-- 头像 - Neo-Brutalism -->
+              <!-- 头像 -->
               <div 
-                class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border-2 border-black"
-                :class="msg.role === 'user' ? 'bg-pop-blue' : 'bg-pop-purple'"
+                class="w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0 border border-gray-200 dark:border-gray-700"
+                :class="msg.role === 'user' ? 'bg-primary' : 'bg-info'"
               >
                 <el-icon color="white" size="20">
                   <User v-if="msg.role === 'user'" />
@@ -298,35 +298,35 @@ onMounted(() => {
                 </el-icon>
               </div>
               
-              <!-- 气泡 - Neo-Brutalism -->
+              <!-- 气泡 -->
               <div
-                class="ai-chat-bubble rounded-xl px-4 py-3 max-w-[85%] border-2 border-black shadow-brutal-sm"
-                :class="msg.role === 'user' ? 'bg-pop-yellow text-black' : 'bg-white'"
+                class="ai-chat-bubble rounded-xl px-4 py-3 max-w-[85%] border border-gray-200 dark:border-gray-700 shadow-sm"
+                :class="msg.role === 'user' ? 'bg-primary-50 dark:bg-primary-900/30 text-gray-900 dark:text-gray-100' : 'bg-white dark:bg-gray-800'"
               >
                 <!-- AI 回复：流式输出时显示纯文本，完成后渲染 Markdown -->
                 <template v-if="msg.role === 'assistant'">
                   <!-- 正在输出中 -->
                   <p v-if="chatLoading && index === chatMessages.length - 1" class="text-sm font-medium whitespace-pre-wrap break-words ai-chat-text">
-                    {{ msg.content }}<span class="animate-pulse text-pop-blue">▊</span>
+                    {{ msg.content }}<span class="animate-pulse text-primary">▊</span>
                   </p>
                   <!-- 输出完成，渲染 Markdown -->
                   <div v-else class="markdown-body text-sm break-words font-medium" v-html="md.render(msg.content)" @click="handleMarkdownClick"></div>
                 </template>
                 <!-- 用户消息 -->
-                <p v-else class="text-sm font-bold whitespace-pre-wrap break-words">{{ msg.content }}</p>
+                <p v-else class="text-sm font-medium whitespace-pre-wrap break-words">{{ msg.content }}</p>
               </div>
             </div>
           </div>
           
-          <!-- 输入区域 - Neo-Brutalism -->
-          <div class="border-t-3 border-black p-4 bg-white">
+          <!-- 输入区域 -->
+          <div class="border-t border-gray-200 dark:border-gray-700 p-4 bg-white dark:bg-gray-800">
             <div class="flex items-center gap-4 mb-3">
-              <label class="flex items-center gap-2 cursor-pointer bg-pop-blue/10 border-2 border-black rounded-lg px-3 py-1">
+              <label class="flex items-center gap-2 cursor-pointer bg-primary/10 border border-primary/30 rounded-lg px-3 py-1">
                 <input type="checkbox" v-model="enableRag" class="w-4 h-4" />
-                <span class="font-bold text-sm">🔍 启用 RAG 检索</span>
+                <span class="font-medium text-sm">启用 RAG 检索</span>
               </label>
               <div class="flex-1"></div>
-              <el-button class="!border-2 !border-black !font-bold" size="small" @click="clearChat">
+              <el-button class="!border !border-gray-200 dark:!border-gray-700 !font-medium" size="small" @click="clearChat">
                  清空对话
               </el-button>
             </div>
@@ -342,7 +342,7 @@ onMounted(() => {
                 class="flex-1"
                 size="large"
               />
-              <el-button class="!bg-pop-green !text-black !border-3 !border-black !font-black !px-6 !shadow-brutal-sm" :loading="chatLoading" @click="handleSendMessage">
+              <el-button class="!bg-primary !text-white !border !border-primary !font-semibold !px-6" :loading="chatLoading" @click="handleSendMessage">
                  发送
               </el-button>
             </div>
@@ -412,7 +412,7 @@ onMounted(() => {
                 <div class="text-center mb-8">
                   <h1 class="text-3xl font-bold text-white mb-4">{{ novelOutlineData.title }}</h1>
                   <div class="bg-dark-bg p-4 rounded-xl text-left">
-                    <h4 class="text-primary font-bold mb-2">📝 故事简介</h4>
+                    <h4 class="text-primary font-bold mb-2">故事简介</h4>
                     <p class="text-gray-300 leading-relaxed">{{ novelOutlineData.synopsis }}</p>
                   </div>
                 </div>
@@ -470,27 +470,29 @@ onMounted(() => {
       </el-tab-pane>
 
       <!-- 知识库 RAG -->
-      <el-tab-pane label="📚 知识库 RAG" name="knowledge">
+      <el-tab-pane label="知识库 RAG" name="knowledge">
         <div class="grid lg:grid-cols-2 gap-6">
           <!-- 左侧：服务状态 & 同步 -->
-          <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6">
-            <h3 class="text-xl font-black mb-6 flex items-center gap-2">
-              ⚙️ RAG 服务控制
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-2xl p-6">
+            <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+              RAG 服务控制
             </h3>
             
             <!-- 服务状态 -->
-            <div class="mb-6 p-4 rounded-xl border-2 border-black" :class="{
-              'bg-green-100': ragServiceStatus === 'online',
-              'bg-red-100': ragServiceStatus === 'offline',
-              'bg-gray-100': ragServiceStatus === 'checking'
+            <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700" :class="{
+              'bg-success/10': ragServiceStatus === 'online',
+              'bg-danger/10': ragServiceStatus === 'offline',
+              'bg-gray-100 dark:bg-gray-700': ragServiceStatus === 'checking'
             }">
               <div class="flex items-center gap-3">
-                <span class="text-2xl">
-                  {{ ragServiceStatus === 'online' ? '✅' : ragServiceStatus === 'offline' ? '❌' : '⏳' }}
-                </span>
+                <span class="w-3 h-3 rounded-full" :class="{
+                  'bg-success': ragServiceStatus === 'online',
+                  'bg-danger': ragServiceStatus === 'offline',
+                  'bg-gray-400': ragServiceStatus === 'checking'
+                }"></span>
                 <div>
-                  <div class="font-bold">Python RAG 服务</div>
-                  <div class="text-sm text-gray-600">
+                  <div class="font-semibold">Python RAG 服务</div>
+                  <div class="text-sm text-gray-500 dark:text-gray-400">
                     {{ ragServiceStatus === 'online' ? '运行中 (已通过后端代理)' : 
                        ragServiceStatus === 'offline' ? '未连接 - 请启动服务' : '检查中...' }}
                   </div>
@@ -501,7 +503,7 @@ onMounted(() => {
             
             <!-- 同步电影 -->
             <div class="mb-6">
-              <h4 class="font-bold mb-3">🎬 同步电影数据到向量库</h4>
+              <h4 class="font-bold mb-3">同步电影数据到向量库</h4>
               <p class="text-sm text-gray-600 mb-4">
                 将 MySQL 中的电影数据 (t_film) 向量化后存入 Milvus，用于语义检索。
               </p>
@@ -510,7 +512,7 @@ onMounted(() => {
                 :loading="syncLoading" 
                 :disabled="ragServiceStatus !== 'online'"
                 @click="handleSyncFilms"
-                class="!bg-pop-blue !border-2 !border-black !font-bold"
+                class="!bg-primary !border !border-primary !font-medium"
               >
                 <el-icon class="mr-1"><Refresh /></el-icon>
                 {{ syncLoading ? '同步中...' : '开始同步' }}
@@ -526,8 +528,8 @@ onMounted(() => {
             </div>
             
             <!-- 使用说明 -->
-            <div class="bg-gray-50 border-2 border-black rounded-xl p-4">
-              <h4 class="font-bold mb-2">💡 使用说明</h4>
+            <div class="bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl p-4">
+              <h4 class="font-bold mb-2">使用说明</h4>
               <ol class="text-sm text-gray-700 space-y-2 list-decimal list-inside">
                 <li>启动 Python 服务: <code class="bg-gray-200 px-1 rounded">cd jelly-rag-python && uvicorn main:app --port 8500</code></li>
                 <li>点击"开始同步"将电影数据向量化</li>
@@ -538,9 +540,9 @@ onMounted(() => {
           </div>
           
           <!-- 右侧：知识库检索 -->
-          <div class="bg-white border-3 border-black shadow-brutal rounded-2xl p-6 flex flex-col">
-            <h3 class="text-xl font-black mb-6 flex items-center gap-2">
-              🔍 知识库检索测试
+          <div class="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-lg rounded-2xl p-6 flex flex-col">
+            <h3 class="text-xl font-bold mb-6 flex items-center gap-2">
+              知识库检索测试
             </h3>
             
             <!-- 搜索框 -->
@@ -557,7 +559,7 @@ onMounted(() => {
                 :loading="ragLoading" 
                 :disabled="ragServiceStatus !== 'online' || !ragQuery.trim()"
                 @click="handleRagSearch"
-                class="!bg-pop-green !text-black !border-2 !border-black !font-bold"
+                class="!bg-success !text-white !border !border-success !font-medium"
               >
                 搜索
               </el-button>
@@ -566,19 +568,19 @@ onMounted(() => {
             <!-- 搜索结果 -->
             <div class="flex-1 overflow-y-auto space-y-4" style="max-height: 400px;">
               <div v-if="ragLoading" class="flex items-center justify-center py-12">
-                <el-icon class="is-loading text-4xl text-pop-purple"><Loading /></el-icon>
+                <el-icon class="is-loading text-4xl text-info"><Loading /></el-icon>
               </div>
               
               <div v-else-if="ragResults.length > 0">
                 <div 
                   v-for="(result, idx) in ragResults" 
                   :key="idx"
-                  class="p-4 rounded-xl border-2 border-black bg-nb-bg hover:shadow-brutal-sm transition-shadow cursor-pointer rag-result"
+                  class="p-4 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-900 hover:shadow-md transition-shadow cursor-pointer rag-result"
                   @click="goToFilmDetail(result.film_id)"
                 >
                   <div class="flex items-start justify-between mb-2">
-                    <h4 class="font-bold text-lg">{{ result.title }}</h4>
-                    <span class="text-xs bg-pop-purple text-white px-2 py-1 rounded-full">
+                    <h4 class="font-semibold text-lg">{{ result.title }}</h4>
+                    <span class="text-xs bg-info text-white px-2 py-1 rounded-full">
                       相关度: {{ (result.score * 100).toFixed(1) }}%
                     </span>
                   </div>
@@ -598,8 +600,7 @@ onMounted(() => {
 
 <style scoped>
 .markdown-body {
-  color: #1a1a1a;
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+  color: var(--text-primary);
   word-wrap: break-word;
   overflow-wrap: break-word;
   white-space: normal;
@@ -607,13 +608,10 @@ onMounted(() => {
   letter-spacing: 0.01em;
 }
 
-.ai-chat-bubble {
-  font-family: -apple-system, BlinkMacSystemFont, 'PingFang SC', 'Source Han Sans SC', 'Noto Sans SC', 'Helvetica Neue', sans-serif;
+.ai-chat-text {
+  color: var(--text-primary);
 }
 
-.ai-chat-text {
-  color: #1a1a1a;
-}
 .markdown-body :deep(p) {
   margin-bottom: 0.5em;
 }
@@ -628,21 +626,25 @@ onMounted(() => {
   list-style: disc;
 }
 .markdown-body :deep(code) {
-  background-color: rgba(255, 255, 255, 0.1);
+  background-color: var(--color-primary-bg);
   padding: 0.2em 0.4em;
-  border-radius: 3px;
-  font-family: monospace;
+  border-radius: var(--radius-sm);
+  font-family: 'SF Mono', 'Fira Code', monospace;
 }
 .markdown-body :deep(pre) {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.06);
   padding: 1em;
-  border-radius: 8px;
+  border-radius: var(--radius-md);
   overflow-x: auto;
   margin-bottom: 0.5em;
 }
 .markdown-body :deep(pre code) {
   background-color: transparent;
   padding: 0;
+}
+
+html.dark .markdown-body :deep(pre) {
+  background-color: rgba(0, 0, 0, 0.3);
 }
 
 .rag-result {
@@ -653,7 +655,7 @@ onMounted(() => {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 12px;
+  border-radius: var(--radius-lg);
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.35), rgba(255, 255, 255, 0));
   opacity: 0.7;
   pointer-events: none;

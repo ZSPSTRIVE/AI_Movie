@@ -157,7 +157,7 @@ function formatTime(time: string): string {
       <div
         v-for="post in postList"
         :key="post.id"
-        class="glass-post-card"
+        class="glass-post-card stagger-item hover-lift"
         @click="goToDetail(post.id)"
       >
         <div class="flex gap-4">
@@ -204,7 +204,7 @@ function formatTime(time: string): string {
                 <el-icon><ChatLineRound /></el-icon>
                 <span>{{ post.commentCount }}</span>
               </div>
-              <div v-if="post.filmTitle" class="meta-item" style="background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(6, 182, 212, 0.12)); color: var(--glass-primary);">
+              <div v-if="post.filmTitle" class="meta-item meta-item--film">
                 <el-icon><Film /></el-icon>
                 <span>{{ post.filmTitle }}</span>
               </div>
@@ -237,8 +237,8 @@ function formatTime(time: string): string {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button class="!border-2 !border-black !font-bold" @click="showCreateDialog = false">取消</el-button>
-        <el-button class="!bg-pop-green !text-black !border-2 !border-black !font-bold" :loading="creating" @click="handleCreatePost">
+        <el-button class="!border !border-gray-200 dark:!border-gray-700 !font-medium" @click="showCreateDialog = false">取消</el-button>
+        <el-button class="!bg-success !text-white !border !border-success !font-medium" :loading="creating" @click="handleCreatePost">
           <el-icon class="mr-2"><Promotion /></el-icon>发布
         </el-button>
       </template>
