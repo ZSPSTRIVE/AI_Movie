@@ -8,7 +8,7 @@
 
 ### **影视** · **社交** · **AI** · **RAG** · **积分**
 
-**新一代全栈微服务平台 | Spring Cloud + Vue3 + AI **
+新一代全栈微服务平台 | Spring Cloud + Vue3 + AI 
 
 [![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-brightgreen?style=for-the-badge&logo=springboot)](https://spring.io/projects/spring-boot)
 [![Vue](https://img.shields.io/badge/Vue-3.4-4FC08D?style=for-the-badge&logo=vue.js)](https://vuejs.org/)
