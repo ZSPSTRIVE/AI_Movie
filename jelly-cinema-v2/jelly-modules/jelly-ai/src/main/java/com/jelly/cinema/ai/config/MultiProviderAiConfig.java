@@ -96,8 +96,12 @@ public class MultiProviderAiConfig {
 
         Throwable lastError = null;
         int retryCount = Math.max(1, properties.getFailover().getRetryCount());
+        List<AiProviderProperties.Provider> candidates = getCandidateProviders();
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("No AI provider with valid apiKey/baseUrl/model is configured");
+        }
 
-        for (AiProviderProperties.Provider provider : getCandidateProviders()) {
+        for (AiProviderProperties.Provider provider : candidates) {
             ChatLanguageModel model = chatModels.computeIfAbsent(provider.getName(), key -> createChatModel(provider));
 
             for (int attempt = 1; attempt <= retryCount; attempt++) {
@@ -132,8 +136,12 @@ public class MultiProviderAiConfig {
 
         Throwable lastError = null;
         int retryCount = Math.max(1, properties.getFailover().getRetryCount());
+        List<AiProviderProperties.Provider> candidates = getCandidateProviders();
+        if (candidates.isEmpty()) {
+            throw new IllegalStateException("No AI provider with valid apiKey/baseUrl/model is configured");
+        }
 
-        for (AiProviderProperties.Provider provider : getCandidateProviders()) {
+        for (AiProviderProperties.Provider provider : candidates) {
             StreamingChatLanguageModel model = streamingModels.computeIfAbsent(
                     provider.getName(),
                     key -> createStreamingChatModel(provider)
@@ -268,10 +276,11 @@ public class MultiProviderAiConfig {
     private List<AiProviderProperties.Provider> getEnabledProviders() {
         List<AiProviderProperties.Provider> providers = properties.getProviders().stream()
                 .filter(AiProviderProperties.Provider::isEnabled)
+                .filter(this::hasChatConfig)
                 .sorted(Comparator.comparingInt(AiProviderProperties.Provider::getPriority))
                 .toList();
         if (providers.isEmpty()) {
-            throw new IllegalStateException("No enabled AI provider found");
+            log.warn("No enabled AI provider with valid chat config found");
         }
         return providers;
     }
@@ -282,6 +291,12 @@ public class MultiProviderAiConfig {
 
     private boolean hasEmbeddingConfig(AiProviderProperties.Provider provider) {
         return StringUtils.hasText(provider.getApiKey()) && StringUtils.hasText(provider.getBaseUrl());
+    }
+
+    private boolean hasChatConfig(AiProviderProperties.Provider provider) {
+        return StringUtils.hasText(provider.getApiKey())
+                && StringUtils.hasText(provider.getBaseUrl())
+                && StringUtils.hasText(provider.getModel());
     }
 
     private boolean isHealthy(String providerName) {

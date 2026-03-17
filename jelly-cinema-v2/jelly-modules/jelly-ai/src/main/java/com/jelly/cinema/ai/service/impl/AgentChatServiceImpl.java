@@ -168,6 +168,7 @@ public class AgentChatServiceImpl implements AgentChatService {
                 return aiMessage.text();
             }
 
+            // 对工具调用轮数做硬限制，避免 Agent 在异常场景下无限递归调用工具。
             for (ToolExecutionRequest request : aiMessage.toolExecutionRequests()) {
                 String toolResult = executeToolByName(request.name(), request.arguments(), ragEnabled);
                 messages.add(ToolExecutionResultMessage.from(request, toolResult));

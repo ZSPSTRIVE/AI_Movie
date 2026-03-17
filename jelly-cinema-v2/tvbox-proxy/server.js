@@ -258,12 +258,56 @@ function extractYear(value) {
     return match ? Number(match[0]) : new Date().getFullYear();
 }
 
-function generateRating() {
-    return Number((Math.random() * 2 + 7).toFixed(1));
+function stableHash(input) {
+    const text = String(input || '');
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i += 1) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return hash >>> 0;
 }
 
-function generatePlayCount() {
-    return Math.floor(Math.random() * 100000);
+function buildFilmSeed(sourceKey, vodId, title) {
+    return `${sourceKey || 'unknown'}|${vodId || 'unknown'}|${title || 'unknown'}`;
+}
+
+function stableRating(seed) {
+    const hash = stableHash(seed);
+    return Number((7 + (hash % 21) / 10).toFixed(1));
+}
+
+function stablePlayCount(seed) {
+    return 10000 + (stableHash(`${seed}:plays`) % 900000);
+}
+
+function resolveRating(rawValue, seed) {
+    return safeNumber(rawValue, stableRating(seed));
+}
+
+function resolvePlayCount(rawValue, seed) {
+    return safeNumber(rawValue, stablePlayCount(seed));
+}
+
+function buildFilmRank(film) {
+    const year = Number(film.year) || 0;
+    const rating = Number(film.rating) || 0;
+    const playCount = Number(film.playCount) || 0;
+    const quality = Math.round(rating * 100);
+    const heat = Math.min(999999, playCount);
+    const titleScore = stableHash(`${film.title || ''}|${film.id || ''}`) % 1000;
+    return year * 100000000 + quality * 100000 + heat + titleScore;
+}
+
+// 推荐和搜索统一使用稳定排序，避免每次刷新都出现完全不同的影片集合。
+function sortFilmsForDisplay(list) {
+    return list
+        .slice()
+        .sort((a, b) => {
+            const rankDiff = buildFilmRank(b) - buildFilmRank(a);
+            if (rankDiff !== 0) return rankDiff;
+            return String(a.title || '').localeCompare(String(b.title || ''), 'zh-Hans-CN');
+        });
 }
 
 /**
@@ -540,12 +584,13 @@ function buildFilmFromVod(vod, site) {
     const title = String(pickField(vod, ['vod_name', 'name', 'title']) || site.name || 'Unknown');
     const vodId = vodIdRaw ? String(vodIdRaw) : title;
     const filmId = buildFilmId(site.key, vodId);
+    const seed = buildFilmSeed(site.key, vodId, title);
 
     const coverUrl = pickField(vod, ['vod_pic', 'pic', 'cover', 'img', 'image']) || PLACEHOLDER_COVER;
     const description = String(pickField(vod, ['vod_content', 'content', 'desc', 'vod_remarks', 'note']) || '');
     const year = extractYear(pickField(vod, ['vod_year', 'year', 'dt', 'pubdate']));
-    const rating = safeNumber(pickField(vod, ['vod_score', 'score', 'rating']), generateRating());
-    const playCount = safeNumber(pickField(vod, ['vod_hits', 'hits', 'playCount']), generatePlayCount());
+    const rating = resolveRating(pickField(vod, ['vod_score', 'score', 'rating']), seed);
+    const playCount = resolvePlayCount(pickField(vod, ['vod_hits', 'hits', 'playCount']), seed);
     const director = String(pickField(vod, ['vod_director', 'director']) || '');
     const actors = String(pickField(vod, ['vod_actor', 'actor']) || '');
     const region = String(pickField(vod, ['vod_area', 'area']) || '');
@@ -799,15 +844,6 @@ function dedupeFilms(list) {
     return deduped;
 }
 
-function shuffle(list) {
-    const arr = list.slice();
-    for (let i = arr.length - 1; i > 0; i -= 1) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-}
-
 async function aggregateFilms({ page, pageSize, keyword, limit, onlySearchable }) {
     const sites = await getAllSites();
     const supportedSites = sites.filter((site) => {
@@ -832,9 +868,9 @@ async function aggregateFilms({ page, pageSize, keyword, limit, onlySearchable }
         total += siteTotal || 0;
     });
 
-    films = dedupeFilms(films);
+    films = sortFilmsForDisplay(dedupeFilms(films));
     if (limit) {
-        films = shuffle(films).slice(0, limit);
+        films = films.slice(0, limit);
     }
 
     return { films, total };
@@ -855,6 +891,7 @@ async function fetchFromDirectApi(source) {
         return list.map((vod, idx) => {
             const filmId = `${source.name}|${vod.vod_id}`;
             const encodedId = Buffer.from(filmId).toString('base64').replace(/\+/g, '-').replace(/\//g, '_');
+            const seed = buildFilmSeed(source.name, vod.vod_id, vod.vod_name);
 
             // 存储到索引
             filmIndex.set(encodedId, {
@@ -870,8 +907,8 @@ async function fetchFromDirectApi(source) {
                 coverUrl: vod.vod_pic || PLACEHOLDER_COVER,
                 description: (vod.vod_content || vod.vod_blurb || '').replace(/<[^>]+>/g, ''),
                 year: extractYear(vod.vod_year),
-                rating: safeNumber(vod.vod_score, generateRating()),
-                playCount: generatePlayCount(),
+                rating: resolveRating(vod.vod_score, seed),
+                playCount: resolvePlayCount(vod.vod_hits, seed),
                 isVip: false,
                 director: vod.vod_director || '',
                 actors: vod.vod_actor || '',
@@ -914,12 +951,11 @@ app.get('/api/tvbox/recommend', async (req, res) => {
             allFilms = films;
         }
 
-        // 打乱并限制数量
-        const shuffled = shuffle(allFilms).slice(0, limit);
+        const recommended = sortFilmsForDisplay(dedupeFilms(allFilms)).slice(0, limit);
 
         res.json({
             code: 200,
-            data: shuffled,
+            data: recommended,
             message: 'success',
         });
     } catch (error) {
@@ -971,14 +1007,15 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
             // 如果有缓存的vod数据，构建完整的电影信息
             if (cached.vod) {
                 const vod = cached.vod;
+                const seed = buildFilmSeed(cached.siteKey, cached.vodId, vod.vod_name);
                 const film = {
                     id: id,
                     title: vod.vod_name || 'Unknown',
                     coverUrl: vod.vod_pic || PLACEHOLDER_COVER,
                     description: (vod.vod_content || vod.vod_blurb || '').replace(/<[^>]+>/g, ''),
                     year: extractYear(vod.vod_year),
-                    rating: safeNumber(vod.vod_score, generateRating()),
-                    playCount: generatePlayCount(),
+                    rating: resolveRating(vod.vod_score, seed),
+                    playCount: resolvePlayCount(vod.vod_hits, seed),
                     isVip: false,
                     director: vod.vod_director || '未知',
                     actors: vod.vod_actor || '未知',
@@ -1010,14 +1047,15 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
                     const list = response.data.list || [];
                     if (list.length > 0) {
                         const vod = list[0];
+                        const seed = buildFilmSeed(cached.siteKey, cached.vodId, vod.vod_name);
                         const film = {
                             id: id,
                             title: vod.vod_name || 'Unknown',
                             coverUrl: vod.vod_pic || PLACEHOLDER_COVER,
                             description: (vod.vod_content || vod.vod_blurb || '').replace(/<[^>]+>/g, ''),
                             year: extractYear(vod.vod_year),
-                            rating: safeNumber(vod.vod_score, generateRating()),
-                            playCount: generatePlayCount(),
+                            rating: resolveRating(vod.vod_score, seed),
+                            playCount: resolvePlayCount(vod.vod_hits, seed),
                             isVip: false,
                             director: vod.vod_director || '未知',
                             actors: vod.vod_actor || '未知',
@@ -1079,14 +1117,15 @@ app.get('/api/tvbox/detail/:id', async (req, res) => {
                     const list = response.data.list || [];
                     if (list.length > 0) {
                         const vod = list[0];
+                        const seed = buildFilmSeed(siteKey, vodId, vod.vod_name);
                         const film = {
                             id: id,
                             title: vod.vod_name || 'Unknown',
                             coverUrl: vod.vod_pic || PLACEHOLDER_COVER,
                             description: (vod.vod_content || vod.vod_blurb || '').replace(/<[^>]+>/g, ''),
                             year: extractYear(vod.vod_year),
-                            rating: safeNumber(vod.vod_score, generateRating()),
-                            playCount: generatePlayCount(),
+                            rating: resolveRating(vod.vod_score, seed),
+                            playCount: resolvePlayCount(vod.vod_hits, seed),
                             isVip: false,
                             director: vod.vod_director || '未知',
                             actors: vod.vod_actor || '未知',
@@ -1692,4 +1731,3 @@ app.get('/api/tvbox/debug/sources', async (req, res) => {
 });
 
 module.exports = app;
-

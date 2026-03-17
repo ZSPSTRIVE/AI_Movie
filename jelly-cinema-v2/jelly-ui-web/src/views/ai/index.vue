@@ -186,14 +186,14 @@ async function handleSyncFilms() {
     const data = await res.json()
     if (data.success) {
       syncStatus.value = 'success'
-      syncMessage.value = `同步成功！共同步 ${data.count} 部电影`
+      syncMessage.value = `同步成功，已从 MySQL 片库同步 ${data.count} 部电影到 RAG`
       ElMessage.success(syncMessage.value)
     } else {
       throw new Error(data.message || '同步失败')
     }
   } catch (e: any) {
     syncStatus.value = 'error'
-    syncMessage.value = e.message || '同步失败，请检查 Python 服务是否运行'
+    syncMessage.value = e.message || '同步失败，请检查电影服务和 Python RAG 服务是否运行'
     ElMessage.error(syncMessage.value)
   } finally {
     syncLoading.value = false

@@ -2,6 +2,7 @@ package com.jelly.cinema.film.controller;
 
 import com.jelly.cinema.common.core.domain.PageResult;
 import com.jelly.cinema.common.core.domain.R;
+import com.jelly.cinema.film.domain.dto.HomepageFilmImportDTO;
 import com.jelly.cinema.film.domain.entity.HomepageContent;
 import com.jelly.cinema.film.domain.vo.HomepageContentVO;
 import com.jelly.cinema.film.service.HomepageContentService;
@@ -170,5 +171,13 @@ public class HomepageContentController {
         homepageContentService.markAsBest(id, isBest);
         homepageReadCacheService.evictAll();
         return R.ok();
+    }
+
+    @Operation(summary = "从片库导入到首页")
+    @PostMapping("/import-film")
+    public R<HomepageContentVO> importFilm(@RequestBody HomepageFilmImportDTO dto) {
+        HomepageContentVO vo = homepageContentService.importFilm(dto);
+        homepageReadCacheService.evictAll();
+        return R.ok("导入成功", vo);
     }
 }

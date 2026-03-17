@@ -350,7 +350,7 @@ public class RecommendService {
 
         String cacheKey = RECOMMEND_RESULT_KEY + userId;
 
-        // 尝试从缓存获取
+        // 先查缓存，避免每次都重复跑标签推荐 + 协同过滤，属于典型的“计算结果缓存”场景。
         @SuppressWarnings("unchecked")
         List<Long> cached = (List<Long>) redisTemplate.opsForValue().get(cacheKey);
         if (cached != null && !cached.isEmpty()) {

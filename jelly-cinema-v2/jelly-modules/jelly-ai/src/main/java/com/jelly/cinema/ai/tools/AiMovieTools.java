@@ -134,6 +134,9 @@ public class AiMovieTools {
     public String ragSearch(String query) {
         log.info("🔧 Tool: ragSearch('{}')", query);
         try {
+            if (query != null && !query.isBlank()) {
+                remoteFilmService.searchFilms(query.trim());
+            }
             return pythonRagClient.search(query, 3);
         } catch (Exception e) {
             log.error("RAG 检索失败", e);

@@ -59,6 +59,7 @@ public class SignServiceImpl implements SignService {
             throw new ServiceException(4001, "今天已经签到过了");
         }
 
+        // 先用 Redis 位图保证签到幂等，再做积分发放；归档消息异步发送，降低主链路耗时。
         userPointService.addPoints(userId, SIGN_POINTS, 1, "每日签到奖励");
 
         if (rocketMQTemplate != null) {

@@ -15,6 +15,12 @@
     <description>认证服务</description>
 
     <dependencies>
+        <!-- Common Core -->
+        <dependency>
+            <groupId>com.jelly.cinema</groupId>
+            <artifactId>jelly-common-core</artifactId>
+        </dependency>
+
         <!-- Common Security -->
         <dependency>
             <groupId>com.jelly.cinema</groupId>

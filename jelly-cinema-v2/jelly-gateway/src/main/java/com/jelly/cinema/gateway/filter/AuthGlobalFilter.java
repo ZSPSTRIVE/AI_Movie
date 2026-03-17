@@ -47,7 +47,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 }
             }
             
-            // 如果获取到 loginId，添加到请求头
+            // Gateway 在入口完成认证，把用户身份透传给下游微服务，避免每个服务重复做 Token 校验。
             if (loginId != null) {
                 ServerHttpRequest.Builder mutate = request.mutate();
                 mutate.header(HEADER_USER_ID, String.valueOf(loginId));

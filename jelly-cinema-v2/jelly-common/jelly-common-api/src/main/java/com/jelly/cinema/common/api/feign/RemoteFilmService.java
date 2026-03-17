@@ -6,6 +6,7 @@ import com.jelly.cinema.common.core.domain.R;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
@@ -55,4 +56,13 @@ public interface RemoteFilmService {
      */
     @GetMapping("/film/recommend/hot")
     R<List<RemoteFilm>> getHotFilms(@RequestParam(value = "size", defaultValue = "10") Integer size);
+
+    /**
+     * 将电影库同步到 Python RAG
+     *
+     * @param limit 同步数量
+     * @return 实际同步成功数量
+     */
+    @PostMapping("/film/rag/sync")
+    R<Integer> syncFilmsToRag(@RequestParam(value = "limit", required = false) Integer limit);
 }

@@ -16,11 +16,17 @@ import com.jelly.cinema.film.domain.entity.Film;
 import com.jelly.cinema.film.domain.vo.FilmVO;
 import com.jelly.cinema.film.mapper.CategoryMapper;
 import com.jelly.cinema.film.mapper.FilmMapper;
+import com.jelly.cinema.film.service.FilmRagSyncService;
 import com.jelly.cinema.film.service.FilmService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -29,6 +35,10 @@ import java.util.stream.Collectors;
 
 /**
  * 电影服务实现
+ *
+ * API 搜索链路统一为：
+ * TVBox -> MySQL t_film -> Python RAG。
+ * 前端和 AI 侧都优先查数据库，数据库缺数据时再触发 TVBox 拉取并回写。
  *
  * @author Jelly Cinema
  */
@@ -40,9 +50,16 @@ public class FilmServiceImpl implements FilmService {
     private final FilmMapper filmMapper;
     private final CategoryMapper categoryMapper;
     private final RedisService redisService;
+    private final RestTemplate restTemplate;
+    private final FilmRagSyncService filmRagSyncService;
+
+    @Value("${tvbox.proxy.base-url:http://localhost:3001/api/tvbox}")
+    private String tvboxProxyBaseUrl;
 
     private static final String FILM_HOT_RANK_KEY = "jelly:film:hot:rank";
     private static final String FILM_PLAY_COUNT_KEY = "jelly:film:play:count:";
+    private static final int SEARCH_LIMIT = 20;
+    private static final int RAG_SYNC_LIMIT = 200;
 
     /**
      * 本地缓存 - 分类信息
@@ -55,28 +72,24 @@ public class FilmServiceImpl implements FilmService {
     @Override
     public PageResult<FilmVO> list(FilmQueryDTO dto) {
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
-        
-        // 条件查询
+
         wrapper.like(StrUtil.isNotBlank(dto.getKeyword()), Film::getTitle, dto.getKeyword());
         wrapper.eq(dto.getCategoryId() != null, Film::getCategoryId, dto.getCategoryId());
         wrapper.eq(dto.getYear() != null, Film::getYear, dto.getYear());
         wrapper.eq(StrUtil.isNotBlank(dto.getRegion()), Film::getRegion, dto.getRegion());
         wrapper.eq(Film::getStatus, 0);
 
-        // 排序
         switch (dto.getSort()) {
             case "new" -> wrapper.orderByDesc(Film::getCreateTime);
             case "rating" -> wrapper.orderByDesc(Film::getRating);
             default -> wrapper.orderByDesc(Film::getPlayCount);
         }
 
-        // 分页查询
         Page<Film> page = filmMapper.selectPage(
                 new Page<>(dto.getPageNum(), dto.getPageSize()),
                 wrapper
         );
 
-        // 转换 VO
         List<FilmVO> voList = page.getRecords().stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
@@ -99,18 +112,18 @@ public class FilmServiceImpl implements FilmService {
             return List.of();
         }
 
-        LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
-        wrapper.like(Film::getTitle, keyword)
-                .or()
-                .like(Film::getDescription, keyword)
-                .or()
-                .like(Film::getActors, keyword)
-                .or()
-                .like(Film::getDirector, keyword);
-        wrapper.eq(Film::getStatus, 0);
-        wrapper.orderByDesc(Film::getPlayCount);
+        String normalizedKeyword = keyword.trim();
+        List<Film> localFilms = searchFromDatabase(normalizedKeyword, SEARCH_LIMIT);
+        if (localFilms.size() >= 8) {
+            return localFilms.stream().map(this::toVO).collect(Collectors.toList());
+        }
 
-        return queryWithLimit(wrapper, 20).stream()
+        int imported = importFromTvboxSearch(normalizedKeyword, SEARCH_LIMIT);
+        if (imported > 0) {
+            log.info("电影搜索触发 TVBox 补库完成: keyword={}, imported={}", normalizedKeyword, imported);
+        }
+
+        return searchFromDatabase(normalizedKeyword, SEARCH_LIMIT).stream()
                 .map(this::toVO)
                 .collect(Collectors.toList());
     }
@@ -118,7 +131,6 @@ public class FilmServiceImpl implements FilmService {
     @Override
     public List<FilmVO> getRecommend(Integer size) {
         int safeSize = sanitizeLimit(size, 10, 50);
-        // 简单推荐：高评分 + 随机
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Film::getStatus, 0);
         wrapper.ge(Film::getRating, 7.0);
@@ -134,7 +146,6 @@ public class FilmServiceImpl implements FilmService {
         int limit = size != null ? size : 10;
 
         try {
-            // 尝试从 Redis ZSet 缓存获取（按分数降序）
             Set<Object> cachedIds = redisService.zReverseRange(FILM_HOT_RANK_KEY, 0, limit - 1);
             if (cachedIds != null && !cachedIds.isEmpty()) {
                 return cachedIds.stream()
@@ -150,10 +161,9 @@ public class FilmServiceImpl implements FilmService {
                         .collect(Collectors.toList());
             }
         } catch (Exception e) {
-            log.warn("从 Redis 获取热门榜单失败，fallback 到数据库查询", e);
+            log.warn("从 Redis 获取热门榜单失败，回退数据库查询", e);
         }
 
-        // 缓存未命中或 Redis 异常，从数据库查询
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Film::getStatus, 0);
         wrapper.orderByDesc(Film::getPlayCount);
@@ -165,13 +175,9 @@ public class FilmServiceImpl implements FilmService {
 
     @Override
     public void incrementPlayCount(Long id) {
-        // 使用 Redis 累计播放量
         String key = FILM_PLAY_COUNT_KEY + id;
         redisService.increment(key);
-
-        // 更新热门榜单分数
         redisService.zIncrementScore(FILM_HOT_RANK_KEY, id, 1);
-
         log.debug("电影播放量 +1, id={}", id);
     }
 
@@ -181,55 +187,27 @@ public class FilmServiceImpl implements FilmService {
             return List.of();
         }
 
-        // 批量查询
         List<Film> films = filmMapper.selectBatchIds(ids);
-
-        // 转换为 Map 方便按 ID 顺序排列
         Map<Long, FilmVO> filmMap = films.stream()
                 .collect(Collectors.toMap(Film::getId, this::toVO));
 
-        // 保持传入的 ID 顺序
         return ids.stream()
                 .map(filmMap::get)
                 .filter(vo -> vo != null)
                 .collect(Collectors.toList());
     }
 
-    /**
-     * 转换为 VO
-     */
-    private FilmVO toVO(Film film) {
-        FilmVO vo = BeanUtil.copyProperties(film, FilmVO.class);
-
-        // 解析标签 JSON
-        if (StrUtil.isNotBlank(film.getTags())) {
-            vo.setTags(JSONUtil.toList(film.getTags(), String.class));
-        }
-
-        // 获取分类名称
-        if (film.getCategoryId() != null) {
-            Category category = categoryCache.get(film.getCategoryId(), 
-                    id -> categoryMapper.selectById(id));
-            if (category != null) {
-                vo.setCategoryName(category.getName());
-            }
-        }
-
-        return vo;
-    }
-
     @Override
     public boolean saveFromTvbox(Map<String, Object> data) {
-        String title = (String) data.get("title");
-        if (StrUtil.isBlank(title)) return false;
+        String title = stringValue(data.get("title"));
+        if (StrUtil.isBlank(title)) {
+            return false;
+        }
 
-        // 查重：同名且同一年份
-        Object yearObj = data.get("year");
-        Integer year = yearObj instanceof Number ? ((Number) yearObj).intValue() : null;
-        
+        Integer year = toInteger(data.get("year"));
         LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Film::getTitle, title);
-        if (year != null && year > 1900) { // 简单年份校验
+        if (year != null && year > 1900) {
             wrapper.eq(Film::getYear, year);
         }
         if (filmMapper.exists(wrapper)) {
@@ -238,42 +216,137 @@ public class FilmServiceImpl implements FilmService {
 
         Film film = new Film();
         film.setTitle(title);
-        film.setCoverUrl((String) data.get("coverUrl"));
-        film.setDescription((String) data.get("description"));
-        
-        Object ratingObj = data.get("rating");
-        if (ratingObj instanceof Number) {
-            film.setRating(((Number) ratingObj).doubleValue());
-        } else {
-             film.setRating(7.0); // 默认评分
-        }
-        
+        film.setCoverUrl(stringValue(data.get("coverUrl")));
+        film.setDescription(stringValue(data.get("description")));
+        film.setRating(toDouble(data.get("rating"), 7.0));
         film.setYear(year);
-        film.setRegion((String) data.get("region"));
-        film.setDirector((String) data.get("director"));
-        film.setActors((String) data.get("actors"));
-        film.setVideoUrl((String) data.get("videoUrl"));
-        
-        // 简单的分类匹配逻辑
-        // 默认电影
-        long categoryId = 1L; 
-        
-        // 尝试根据标题或来源信息判断
-        // 这里只是简单示例，完善需根据 Tags 或 Category Name
-        // 有些 Tvbox 源会返回 type_name
-        if (title.matches(".*(第.*季|全.*集).*")) {
-            categoryId = 2L; // 电视剧
+        film.setRegion(stringValue(data.get("region")));
+        film.setDirector(stringValue(data.get("director")));
+        film.setActors(stringValue(data.get("actors")));
+        film.setVideoUrl(stringValue(data.get("videoUrl")));
+        film.setPlayCount(toLong(data.get("playCount"), 0L));
+
+        long categoryId = 1L;
+        String contentType = stringValue(data.get("contentType"));
+        if ("tv_series".equalsIgnoreCase(contentType) || title.matches(".*(第.*季|全.*集).*")) {
+            categoryId = 2L;
         }
-        
+
         film.setCategoryId(categoryId);
-        film.setStatus(0); // 0-上架
+        film.setStatus(0);
         film.setDeleted(0);
-        
+
         filmMapper.insert(film);
-        
-        // 初始写入 Redis 缓存（可选）
-        
+        filmRagSyncService.syncFilm(film);
         return true;
+    }
+
+    @Override
+    public int syncFilmsToRag(Integer limit) {
+        LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
+        wrapper.eq(Film::getStatus, 0)
+                .orderByDesc(Film::getUpdateTime)
+                .orderByDesc(Film::getCreateTime);
+        List<Film> films = queryWithLimit(wrapper, sanitizeLimit(limit, RAG_SYNC_LIMIT, 1000));
+        int synced = filmRagSyncService.syncFilms(films);
+        log.info("从 MySQL 同步电影到 Python RAG 完成: total={}, success={}", films.size(), synced);
+        return synced;
+    }
+
+    private FilmVO toVO(Film film) {
+        FilmVO vo = BeanUtil.copyProperties(film, FilmVO.class);
+
+        if (StrUtil.isNotBlank(film.getTags())) {
+            vo.setTags(JSONUtil.toList(film.getTags(), String.class));
+        }
+
+        if (film.getCategoryId() != null) {
+            Category category = categoryCache.get(film.getCategoryId(), id -> categoryMapper.selectById(id));
+            if (category != null) {
+                vo.setCategoryName(category.getName());
+            }
+        }
+
+        return vo;
+    }
+
+    private List<Film> searchFromDatabase(String keyword, int limit) {
+        LambdaQueryWrapper<Film> wrapper = new LambdaQueryWrapper<>();
+        wrapper.like(Film::getTitle, keyword)
+                .or()
+                .like(Film::getDescription, keyword)
+                .or()
+                .like(Film::getActors, keyword)
+                .or()
+                .like(Film::getDirector, keyword);
+        wrapper.eq(Film::getStatus, 0);
+        wrapper.orderByDesc(Film::getPlayCount)
+                .orderByDesc(Film::getRating)
+                .orderByDesc(Film::getYear);
+        return queryWithLimit(wrapper, limit);
+    }
+
+    @SuppressWarnings("unchecked")
+    private int importFromTvboxSearch(String keyword, int limit) {
+        try {
+            String url = UriComponentsBuilder.fromHttpUrl(tvboxProxyBaseUrl + "/search")
+                    .queryParam("keyword", keyword)
+                    .toUriString();
+            ResponseEntity<Map> response = restTemplate.getForEntity(url, Map.class);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                return 0;
+            }
+
+            Object data = response.getBody().get("data");
+            if (!(data instanceof List<?> films)) {
+                return 0;
+            }
+
+            int imported = 0;
+            int size = Math.min(limit, films.size());
+            for (int i = 0; i < size; i++) {
+                Object item = films.get(i);
+                if (!(item instanceof Map<?, ?> rawMap)) {
+                    continue;
+                }
+                Map<String, Object> payload = new HashMap<>();
+                rawMap.forEach((key, value) -> payload.put(String.valueOf(key), value));
+
+                String tvboxId = stringValue(payload.get("id"));
+                if (StrUtil.isNotBlank(tvboxId)) {
+                    String playUrl = fetchTvboxPlayUrl(tvboxId);
+                    if (StrUtil.isNotBlank(playUrl)) {
+                        payload.put("videoUrl", playUrl);
+                    }
+                }
+
+                if (saveFromTvbox(payload)) {
+                    imported++;
+                }
+            }
+            return imported;
+        } catch (Exception e) {
+            log.warn("TVBox 搜索补库失败: keyword={}, err={}", keyword, e.getMessage());
+            return 0;
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private String fetchTvboxPlayUrl(String tvboxId) {
+        try {
+            ResponseEntity<Map> response = restTemplate.getForEntity(tvboxProxyBaseUrl + "/play/{id}", Map.class, tvboxId);
+            if (!response.getStatusCode().is2xxSuccessful() || response.getBody() == null) {
+                return "";
+            }
+
+            Object data = response.getBody().get("data");
+            if (data instanceof Map<?, ?> playMap) {
+                return stringValue(playMap.get("playUrl"));
+            }
+        } catch (Exception e) {
+            log.debug("获取 TVBox 播放地址失败: id={}, err={}", tvboxId, e.getMessage());
+        }
+        return "";
     }
 
     private List<Film> queryWithLimit(LambdaQueryWrapper<Film> wrapper, int limit) {
@@ -286,5 +359,51 @@ public class FilmServiceImpl implements FilmService {
             return defaultValue;
         }
         return Math.min(limit, maxValue);
+    }
+
+    private String stringValue(Object value) {
+        return value == null ? "" : String.valueOf(value).trim();
+    }
+
+    private Integer toInteger(Object value) {
+        if (value instanceof Number number) {
+            return number.intValue();
+        }
+        if (value == null) {
+            return null;
+        }
+        try {
+            return Integer.parseInt(String.valueOf(value).trim());
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    private Long toLong(Object value, Long fallback) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Long.parseLong(String.valueOf(value).trim());
+        } catch (Exception e) {
+            return fallback;
+        }
+    }
+
+    private Double toDouble(Object value, Double fallback) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return Double.parseDouble(String.valueOf(value).trim());
+        } catch (Exception e) {
+            return fallback;
+        }
     }
 }

@@ -1,6 +1,7 @@
 package com.jelly.cinema.ai.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.jelly.cinema.ai.config.AiProviderProperties;
 import dev.langchain4j.model.chat.ChatLanguageModel;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -12,6 +13,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Comparator;
 
 /**
  * AI model service for homepage recommendation analysis.
@@ -23,6 +25,7 @@ public class AiModelService {
 
     private final ChatLanguageModel chatLanguageModel;
     private final ObjectMapper objectMapper;
+    private final AiProviderProperties aiProviderProperties;
 
     private static final int STRUCTURED_RETRY_TIMES = 2;
 
@@ -113,6 +116,15 @@ public class AiModelService {
      */
     public List<Map<String, Object>> batchAnalyzeAndSort(List<Map<String, Object>> films) {
         log.info("Start AI batch analysis, film count={}", films.size());
+        if (films == null || films.isEmpty()) {
+            return films;
+        }
+
+        if (!hasConfiguredChatProvider()) {
+            log.info("No AI provider configured, use local batch sort strategy");
+            return applyLocalBatchSort(films, "本地策略：按年份与评分综合排序");
+        }
+
         int maxAnalyze = Math.min(films.size(), 20);
 
         for (int i = 0; i < maxAnalyze; i++) {
@@ -142,8 +154,9 @@ public class AiModelService {
         }
 
         for (int i = maxAnalyze; i < films.size(); i++) {
-            films.get(i).put("aiScore", 50.0);
-            films.get(i).put("aiReason", "待分析");
+            Map<String, Object> film = films.get(i);
+            film.put("aiScore", calculateLocalScore(film));
+            film.put("aiReason", "本地补全排序");
         }
 
         films.sort((a, b) -> {
@@ -220,7 +233,70 @@ public class AiModelService {
         if (value instanceof Number number) {
             return number.doubleValue();
         }
+        if (value instanceof String text) {
+            try {
+                return Double.parseDouble(text.trim());
+            } catch (Exception ignored) {
+                return defaultValue;
+            }
+        }
         return defaultValue;
+    }
+
+    private boolean hasConfiguredChatProvider() {
+        if (aiProviderProperties == null || aiProviderProperties.getProviders() == null) {
+            return false;
+        }
+        return aiProviderProperties.getProviders().stream()
+                .filter(AiProviderProperties.Provider::isEnabled)
+                .anyMatch(provider -> isNonBlank(provider.getApiKey())
+                        && isNonBlank(provider.getBaseUrl())
+                        && isNonBlank(provider.getModel()));
+    }
+
+    private boolean isNonBlank(String text) {
+        return text != null && !text.isBlank();
+    }
+
+    private List<Map<String, Object>> applyLocalBatchSort(List<Map<String, Object>> films, String reason) {
+        for (Map<String, Object> film : films) {
+            film.put("aiScore", calculateLocalScore(film));
+            film.put("aiReason", reason);
+        }
+        films.sort(Comparator.comparing((Map<String, Object> film) -> asDouble(film.get("aiScore"), 50.0)).reversed());
+        return films;
+    }
+
+    private double calculateLocalScore(Map<String, Object> film) {
+        int currentYear = java.time.LocalDate.now().getYear();
+        int year = 0;
+        if (film.get("year") instanceof Number number) {
+            year = number.intValue();
+        } else if (film.get("year") instanceof String text) {
+            try {
+                year = Integer.parseInt(text.trim());
+            } catch (Exception ignored) {
+                year = 0;
+            }
+        }
+
+        double rating = asDouble(film.get("rating"), 0.0);
+        double score = 45.0;
+        if (year >= currentYear) {
+            score += 28.0;
+        } else if (year == currentYear - 1) {
+            score += 18.0;
+        } else if (year >= currentYear - 3) {
+            score += 10.0;
+        }
+        score += Math.min(22.0, Math.max(0.0, rating) * 2.2);
+        if (isNonBlank((String) film.get("description"))) {
+            score += 3.0;
+        }
+        if (isNonBlank((String) film.get("actors"))) {
+            score += 2.0;
+        }
+        return Math.max(0.0, Math.min(score, 100.0));
     }
 
     private <T> T parseStructured(String raw, Class<T> clazz) {

@@ -1,16 +1,21 @@
 package com.jelly.cinema.film.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import cn.hutool.core.util.StrUtil;
 import com.jelly.cinema.common.core.domain.PageResult;
+import com.jelly.cinema.film.domain.dto.HomepageFilmImportDTO;
 import com.jelly.cinema.film.domain.entity.HomepageConfigVersion;
 import com.jelly.cinema.film.domain.entity.HomepageContent;
 import com.jelly.cinema.film.domain.entity.PublishedContent;
+import com.jelly.cinema.film.domain.vo.FilmVO;
 import com.jelly.cinema.film.domain.vo.HomepageContentVO;
 import com.jelly.cinema.film.mapper.HomepageConfigVersionMapper;
 import com.jelly.cinema.film.mapper.HomepageContentMapper;
 import com.jelly.cinema.film.mapper.PublishedContentMapper;
+import com.jelly.cinema.film.service.FilmService;
 import com.jelly.cinema.film.service.HomepageContentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -41,7 +46,7 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
     private final HomepageConfigVersionMapper configVersionMapper;
     private final StringRedisTemplate redisTemplate;
     private final RestTemplate restTemplate;
-    private final com.jelly.cinema.film.service.FilmService filmService;
+    private final FilmService filmService;
 
     private static final String CACHE_KEY_PREFIX = "homepage:content:";
     private static final long CACHE_TTL_MINUTES = 5;
@@ -249,15 +254,18 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
                 // 使用AI分析结果更新
                 int newSortOrder = 0;
                 for (Map<String, Object> filmMap : analyzed) {
-                    Long id = ((Number) filmMap.get("id")).longValue();
-                    Double aiScore = filmMap.get("aiScore") instanceof Number 
-                            ? ((Number) filmMap.get("aiScore")).doubleValue() : 50.0;
-                    String aiReason = (String) filmMap.get("aiReason");
+                    Long id = asLong(filmMap.get("id"));
+                    if (id == null) {
+                        log.warn("AI排序结果缺少有效ID，跳过: {}", filmMap);
+                        continue;
+                    }
+                    Double aiScore = asDouble(filmMap.get("aiScore"), 50.0);
+                    String aiReason = asString(filmMap.get("aiReason"), "AI推荐");
                     
                     HomepageContent update = new HomepageContent();
                     update.setId(id);
                     update.setAiScore(new BigDecimal(aiScore));
-                    update.setAiReason(aiReason != null ? aiReason : "AI推荐");
+                    update.setAiReason(aiReason);
                     update.setSortOrder(newSortOrder++);
                     updateById(update);
                 }
@@ -448,6 +456,62 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
         log.info("已{}AI精选标记: id={}", isBest ? "添加" : "移除", id);
     }
 
+    @Override
+    public HomepageContentVO importFilm(HomepageFilmImportDTO dto) {
+        if (dto == null || dto.getFilmId() == null) {
+            throw new IllegalArgumentException("filmId 不能为空");
+        }
+
+        FilmVO film = filmService.getDetail(dto.getFilmId());
+        String sectionType = normalizeSectionType(dto.getSectionType());
+        String contentType = normalizeContentType(dto.getContentType(), film);
+        int sortOrder = resolveSortOrder(sectionType, dto.getSortOrder());
+        boolean replaceExisting = Boolean.TRUE.equals(dto.getReplaceExisting());
+
+        if (replaceExisting && dto.getSortOrder() != null) {
+            remove(
+                    Wrappers.<HomepageContent>lambdaQuery()
+                            .eq(HomepageContent::getSectionType, sectionType)
+                            .eq(HomepageContent::getSortOrder, dto.getSortOrder())
+            );
+        }
+
+        HomepageContent existing = getOne(
+                Wrappers.<HomepageContent>lambdaQuery()
+                        .eq(HomepageContent::getSectionType, sectionType)
+                        .eq(HomepageContent::getTitle, film.getTitle())
+                        .last("limit 1"),
+                false
+        );
+
+        HomepageContent content = existing == null ? new HomepageContent() : existing;
+        content.setContentType(contentType);
+        content.setSectionType(sectionType);
+        content.setTitle(film.getTitle());
+        content.setCoverUrl(film.getCoverUrl());
+        content.setDescription(film.getDescription());
+        content.setSourceName(StrUtil.blankToDefault(film.getCategoryName(), "片库导入"));
+        content.setSourceApi("mysql://t_film/" + film.getId());
+        content.setRating(film.getRating() == null ? BigDecimal.ZERO : BigDecimal.valueOf(film.getRating()));
+        content.setYear(film.getYear());
+        content.setRegion(film.getRegion());
+        content.setActors(film.getActors());
+        content.setDirector(film.getDirector());
+        content.setSortOrder(sortOrder);
+        content.setStatus(1);
+        content.setAiReason("管理员从片库导入");
+        content.setTvboxId(existing != null ? existing.getTvboxId() : null);
+
+        if (existing == null) {
+            save(content);
+        } else {
+            updateById(content);
+        }
+
+        clearCache();
+        return convertToVO(content);
+    }
+
     private void syncToLibrary(List<Map<String, Object>> films) {
         log.info("开始后台同步电影库，共 {} 部...", films.size());
         int count = 0;
@@ -488,6 +552,82 @@ public class HomepageContentServiceImpl extends ServiceImpl<HomepageContentMappe
             }
         }
         log.info("后台同步完成，新增入库 {} 部电影", count);
+    }
+
+    private String normalizeSectionType(String sectionType) {
+        String normalized = asString(sectionType, "recommend");
+        return switch (normalized) {
+            case "recommend", "hot", "new", "trending" -> normalized;
+            default -> "recommend";
+        };
+    }
+
+    private String normalizeContentType(String contentType, FilmVO film) {
+        String normalized = asString(contentType, "");
+        if (Set.of("movie", "tv_series", "variety", "anime").contains(normalized)) {
+            return normalized;
+        }
+        String categoryName = asString(film.getCategoryName(), "");
+        if (categoryName.contains("电视剧") || film.getTitle().matches(".*(第.*季|全.*集).*")) {
+            return "tv_series";
+        }
+        if (categoryName.contains("综艺")) {
+            return "variety";
+        }
+        if (categoryName.contains("动漫")) {
+            return "anime";
+        }
+        return "movie";
+    }
+
+    private int resolveSortOrder(String sectionType, Integer requestedSortOrder) {
+        if (requestedSortOrder != null && requestedSortOrder >= 0) {
+            return requestedSortOrder;
+        }
+        HomepageContent tail = getOne(
+                Wrappers.<HomepageContent>lambdaQuery()
+                        .eq(HomepageContent::getSectionType, sectionType)
+                        .orderByDesc(HomepageContent::getSortOrder)
+                        .last("limit 1"),
+                false
+        );
+        return tail == null || tail.getSortOrder() == null ? 0 : tail.getSortOrder() + 1;
+    }
+
+    private Long asLong(Object value) {
+        if (value instanceof Number number) {
+            return number.longValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Long.parseLong(text.trim());
+            } catch (Exception ignored) {
+                return null;
+            }
+        }
+        return null;
+    }
+
+    private Double asDouble(Object value, double fallback) {
+        if (value instanceof Number number) {
+            return number.doubleValue();
+        }
+        if (value instanceof String text) {
+            try {
+                return Double.parseDouble(text.trim());
+            } catch (Exception ignored) {
+                return fallback;
+            }
+        }
+        return fallback;
+    }
+
+    private String asString(Object value, String fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        String text = String.valueOf(value).trim();
+        return text.isEmpty() ? fallback : text;
     }
 
     private List<HomepageContent> queryWithLimit(LambdaQueryWrapper<HomepageContent> wrapper, int limit) {

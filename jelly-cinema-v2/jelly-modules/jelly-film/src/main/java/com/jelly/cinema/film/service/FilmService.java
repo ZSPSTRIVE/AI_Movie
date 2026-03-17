@@ -75,4 +75,12 @@ public interface FilmService {
      * @return 是否保存成功 (true-新增, false-已存在或忽略)
      */
     boolean saveFromTvbox(java.util.Map<String, Object> data);
+
+    /**
+     * 将电影库中的数据同步到 Python RAG
+     *
+     * @param limit 同步数量，null 时使用默认值
+     * @return 实际同步成功数量
+     */
+    int syncFilmsToRag(Integer limit);
 }

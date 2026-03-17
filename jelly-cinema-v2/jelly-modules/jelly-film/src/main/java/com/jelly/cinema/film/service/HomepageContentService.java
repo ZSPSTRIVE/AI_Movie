@@ -2,6 +2,7 @@ package com.jelly.cinema.film.service;
 
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.jelly.cinema.common.core.domain.PageResult;
+import com.jelly.cinema.film.domain.dto.HomepageFilmImportDTO;
 import com.jelly.cinema.film.domain.entity.HomepageContent;
 import com.jelly.cinema.film.domain.vo.HomepageContentVO;
 
@@ -85,4 +86,9 @@ public interface HomepageContentService extends IService<HomepageContent> {
      * 标记为AI精选
      */
     void markAsBest(Long id, boolean isBest);
+
+    /**
+     * 从片库导入内容到首页板块。
+     */
+    HomepageContentVO importFilm(HomepageFilmImportDTO dto);
 }

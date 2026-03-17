@@ -50,6 +50,12 @@ public class RemoteFilmFallbackFactory implements FallbackFactory<RemoteFilmServ
                 log.warn("Fallback: getHotFilms({})", size);
                 return R.ok(Collections.emptyList());
             }
+
+            @Override
+            public R<Integer> syncFilmsToRag(Integer limit) {
+                log.warn("Fallback: syncFilmsToRag({})", limit);
+                return R.ok(0);
+            }
         };
     }
 }

@@ -65,4 +65,11 @@ public class FilmController {
         filmService.incrementPlayCount(id);
         return R.ok();
     }
+
+    @Operation(summary = "将电影库同步到 Python RAG")
+    @PostMapping("/rag/sync")
+    public R<Integer> syncFilmsToRag(
+            @Parameter(description = "同步数量") @RequestParam(value = "limit", required = false) Integer limit) {
+        return R.ok("同步完成", filmService.syncFilmsToRag(limit));
+    }
 }
