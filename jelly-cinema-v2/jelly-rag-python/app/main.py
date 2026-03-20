@@ -55,8 +55,10 @@ movie_knowledge_service = MovieKnowledgeService(
 async def lifespan(app: FastAPI):
     try:
         pg_client.ensure_schema()
+        rebuild_result = ingest_service.rebuild_from_directory()
+        logger.info("Local knowledge bootstrapped: %s", rebuild_result.message)
     except Exception as exc:
-        logger.warning("PostgreSQL schema init skipped: %s", exc)
+        logger.warning("PostgreSQL schema or local knowledge bootstrap skipped: %s", exc)
     redis_client.connect()
     yield
 

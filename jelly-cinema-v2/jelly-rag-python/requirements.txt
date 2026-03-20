@@ -4,8 +4,6 @@ pydantic>=2.5.0
 pydantic-settings>=2.1.0
 python-dotenv>=1.0.0
 
-langchain-text-splitters>=0.3.0
-
 pymilvus>=2.3.0
 redis>=5.0.0
 httpx>=0.26.0

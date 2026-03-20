@@ -110,6 +110,7 @@ class IngestService:
                     biz_type=self.settings.default_biz_type,
                     source_type="directory_sync",
                     source_path=str(path),
+                    replace_by_source=True,
                 )
             )
             count += 1

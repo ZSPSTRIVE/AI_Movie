@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 电影服务熔断降级工厂
@@ -55,6 +56,18 @@ public class RemoteFilmFallbackFactory implements FallbackFactory<RemoteFilmServ
             public R<Integer> syncFilmsToRag(Integer limit) {
                 log.warn("Fallback: syncFilmsToRag({})", limit);
                 return R.ok(0);
+            }
+
+            @Override
+            public R<Map<String, Object>> startFilmsToRagSync(Integer limit) {
+                log.warn("Fallback: startFilmsToRagSync({})", limit);
+                return R.fail("电影服务暂时不可用");
+            }
+
+            @Override
+            public R<Map<String, Object>> getFilmsToRagSyncStatus() {
+                log.warn("Fallback: getFilmsToRagSyncStatus()");
+                return R.fail("电影服务暂时不可用");
             }
         };
     }

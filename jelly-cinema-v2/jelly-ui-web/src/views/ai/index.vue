@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, nextTick, onMounted, computed } from 'vue'
+import { ref, nextTick, onMounted, onUnmounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import { generateOutline, type NovelOutlineRequest } from '@/api/ai'
 import { ElMessage } from 'element-plus'
@@ -22,7 +22,10 @@ interface ChatMessage {
   content: string
 }
 
-function goToFilmDetail(filmId: string | number) {
+function goToFilmDetail(filmId?: string | number | null) {
+  if (filmId === undefined || filmId === null || filmId === '') {
+    return
+  }
   router.push(`/film/${filmId}`)
 }
 
@@ -157,46 +160,152 @@ const styleOptions = ['轻松', '严肃', '悬疑', '浪漫', '热血', '治愈'
 // ===== RAG 知识库 =====
 const ragQuery = ref('')
 const ragResults = ref<Array<{
-  film_id: number
+  film_id?: number
   title: string
   content: string
   score: number
+  knowledge_base?: string
+  source_type?: string
 }>>([])
 const ragLoading = ref(false)
 const syncLoading = ref(false)
 const syncStatus = ref<'idle' | 'success' | 'error'>('idle')
 const syncMessage = ref('')
+const syncProgress = ref('')
+
+interface RagSyncJobStatus {
+  success?: boolean
+  accepted?: boolean
+  started?: boolean
+  running?: boolean
+  state?: 'idle' | 'running' | 'success' | 'partial_success' | 'failed'
+  limit?: number
+  total?: number
+  processed?: number
+  synced?: number
+  failed?: number
+  message?: string
+}
 
 // Python RAG 服务代理地址（由后端转发，避免浏览器 CORS）
 const RAG_SERVICE_URL = '/api/ai/rag/python'
+const isRagAvailable = computed(() => ragServiceStatus.value === 'online' || ragServiceStatus.value === 'degraded')
+const DEFAULT_SYNC_LIMIT = 100
+let syncStatusPollTimer: number | null = null
+
+function stopSyncStatusPolling() {
+  if (syncStatusPollTimer !== null) {
+    window.clearInterval(syncStatusPollTimer)
+    syncStatusPollTimer = null
+  }
+}
+
+function applySyncJobStatus(data: RagSyncJobStatus) {
+  const processed = data.processed ?? 0
+  const total = data.total ?? 0
+  const synced = data.synced ?? 0
+  const failed = data.failed ?? 0
+  const state = data.state ?? 'idle'
+  const baseMessage = data.message || '同步任务状态未知'
+
+  syncProgress.value = total > 0
+    ? `进度 ${processed}/${total}，成功 ${synced}，失败 ${failed}`
+    : ''
+
+  if (state === 'running' || data.running) {
+    syncLoading.value = true
+    syncStatus.value = 'idle'
+    syncMessage.value = baseMessage
+    return
+  }
+
+  syncLoading.value = false
+  if (state === 'success' || state === 'partial_success') {
+    syncStatus.value = 'success'
+    syncMessage.value = total > 0 ? `${baseMessage}，成功 ${synced} 条` : baseMessage
+  } else if (state === 'failed') {
+    syncStatus.value = 'error'
+    syncMessage.value = total > 0 ? `${baseMessage}，失败 ${failed} 条` : baseMessage
+  } else {
+    syncStatus.value = 'idle'
+    syncMessage.value = baseMessage
+  }
+}
+
+async function fetchSyncStatus(showError = false) {
+  try {
+    const token = localStorage.getItem('token')
+    const res = await fetch(`${RAG_SERVICE_URL}/sync/status`, {
+      method: 'GET',
+      headers: token ? { 'Authorization': token } : undefined
+    })
+    if (!res.ok) {
+      throw new Error('无法获取同步状态')
+    }
+    const data: RagSyncJobStatus = await res.json()
+    applySyncJobStatus(data)
+    if (data.state === 'running' || data.running) {
+      if (syncStatusPollTimer === null) {
+        startSyncStatusPolling()
+      }
+    } else {
+      stopSyncStatusPolling()
+    }
+  } catch (e: any) {
+    stopSyncStatusPolling()
+    syncLoading.value = false
+    if (showError) {
+      syncStatus.value = 'error'
+      syncMessage.value = e.message || '获取同步状态失败'
+      ElMessage.error(syncMessage.value)
+    }
+  }
+}
+
+function startSyncStatusPolling() {
+  stopSyncStatusPolling()
+  syncStatusPollTimer = window.setInterval(() => {
+    void fetchSyncStatus(false)
+  }, 2000)
+}
 
 // 同步电影数据到向量库
 async function handleSyncFilms() {
   syncLoading.value = true
   syncStatus.value = 'idle'
+  syncMessage.value = ''
+  syncProgress.value = ''
   try {
     const token = localStorage.getItem('token')
     const res = await fetch(`${RAG_SERVICE_URL}/sync`, {
       method: 'POST',
-      headers: token ? { 'Authorization': token } : undefined
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': token } : {})
+      },
+      body: JSON.stringify({ limit: DEFAULT_SYNC_LIMIT })
     })
     if (!res.ok) {
-      throw new Error('RAG 服务不可用')
+      const errorBody = await res.json().catch(() => null)
+      throw new Error(errorBody?.message || 'RAG 服务不可用')
     }
-    const data = await res.json()
-    if (data.success) {
-      syncStatus.value = 'success'
-      syncMessage.value = `同步成功，已从 MySQL 片库同步 ${data.count} 部电影到 RAG`
-      ElMessage.success(syncMessage.value)
+    const data: RagSyncJobStatus = await res.json()
+    if (data.success !== false) {
+      applySyncJobStatus(data)
+      startSyncStatusPolling()
+      ElMessage.success(data.message || `已启动 ${DEFAULT_SYNC_LIMIT} 条电影的后台同步`)
     } else {
       throw new Error(data.message || '同步失败')
     }
   } catch (e: any) {
     syncStatus.value = 'error'
     syncMessage.value = e.message || '同步失败，请检查电影服务和 Python RAG 服务是否运行'
+    syncProgress.value = ''
     ElMessage.error(syncMessage.value)
   } finally {
-    syncLoading.value = false
+    if (syncStatus.value === 'error') {
+      syncLoading.value = false
+    }
   }
 }
 
@@ -232,7 +341,7 @@ async function handleRagSearch() {
 }
 
 // 检查 RAG 服务状态
-const ragServiceStatus = ref<'checking' | 'online' | 'offline'>('checking')
+const ragServiceStatus = ref<'checking' | 'online' | 'degraded' | 'offline'>('checking')
 
 async function checkRagService() {
   try {
@@ -246,7 +355,13 @@ async function checkRagService() {
       return
     }
     const data = await res.json()
-    ragServiceStatus.value = data.status === 'healthy' ? 'online' : 'offline'
+    const postgresOk = data?.components?.postgres?.status === 'connected'
+    const milvusOk = data?.components?.milvus?.status === 'connected'
+    if (!postgresOk) {
+      ragServiceStatus.value = 'offline'
+      return
+    }
+    ragServiceStatus.value = milvusOk ? 'online' : 'degraded'
   } catch {
     ragServiceStatus.value = 'offline'
   }
@@ -254,6 +369,11 @@ async function checkRagService() {
 
 onMounted(() => {
   checkRagService()
+  void fetchSyncStatus(false)
+})
+
+onUnmounted(() => {
+  stopSyncStatusPolling()
 })
 </script>
 
@@ -481,19 +601,22 @@ onMounted(() => {
             <!-- 服务状态 -->
             <div class="mb-6 p-4 rounded-xl border border-gray-200 dark:border-gray-700" :class="{
               'bg-success/10': ragServiceStatus === 'online',
+              'bg-warning/10': ragServiceStatus === 'degraded',
               'bg-danger/10': ragServiceStatus === 'offline',
               'bg-gray-100 dark:bg-gray-700': ragServiceStatus === 'checking'
             }">
               <div class="flex items-center gap-3">
                 <span class="w-3 h-3 rounded-full" :class="{
                   'bg-success': ragServiceStatus === 'online',
+                  'bg-warning': ragServiceStatus === 'degraded',
                   'bg-danger': ragServiceStatus === 'offline',
                   'bg-gray-400': ragServiceStatus === 'checking'
                 }"></span>
                 <div>
                   <div class="font-semibold">Python RAG 服务</div>
                   <div class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ ragServiceStatus === 'online' ? '运行中 (已通过后端代理)' : 
+                    {{ ragServiceStatus === 'online' ? '运行中 (向量检索可用)' :
+                       ragServiceStatus === 'degraded' ? '运行中 (降级模式：关键词检索可用)' :
                        ragServiceStatus === 'offline' ? '未连接 - 请启动服务' : '检查中...' }}
                   </div>
                 </div>
@@ -510,13 +633,16 @@ onMounted(() => {
               <el-button 
                 type="primary" 
                 :loading="syncLoading" 
-                :disabled="ragServiceStatus !== 'online'"
+                :disabled="!isRagAvailable"
                 @click="handleSyncFilms"
                 class="!bg-primary !border !border-primary !font-medium"
               >
                 <el-icon class="mr-1"><Refresh /></el-icon>
-                {{ syncLoading ? '同步中...' : '开始同步' }}
+                {{ syncLoading ? '后台同步中...' : '开始同步' }}
               </el-button>
+              <div v-if="syncProgress" class="mt-3 text-sm text-gray-500 dark:text-gray-400">
+                {{ syncProgress }}
+              </div>
               <el-alert 
                 v-if="syncStatus !== 'idle'" 
                 :type="syncStatus === 'success' ? 'success' : 'error'"
@@ -551,13 +677,13 @@ onMounted(() => {
                 v-model="ragQuery" 
                 placeholder="输入查询内容，如：科幻电影、刘德华..." 
                 size="large"
-                :disabled="ragServiceStatus !== 'online'"
+                :disabled="!isRagAvailable"
                 @keyup.enter="handleRagSearch"
               />
               <el-button 
                 type="primary" 
                 :loading="ragLoading" 
-                :disabled="ragServiceStatus !== 'online' || !ragQuery.trim()"
+                :disabled="!isRagAvailable || !ragQuery.trim()"
                 @click="handleRagSearch"
                 class="!bg-success !text-white !border !border-success !font-medium"
               >
@@ -585,7 +711,8 @@ onMounted(() => {
                     </span>
                   </div>
                   <p class="text-sm text-gray-600 line-clamp-3">{{ result.content }}</p>
-                  <div class="mt-2 text-xs text-gray-400">ID: {{ result.film_id }}</div>
+                  <div v-if="result.film_id" class="mt-2 text-xs text-gray-400">电影 ID: {{ result.film_id }}</div>
+                  <div v-else-if="result.knowledge_base" class="mt-2 text-xs text-gray-400">知识源: {{ result.knowledge_base }}</div>
                 </div>
               </div>
               

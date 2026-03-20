@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 电影控制器
@@ -71,5 +72,18 @@ public class FilmController {
     public R<Integer> syncFilmsToRag(
             @Parameter(description = "同步数量") @RequestParam(value = "limit", required = false) Integer limit) {
         return R.ok("同步完成", filmService.syncFilmsToRag(limit));
+    }
+
+    @Operation(summary = "后台触发电影库同步到 Python RAG")
+    @PostMapping("/rag/sync/start")
+    public R<Map<String, Object>> startSyncFilmsToRag(
+            @Parameter(description = "同步数量") @RequestParam(value = "limit", required = false) Integer limit) {
+        return R.ok(filmService.startSyncFilmsToRag(limit));
+    }
+
+    @Operation(summary = "获取电影库同步到 Python RAG 的任务状态")
+    @GetMapping("/rag/sync/status")
+    public R<Map<String, Object>> getSyncFilmsToRagStatus() {
+        return R.ok(filmService.getSyncFilmsToRagStatus());
     }
 }

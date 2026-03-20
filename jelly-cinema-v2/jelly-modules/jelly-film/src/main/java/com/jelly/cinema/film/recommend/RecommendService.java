@@ -1,6 +1,8 @@
 package com.jelly.cinema.film.recommend;
 
 import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONUtil;
 import com.jelly.cinema.film.domain.entity.Film;
 import com.jelly.cinema.film.domain.entity.UserFavorite;
 import com.jelly.cinema.film.domain.entity.WatchHistory;
@@ -133,7 +135,7 @@ public class RecommendService {
         for (UserFavorite favorite : favorites) {
             Film film = filmMapper.selectById(favorite.getFilmId());
             if (film != null && film.getTags() != null) {
-                for (String tag : film.getTags().split(",")) {
+                for (String tag : parseFilmTagList(film.getTags())) {
                     tag = tag.trim();
                     tagWeights.merge(tag, 2.0, Double::sum);
                 }
@@ -145,7 +147,7 @@ public class RecommendService {
         for (WatchHistory history : histories) {
             Film film = filmMapper.selectById(history.getFilmId());
             if (film != null && film.getTags() != null) {
-                for (String tag : film.getTags().split(",")) {
+                for (String tag : parseFilmTagList(film.getTags())) {
                     tag = tag.trim();
                     tagWeights.merge(tag, 1.0, Double::sum);
                 }
@@ -170,13 +172,41 @@ public class RecommendService {
      * 解析电影标签
      */
     private Set<String> parseFilmTags(String tags) {
-        if (tags == null || tags.isEmpty()) {
-            return Collections.emptySet();
+        return new LinkedHashSet<>(parseFilmTagList(tags));
+    }
+
+    private List<String> parseFilmTagList(String tags) {
+        if (StrUtil.isBlank(tags)) {
+            return Collections.emptyList();
         }
-        return Arrays.stream(tags.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isEmpty())
-                .collect(Collectors.toSet());
+
+        String trimmed = tags.trim();
+        if (trimmed.startsWith("[") && trimmed.endsWith("]")) {
+            try {
+                return JSONUtil.parseArray(trimmed).stream()
+                        .map(String::valueOf)
+                        .map(this::normalizeTag)
+                        .filter(StrUtil::isNotBlank)
+                        .collect(Collectors.toList());
+            } catch (Exception ignored) {
+                // Fall back to CSV parsing.
+            }
+        }
+
+        return Arrays.stream(trimmed.split(","))
+                .map(this::normalizeTag)
+                .filter(StrUtil::isNotBlank)
+                .collect(Collectors.toList());
+    }
+
+    private String normalizeTag(String tag) {
+        if (tag == null) {
+            return "";
+        }
+        return tag.trim()
+                .replace("\"", "")
+                .replace("[", "")
+                .replace("]", "");
     }
 
     /**

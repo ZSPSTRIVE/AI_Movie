@@ -49,6 +49,8 @@ class RetrievalService:
                     biz_type=row["biz_type"],
                     source="vector",
                     source_type=row.get("source_type", "knowledge"),
+                    film_id=self._extract_film_id(row.get("source_path")),
+                    knowledge_base=self._resolve_knowledge_base(row),
                 )
             )
         return chunks
@@ -75,6 +77,8 @@ class RetrievalService:
                     biz_type=row["biz_type"],
                     source="keyword",
                     source_type=row.get("source_type", "knowledge"),
+                    film_id=self._extract_film_id(row.get("source_path")),
+                    knowledge_base=self._resolve_knowledge_base(row),
                 )
             )
 
@@ -123,3 +127,30 @@ class RetrievalService:
             seen.add(term)
             unique.append(term)
         return unique[:16]
+
+    def _extract_film_id(self, source_path: str | None) -> int | None:
+        if not source_path:
+            return None
+        match = re.search(r"/(\d+)$", source_path.strip())
+        if not match:
+            return None
+        try:
+            return int(match.group(1))
+        except ValueError:
+            return None
+
+    def _resolve_knowledge_base(self, row: dict) -> str | None:
+        file_name = row.get("file_name")
+        if isinstance(file_name, str) and file_name.strip():
+            return file_name.strip()
+
+        source_path = row.get("source_path")
+        if not isinstance(source_path, str) or not source_path.strip():
+            return None
+
+        normalized = source_path.strip().replace("\\", "/")
+        if normalized.startswith("mysql://"):
+            return "mysql:t_film"
+        if normalized.startswith("tvbox://"):
+            return "tvbox"
+        return normalized.rsplit("/", 1)[-1] or normalized

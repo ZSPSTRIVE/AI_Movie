@@ -5,6 +5,7 @@ import com.jelly.cinema.film.domain.dto.FilmQueryDTO;
 import com.jelly.cinema.film.domain.vo.FilmVO;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 电影服务接口
@@ -83,4 +84,28 @@ public interface FilmService {
      * @return 实际同步成功数量
      */
     int syncFilmsToRag(Integer limit);
+
+    /**
+     * 后台触发电影向量库同步任务
+     *
+     * @param limit 同步数量，null 时使用默认值
+     * @return 当前任务状态
+     */
+    Map<String, Object> startSyncFilmsToRag(Integer limit);
+
+    /**
+     * 获取电影向量库同步任务状态
+     *
+     * @return 当前任务状态
+     */
+    Map<String, Object> getSyncFilmsToRagStatus();
+
+    /**
+     * 启动阶段从 TVBox 预热电影库
+     *
+     * @param targetNewCount 目标新增数量
+     * @param fullSweep      是否执行完整补库（推荐 + 列表 + 关键词）
+     * @return 实际新增数量
+     */
+    int warmupCatalogFromTvbox(int targetNewCount, boolean fullSweep);
 }

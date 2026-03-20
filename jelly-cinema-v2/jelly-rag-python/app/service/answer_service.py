@@ -43,6 +43,8 @@ class AnswerService:
                     score=chunk.score,
                     source=chunk.source,
                     source_type=chunk.source_type,
+                    film_id=chunk.film_id,
+                    knowledge_base=chunk.knowledge_base,
                 )
                 for chunk in chunks
             ],

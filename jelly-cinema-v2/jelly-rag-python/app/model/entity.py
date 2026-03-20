@@ -13,3 +13,5 @@ class ChunkRecord:
     biz_type: str
     source: str = "vector"
     source_type: str = "knowledge"
+    film_id: int | None = None
+    knowledge_base: str | None = None

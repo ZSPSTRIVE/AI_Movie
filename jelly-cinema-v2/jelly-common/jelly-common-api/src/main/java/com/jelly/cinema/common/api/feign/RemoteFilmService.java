@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * 电影服务 Feign 接口
@@ -65,4 +66,21 @@ public interface RemoteFilmService {
      */
     @PostMapping("/film/rag/sync")
     R<Integer> syncFilmsToRag(@RequestParam(value = "limit", required = false) Integer limit);
+
+    /**
+     * 后台触发电影库同步到 Python RAG
+     *
+     * @param limit 同步数量
+     * @return 当前任务状态
+     */
+    @PostMapping("/film/rag/sync/start")
+    R<Map<String, Object>> startFilmsToRagSync(@RequestParam(value = "limit", required = false) Integer limit);
+
+    /**
+     * 查询电影库同步到 Python RAG 的任务状态
+     *
+     * @return 当前任务状态
+     */
+    @GetMapping("/film/rag/sync/status")
+    R<Map<String, Object>> getFilmsToRagSyncStatus();
 }

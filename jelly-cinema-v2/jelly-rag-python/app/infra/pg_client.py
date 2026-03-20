@@ -167,6 +167,9 @@ class PgClient:
             c.document_id,
             d.title,
             d.biz_type,
+            d.source_type,
+            d.source_path,
+            d.file_name,
             c.chunk_text
         from rag_chunk c
         join rag_document d on d.id = c.document_id
@@ -187,6 +190,8 @@ class PgClient:
             d.title,
             d.biz_type,
             d.source_type,
+            d.source_path,
+            d.file_name,
             c.chunk_text
         from rag_chunk c
         join rag_document d on d.id = c.document_id

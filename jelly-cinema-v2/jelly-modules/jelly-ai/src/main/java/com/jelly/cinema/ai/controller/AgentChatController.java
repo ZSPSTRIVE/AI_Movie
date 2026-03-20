@@ -12,6 +12,8 @@ import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
 
+import java.util.Map;
+
 /**
  * AI Agent 对话控制器
  * 支持自动工具调用的智能对话接口
@@ -57,12 +59,12 @@ public class AgentChatController {
     @Operation(summary = "重建 Python RAG 索引")
     @PostMapping("/sync/films")
     public R<String> syncFilms() {
-        R<Integer> result = remoteFilmService.syncFilmsToRag(null);
+        R<Map<String, Object>> result = remoteFilmService.startFilmsToRagSync(100);
         if (result == null || !result.isSuccess()) {
             return R.fail(result == null ? "电影服务暂时不可用" : result.getMsg());
         }
-        Integer count = result.getData() == null ? 0 : result.getData();
-        return R.ok("已按 MySQL -> Python RAG 链路完成同步，共 " + count + " 条", null);
+        String message = result.getData() == null ? "已触发后台同步" : String.valueOf(result.getData().getOrDefault("message", "已触发后台同步"));
+        return R.ok(message, null);
     }
 
     @Operation(summary = "检查 RAG 服务健康状态")

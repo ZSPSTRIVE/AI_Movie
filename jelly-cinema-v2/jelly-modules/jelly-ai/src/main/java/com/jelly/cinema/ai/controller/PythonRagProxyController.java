@@ -23,6 +23,8 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class PythonRagProxyController {
 
+    private static final int DEFAULT_SYNC_LIMIT = 100;
+
     private final PythonRagClient pythonRagClient;
     private final RemoteFilmService remoteFilmService;
 
@@ -46,9 +48,9 @@ public class PythonRagProxyController {
 
     @PostMapping("/sync")
     public ResponseEntity<?> sync(@RequestBody(required = false) Map<String, Object> body) {
-        Integer limit = body == null ? null : parseNullableInt(body.get("limit"));
+        Integer limit = body == null ? DEFAULT_SYNC_LIMIT : parseInt(body.getOrDefault("limit", DEFAULT_SYNC_LIMIT), DEFAULT_SYNC_LIMIT);
         try {
-            R<Integer> response = remoteFilmService.syncFilmsToRag(limit);
+            R<Map<String, Object>> response = remoteFilmService.startFilmsToRagSync(limit);
             if (response == null || !response.isSuccess()) {
                 return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                         .body(Map.of(
@@ -56,14 +58,28 @@ public class PythonRagProxyController {
                                 "message", response == null ? "Film service unavailable" : response.getMsg()
                         ));
             }
-            int count = response.getData() == null ? 0 : response.getData();
-            return ResponseEntity.ok(Map.of(
-                    "success", true,
-                    "count", count,
-                    "message", "已按 MySQL -> Python RAG 链路完成同步"
-            ));
+            return ResponseEntity.ok(response.getData());
         } catch (Exception e) {
             log.error("Sync films to Python RAG through film service failed", e);
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                    .body(Map.of("success", false, "message", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/sync/status")
+    public ResponseEntity<?> syncStatus() {
+        try {
+            R<Map<String, Object>> response = remoteFilmService.getFilmsToRagSyncStatus();
+            if (response == null || !response.isSuccess() || response.getData() == null) {
+                return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                        .body(Map.of(
+                                "success", false,
+                                "message", response == null ? "Film service unavailable" : response.getMsg()
+                        ));
+            }
+            return ResponseEntity.ok(response.getData());
+        } catch (Exception e) {
+            log.error("Fetch sync status from film service failed", e);
             return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                     .body(Map.of("success", false, "message", e.getMessage()));
         }

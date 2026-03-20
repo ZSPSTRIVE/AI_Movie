@@ -85,6 +85,21 @@ logging:
   level:
     com.jelly.cinema: info
 
+tvbox:
+  proxy:
+    base-url: ${TVBOX_PROXY_BASE_URL:http://localhost:3001/api/tvbox}
+  startup-sync:
+    enabled: ${TVBOX_STARTUP_SYNC_ENABLED:true}
+    delay-ms: ${TVBOX_STARTUP_SYNC_DELAY_MS:5000}
+    initial-target: ${TVBOX_STARTUP_INITIAL_TARGET:2000}
+    incremental-target: ${TVBOX_STARTUP_INCREMENTAL_TARGET:100}
+    recommend-limit: ${TVBOX_STARTUP_RECOMMEND_LIMIT:100}
+    list-page-size: ${TVBOX_STARTUP_LIST_PAGE_SIZE:100}
+    max-list-pages: ${TVBOX_STARTUP_MAX_LIST_PAGES:20}
+    search-limit: ${TVBOX_STARTUP_SEARCH_LIMIT:20}
+    play-url-prefetch-limit: ${TVBOX_STARTUP_PLAY_PREFETCH_LIMIT:30}
+    search-keywords: ${TVBOX_STARTUP_SEARCH_KEYWORDS:电影,喜剧,电视剧,动漫,科幻,动作,爱情,悬疑,冒险,战争,综艺,纪录片,少儿,经典,高分,轻松,休闲,下饭,治愈,热血}
+
 # 禁用 Elasticsearch 健康检查
 management:
   health:
