@@ -158,7 +158,7 @@ jelly-cinema-v2/
 │   ├── jelly-im              # [9400] 即时通讯 (WebSocket/群聊/私聊)
 │   └── jelly-ai              # [9500] AI 实验室 (LLM对话/小说生成/角色扮演)
 ├── 📂 jelly-rag-python/      # [8000] RAG 检索引擎 (Python/LangChain/向量库) [NEW]
-├── 📂 tvbox-proxy/           # [5000] TVBox 接口代理 (TV端源解析) [NEW]
+├── 📂 tvbox-proxy/           # [3001] TVBox 接口代理 (TV端源解析) [NEW]
 ├── 📂 jelly-common/          # 公共依赖模块 (Core/Redis/MyBatis/Security)
 ├── 📂 jelly-ui-web/          # 前端 Web 端源码 (Vue3 + TS)
 └── 📄 docker-compose.yml     # 容器化一键部署脚本
@@ -167,6 +167,11 @@ jelly-cinema-v2/
 ---
 
 ## 🚀 **快速开始**
+
+### **0. 进入项目目录**
+```bash
+cd jelly-cinema-v2
+```
 
 ### **1. 环境准备**
 - JDK 21+
@@ -177,7 +182,7 @@ jelly-cinema-v2/
 ### **2. 启动中间件**
 
 ```bash
-# 启动 MySQL, Redis, Nacos, Elasticsearch, RocketMQ, MinIO
+# 启动 MySQL, Redis, Nacos, Elasticsearch, RocketMQ, MinIO, Milvus
 docker-compose up -d
 ```
 
@@ -189,10 +194,16 @@ docker-compose up -d
 
 ```bash
 # 建议启动顺序
-1. jelly-gateway      (网关)
-2. jelly-auth         (认证)
-3. jelly-film         (核心业务)
-4. jelly-rag-python   (AI 搜索增强 - 可选)
+1. tvbox-proxy        (TVBox 源代理，影视/TV 端依赖)
+   cd tvbox-proxy && npm install && npm run start
+2. jelly-gateway      (网关)
+3. jelly-auth         (认证)
+4. jelly-admin        (运营后台)
+5. jelly-film         (核心业务，依赖 tvbox-proxy)
+6. jelly-community    (社区)
+7. jelly-im           (即时通讯)
+8. jelly-ai           (AI 实验室)
+9. jelly-rag-python   (RAG 检索 - 可选)
    cd jelly-rag-python && pip install -r requirements.txt && python main.py
 ```
 
